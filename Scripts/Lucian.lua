@@ -312,8 +312,8 @@ function Lucian:LogicW()
 	local TargetW = self.menu_ts:GetTarget(self.W.range)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
+		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, true)
+		--local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
 		if TargetW ~= nil then
@@ -467,6 +467,13 @@ function Lucian:OnProcessSpell(unit, spell)
     if unit.IsMe then
     	if spellName == "lucianr" then
     		self.castR = GetTimeGame()
+
+    		if self.newMovePos ~= nil and self.menu_Combo_Rlock.getValue() then
+				self.Move = false
+				--if not IsWall(self.newMovePos.x, self.newMovePos.y, self.newMovePos.z) then
+					MoveToPos(self.newMovePos.x, self.newMovePos.z)
+				--end		
+			end
     	end
 
     	

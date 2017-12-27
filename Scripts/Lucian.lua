@@ -471,7 +471,7 @@ function Lucian:OnProcessSpell(unit, spell)
 
     	
     	if spellName == "lucianq" then
-    		orbwalk:ResetAutoAttackTimer()
+    		--orbwalk:ResetAutoAttackTimer()
     	end
     	if (spellName == "lucianw" or spellName == "luciane" or spellName == "lucianq") then    		
             self.passRdy = true

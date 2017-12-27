@@ -283,6 +283,7 @@ function Lucian:CountMinionInLine(target)
     local NH = 0
 	local minioncollision = nil
     local targetPos = Vector(target.x, target.y, target.z)
+    local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 	local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q2.delay, self.Q2.width, self.Q2.range, math.huge, myHero, false)
 	if HitChance >= 2 and GetDistance(targetPos) > self.Q.range and GetDistance(targetPos) <= self.Q2.range then
 		local distance = GetDistance(CastPosition)
@@ -293,7 +294,7 @@ function Lucian:CountMinionInLine(target)
 					local minion = GetUnit(minions)
 					local minionPos = Vector(minion.x, minion.y, minion.z) 
 					local posEx = myHeroPos:Extended(minionPos, distance)
-					local angle = myHeroPos:AngleBetween(CastPosition, posEx)
+					--local angle = myHeroPos:AngleBetween(CastPosition, posEx)
 					if GetDistance(CastPosition, posEx) < 25 then --or angle < 10 then
 						NH = NH + 1
 						minioncollision = minion

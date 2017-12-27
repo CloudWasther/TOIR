@@ -299,13 +299,13 @@ end
 
 function Twitch:AutoE()
 	local target = self:GetTargetBuffE(self.E.range)
-	if target ~= nil then		
-		--targetE = GetAIHero(target)	
+	if target ~= nil then
+		--targetE = GetAIHero(target)
 		--__PrintTextGame(tostring(self:GetStackBuffE(target)))
 		--if self:GetStackBuffE(target) >= self.menu_Combo_ECount.getValue() and CanCast(_E) then
 			--CastSpellTarget(myHero.Addr, _E)
 		--end
-		
+
 		if IsValidTarget(target, self.E.range) and self:GetStackBuffE(target) >= self.menu_Combo_EAuto.getValue() and GetDistance(target) >= self.E.range * 0.80 and CanCast(_E) then
 			--__PrintTextGame(tostring(GetDistance(target)))
 			CastSpellTarget(myHero.Addr, _E)
@@ -336,7 +336,7 @@ function Twitch:AutoE()
                 end
 
                 if IsValidTarget(jungle.Addr, self.E.range) and self:getEDmg(jungle) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.menu_Combo_EKsDragon.getValue() then
-                    eCastSpellTarget(jungle.Addr, _E)
+                    CastSpellTarget(jungle.Addr, _E)
                 end
             end
         end
@@ -382,7 +382,7 @@ function Twitch:KillSteal()
 	for i,hero in pairs(GetEnemyHeroes()) do
         if hero~= 0 and IsValidTarget(hero, self.E.range) and GetBuffByName(hero, "TwitchDeadlyVenom") ~= 0 then
         	target = GetAIHero(hero)
-        	if self:RealEDamage(target) > target.HP and CanCast(_E) and self.menu_Combo_EKs.getValue() then        		
+        	if self:RealEDamage(target) > target.HP and CanCast(_E) and self.menu_Combo_EKs.getValue() then
         		CastSpellTarget(myHero.Addr, _E)
         	end
         end
@@ -403,11 +403,11 @@ function Twitch:OnProcessSpell(unit, spell)
 end
 
 function Twitch:ReCall()
-	if self.menu_Combo_QRecall.getValue() then		
+	if self.menu_Combo_QRecall.getValue() then
 		if self.Q:IsReady() then
-			CastSpellTarget(myHero.Addr, _Q)			
+			CastSpellTarget(myHero.Addr, _Q)
 			DelayAction(function() CastSpellTarget(myHero.Addr, self:GetIndexRecall()) end, 0.5)
-		end 
+		end
 	end
 end
 
@@ -422,7 +422,7 @@ function Twitch:OnDraw()
 		if self.menu_Draw_R.getValue() and self.R:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,0,0,255))
 		end
-	else		
+	else
 		if self.menu_Draw_W.getValue() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.W.range, Lua_ARGB(255,255,0,0))
 		end
@@ -436,12 +436,12 @@ function Twitch:OnDraw()
 	if self.menu_Draw_Qrange.getValue() then
 		DrawCircleGame(myHero.x , myHero.y, myHero.z, self:RemainQ() * myHero.MoveSpeed, Lua_ARGB(255, 0, 255, 10))
 	end
-	
+
 	if self.menu_Combo_QRecall.getValue() then
 		if self.Q:IsReady() then
-			CastSpellTarget(myHero.Addr, _Q)			
+			CastSpellTarget(myHero.Addr, _Q)
 			DelayAction(function() CastSpellTarget(myHero.Addr, self:GetIndexRecall()) end, 0.5)
-		end 
+		end
 	end
 
 	local a,b = WorldToScreen(myHero.x, myHero.y, myHero.z)

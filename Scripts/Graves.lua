@@ -92,10 +92,16 @@ function Graves:__init()
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
-    Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
+    --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
+    Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
 end
 
-
+function Graves:OnDoCast(unit, spell)
+	local spellName = spell.Name:lower()
+    if unit.IsMe and orbwalk:IsAutoAttack(spellName) then
+    	DelayAction(function() self:AfterAttack() end, 0.1, {})
+    end
+end
 
 function Graves:OnTick()
 

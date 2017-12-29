@@ -81,17 +81,17 @@ function Lucian:__init()
     self.E:SetSkillShot()
     self.R:SetSkillShot(0.25, 2800, 110, true)
 
-    self.castR = 0
     self.newMovePos = nil
     self.NewPath = {}
     self.WaypointTick = GetTickCount()
     self.passRdy = false
+    self.lucianR = false
 
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
-    Callback.Add("Draw", function(...) self:OnDraw(...) end)
+    --Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
+    --Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
 end
 
 function Lucian:OnWaypoint(pUnit)            
@@ -116,17 +116,17 @@ function Lucian:OnWaypoint(pUnit)
 
 			self.newMovePos = unitPos:Extended(trungdiem, 2 * GetDistance(unitPos, trungdiem))			
 
-			self.Move = false
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+			--self.Move = false
+			--[[local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
 			if HitChance >= 2 and GetTimeGame() - self.castR > 5 and self.menu_Combo_R.getValue() then
 				DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
 				if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
 					CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
 				end	
-			end
+			end]]
 		else
 			self.newMovePos = nil
-			self.Move = true
+			--self.Move = true
 		end   
     end                             
 end
@@ -150,14 +150,8 @@ function Lucian:OnTick()
 
 	--[[orbwalk:RegisterAfterAttackCallback(function()
 		if CanCast(_E) and orbwalk:ComboMode("Combo") and self.menu_Combo_E.getValue() then
-			self:LogicE()
-		end
-
-		if CanCast(_E) and self.menu_Combo_EJungle.getValue() then
-			local orbT = orbwalk:GetTargetOrb()
-    		if orbT ~= nil and GetType(orbT) == 3 then
-    			CastSpellToPos(GetMousePos().x,GetMousePos().z, _E)
-    		end
+			--self:LogicE()
+			--__PrintTextGame("string szText")
 		end
 	end)]]
 
@@ -203,15 +197,17 @@ function Lucian:LogicE()
 		if target.IsMelee then
 			local dashPos = self:CastDash(true);
 			if dashPos ~= Vector(0, 0, 0) then
+				--__PrintTextGame("111111111")
 				CastSpellToPos(dashPos.x,dashPos.z, _E)
 			end
 		else
-			if (not orbwalk:ComboMode("Combo") or self.passRdy or self:SpellLock()) then
+			if not orbwalk:ComboMode("Combo") or self.passRdy or self:SpellLock() then
                     return
             end
 
             local dashPos = self:CastDash();
 			if dashPos ~= Vector(0, 0, 0) then
+				--__PrintTextGame("222222222222")
 				CastSpellToPos(dashPos.x,dashPos.z, _E)
 			end
 		end
@@ -265,7 +261,7 @@ function Lucian:LogicQ()
 end
 
 function Lucian:CountMinionInLine(target)
-	--[[local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
     local targetPos = Vector(target.x, target.y, target.z)
 	local NH = 0
 	local minioncollision
@@ -279,8 +275,8 @@ function Lucian:CountMinionInLine(target)
 		    end
 		end
 	end
-    return NH , minioncollision]]
-    local NH = 0
+    return NH , minioncollision
+    --[[local NH = 0
 	local minioncollision = nil
     local targetPos = Vector(target.x, target.y, target.z)
     local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -305,7 +301,7 @@ function Lucian:CountMinionInLine(target)
 			end
 		end 			        
 	end
-	return NH , minioncollision
+	return NH , minioncollision]]
 end
 
 function Lucian:LogicW()
@@ -327,11 +323,24 @@ function Lucian:LogicW()
 end
 
 function Lucian:LogicR()
-	if self.newMovePos ~= nil and self.menu_Combo_Rlock.getValue() then
+	if self.newMovePos ~= nil and self.menu_Combo_Rlock.getValue() and  myHero.MP > 250 then --and self.lucianR then
 		self.Move = false
-		--if not IsWall(self.newMovePos.x, self.newMovePos.y, self.newMovePos.z) then
-			MoveToPos(self.newMovePos.x, self.newMovePos.z)
-		--end		
+		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		local TargetR = self.menu_ts:GetTarget(self.R.range)
+		if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) then
+			local target = GetAIHero(TargetR)
+			local targetPos = Vector(target.x, target.y, target.z)
+			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+			if HitChance >= 2 and GetDistance(TargetR) < self.R.range - 200 and 10 * GetDamage("R", targetR) + GetDamage("Q", targetR) + GetDamage("W", targetR) > GetHealthPoint(TargetR) and self.menu_Combo_R.getValue() then
+				MoveToPos(self.newMovePos.x, self.newMovePos.z)
+				if not self.lucianR then
+					DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
+				end
+				if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
+					CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
+				end	
+			end
+		end		
 	end
 end
 
@@ -371,16 +380,20 @@ function Lucian:KillSteal()
 	if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) and self.menu_Combo_Rks.getValue() then
 		targetR = GetAIHero(TargetR)
 		--__PrintTextGame(tostring(myHero.CalcDamage(target.Addr, GetDamage("R", targetR))))
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
-		if GetDistance(TargetR) < self.R.range and 10 * GetDamage("R", targetR) > GetHealthPoint(TargetR) then
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)		
+
+		if HitChance >= 2 and GetDistance(TargetR) < self.R.range and 10 * GetDamage("R", targetR) > GetHealthPoint(TargetR) then
 			if self.newMovePos ~= nil then
 				self.Move = false
-		--if not IsWall(self.newMovePos.x, self.newMovePos.y, self.newMovePos.z) then
 				MoveToPos(self.newMovePos.x, self.newMovePos.z)
-		--end		
 			end
-			CastSpellToPos(CastPosition.x, CastPosition.z, _R)
-		end
+			if not self.lucianR then
+				DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
+			end
+			if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
+				CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
+			end	
+		end	
 	end
 
 	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
@@ -466,20 +479,11 @@ function Lucian:OnProcessSpell(unit, spell)
 
     if unit.IsMe then
     	if spellName == "lucianr" then
-    		self.castR = GetTimeGame()
-
-    		if self.newMovePos ~= nil and self.menu_Combo_Rlock.getValue() then
-				self.Move = false
-				--if not IsWall(self.newMovePos.x, self.newMovePos.y, self.newMovePos.z) then
-					MoveToPos(self.newMovePos.x, self.newMovePos.z)
-				--end		
-			end
+    		self.lucianR = true
+		else
+			self.lucianR = false
     	end
 
-    	
-    	if spellName == "lucianq" then
-    		--orbwalk:ResetAutoAttackTimer()
-    	end
     	if (spellName == "lucianw" or spellName == "luciane" or spellName == "lucianq") then    		
             self.passRdy = true
         else
@@ -771,11 +775,13 @@ function Lucian:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravity
 
 		self.Move = false
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
-		if HitChance >= 2 and GetTimeGame() - self.castR > 3.5 and self.menu_Combo_R.getValue() then
-			DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
+		if HitChance >= 2 and self.lucianR and self.menu_Combo_R.getValue() then
+			
 			if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
 				CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
 			end	
+
+			DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
 		end
 	else
 		self.newMovePos = nil

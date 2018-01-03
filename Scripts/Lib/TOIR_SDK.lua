@@ -101,6 +101,7 @@ local Callbacks = {
         ["Tick"]                    = {},
         ["Update"]                  = {},
         ["Draw"]                    = {},
+        ["DrawMenu"]                = {},
         ["UpdateBuff"]              = {},
         ["RemoveBuff"]              = {},
         ["ProcessSpell"]            = {},
@@ -256,6 +257,12 @@ end
 
 function OnDraw()
         for i, cb in pairs(Callbacks["Draw"]) do
+                cb()
+        end
+end
+
+function OnDrawMenu()
+        for i, cb in pairs(Callbacks["DrawMenu"]) do
                 cb()
         end
 end
@@ -647,6 +654,16 @@ function GetDistance(p1, p2)
 
     return GetDistance2D(p1.x, p1.z or p1.y, p2.x, p2.z or p2.y)
 end
+
+--Faster for comparison of distances, returns the distance^2
+--[[function GetDistanceSqr(p1, p2)
+    p2 = p2 or GetOrigin(myHero)
+    return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
+end
+
+function GetDistance(p1, p2)
+    return math.sqrt(GetDistanceSqr(p1, p2))
+end]]
 
 function GetPercentHP(unit)
         return GetHealthPoint(unit) / GetHealthPointMax(unit) * 100
@@ -3484,23 +3501,26 @@ function TargetSelector:__init(range, damageType, from, focusSelected, menu, dra
         end
 
         self.sorting = {
-                [1] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return self.CalcDamage(a, self.damageType, 100) / (1 + a.HP) * self:GetPriority(a) > self.CalcDamage(b, self.damageType, 100) / (1 + b.HP) * self:GetPriority(b) end,
-                [2] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return self.CalcDamage(a, 1, 100) / (1 + a.HP) * self:GetPriority(a) > self.CalcDamage(b, 1, 100) / (1 + b.HP) * self:GetPriority(b) end,
-                [3] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return self.CalcDamage(a, 2, 100) / (1 + a.HP) * self:GetPriority(a) > self.CalcDamage(b, 2, 100) / (1 + b.HP) * self:GetPriority(b) end,
-                [4] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return a.HP < b.HP end,
-                [5] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return a.TotalDmg > b.TotalDmg end,
-                [6] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return a.MagicDmg > b.MagicDmg end,
-                [7] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return GetDistance(a, self.from and self.from or myHero) < GetDistance(b, self.from and self.from or myHero) end,
-                [8] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return GetDistance(a, GetMousePos()) < GetDistance(b, GetMousePos()) end
+                [0] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return self.CalcDamage(a, self.damageType, 100) / (1 + a.HP) * self:GetPriority(a) > self.CalcDamage(b, self.damageType, 100) / (1 + b.HP) * self:GetPriority(b) end,
+                [1] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return self.CalcDamage(a, 1, 100) / (1 + a.HP) * self:GetPriority(a) > self.CalcDamage(b, 1, 100) / (1 + b.HP) * self:GetPriority(b) end,
+                [2] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return self.CalcDamage(a, 2, 100) / (1 + a.HP) * self:GetPriority(a) > self.CalcDamage(b, 2, 100) / (1 + b.HP) * self:GetPriority(b) end,
+                [3] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return a.HP < b.HP end,
+                [4] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return a.TotalDmg > b.TotalDmg end,
+                [5] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return a.MagicDmg > b.MagicDmg end,
+                [6] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return GetDistance(a, self.from and self.from or myHero) < GetDistance(b, self.from and self.from or myHero) end,
+                [7] = function(a,b) a = GetAIHero(a); b = GetAIHero(b); return GetDistance(a, GetMousePos()) < GetDistance(b, GetMousePos()) end
         }
 
         self.SelectedTarget = nil
 
         if menu then
-                self.tsMenu = menu.addItem(SubMenu.new("Target Selector"))
+            self:MenuValueDefault()
+            Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
+                --[[self.tsMenu = menu.addItem(SubMenu.new("Target Selector"))
                 self.tsMenu_focus = self.tsMenu.addItem(SubMenu.new("Focus Target Settings"))
                 self.tsMenu_focus_selected = self.tsMenu_focus.addItem(MenuBool.new("Focus Selected Target", true))
                 self.tsMenu_focus_selected_only = self.tsMenu_focus.addItem(MenuBool.new("Attack Only Selected Target", true))
+
                 self.tsMenu_mode = self.tsMenu.addItem(MenuStringList.new("Mode", {"Auto Priority", "Less Attack", "Less Cast", "Lowest HP", "Most AD", "Most AP", "Closest", "Closest to Mouse"}, 1))
 
                 self.ts_prio = {}
@@ -3508,7 +3528,7 @@ function TargetSelector:__init(range, damageType, from, focusSelected, menu, dra
 
                 for i, enemy in pairs(GetEnemyHeroes()) do
                         t.insert(self.ts_prio, { charName = GetAIHero(enemy).CharName, menu = self.tsMenu.addItem(MenuSlider.new(GetAIHero(enemy).CharName, self:GetDBPriority(GetAIHero(enemy).CharName), 1, 4, 1)) })
-                end
+                end]]
         end      
 
         if draw then
@@ -3517,8 +3537,55 @@ function TargetSelector:__init(range, damageType, from, focusSelected, menu, dra
         Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
 end
 
+function TargetSelector:MenuValueDefault()
+    self.menu = "Target Selector"
+    self.Focus_Selected_Target = self:MenuBool("Focus Selected Target", true)
+    self.Mode = self:MenuComboBox("Mode", 0)
+    for i, enemy in pairs(GetEnemyHeroes()) do
+        self.hero = self:MenuSliderFloat(GetAIHero(enemy).CharName, self:GetDBPriority(GetAIHero(enemy).CharName))
+    end
+end
+
+function TargetSelector:OnDrawMenu()
+
+    if Menu_Begin(self.menu) then
+        if Menu_Begin("Focus Target Settings") then
+            Menu_Bool("Focus Selected Target", self.Focus_Selected_Target, self.menu)
+            --Menu_Bool("Attack Only Selected Target", self:MenuBool("Attack Only Selected Target", true), self.menu)
+            Menu_End()
+        end
+
+        self.Mode = Menu_ComboBox("Mode", self.Mode, "Auto Priority\0Less Attack\0Less Cast\0Lowest HP\0Most AD\0Most AP\0Closest\0Closest to Mouse", self.menu) 
+
+        for i, enemy in pairs(GetEnemyHeroes()) do
+            self.hero = Menu_SliderInt(GetAIHero(enemy).CharName, self.hero, 1, 4, self.menu)
+        end
+
+        self.ts_prio = {}
+        Menu_Text("Priority Settings")
+
+        for i, enemy in pairs(GetEnemyHeroes()) do
+            t.insert(self.ts_prio, { charName = GetAIHero(enemy).CharName, menu = self.hero })
+        end
+
+        Menu_End()
+    end
+end
+
+function TargetSelector:MenuBool(stringKey, bool)
+    return ReadIniBoolean(self.menu, stringKey, bool)
+end
+
+function TargetSelector:MenuComboBox(stringKey, valueDefault)
+    return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function TargetSelector:MenuSliderFloat(stringKey, valueDefault)
+    return ReadIniFloat(self.menu, stringKey, valueDefault)
+end
+
 function TargetSelector:OnDraw()
-        if (self.tsMenu and self.tsMenu_focus_selected or self.focusSelected) and IsValidTarget(self.SelectedTarget) then
+        if (self:MenuBool("Focus Selected Target", true) or self.focusSelected) and IsValidTarget(self.SelectedTarget) then
                 local pos = Vector(GetAIHero(self.SelectedTarget))
                 --DrawCircleGame(pos.x, pos.y, pos.z, 150, Lua_ARGB(255, 255, 0, 0))
                 Draw:Circle3D(pos.x, pos.y, pos.z, 150, 2, 10, Lua_ARGB(255, 255, 0, 0))
@@ -3526,7 +3593,7 @@ function TargetSelector:OnDraw()
 end
 
 function TargetSelector:OnWndMsg(msg, key)
-        if msg == 513 and (self.tsMenu and self.tsMenu_focus_selected.getValue() or self.focusSelected) then
+        if msg == 513 and (self.Focus_Selected_Target or self.focusSelected) then
                 local target, distance = nil, math.huge
                 for i, enemy in pairs(GetEnemyHeroes()) do
                         if IsValidTarget(enemy) then
@@ -3545,7 +3612,7 @@ end
 
 function TargetSelector:GetPriority(unit)
         local prio = 1
-        if self.tsMenu == nil then return prio end
+        if not self.Focus_Selected_Target then return prio end
         
         for i = 1, #self.ts_prio do
                 local index = 0
@@ -3555,7 +3622,7 @@ function TargetSelector:GetPriority(unit)
                 end
 
                 if index ~= 0 then
-                        prio = self.ts_prio[index].menu.getValue()
+                        prio = self.ts_prio[index].menu
                 end
         end
 
@@ -3583,22 +3650,22 @@ function TargetSelector:GetDBPriority(charName)
 end
 
 function TargetSelector:GetTarget(range)
-        if (self.tsMenu and self.tsMenu_focus_selected.getValue() or self.focusSelected) and IsValidTarget(self.SelectedTarget, range or self.range) then
-                return self.SelectedTarget
+        if (self.Focus_Selected_Target or self.focusSelected) and IsValidTarget(self.SelectedTarget, range or self.range) then
+            return self.SelectedTarget
         end
 
         local targets = {}
         for i, enemy in pairs(GetEnemyHeroes()) do
-                if IsValidTarget(enemy, range or self.range) then
-                        t.insert(targets, enemy)
-                end
+            if IsValidTarget(enemy, range or self.range) then
+                t.insert(targets, enemy)
+            end
         end
 
-        table.sort(targets, function(a, b)            
+        --[[table.sort(targets, function(a, b)            
                 return GetHealthPoint(a) < GetHealthPoint(b) or GetDistance(a) < GetDistance(b)
-            end)
+            end)]]
 
-        self.SortMode = self.tsMenu and self.tsMenu_mode.getValue() or 1
+        self.SortMode = self.Mode or 0
         t.sort(targets, self.sorting[self.SortMode])
         return #targets > 0 and targets[1] or 0
 end
@@ -4148,7 +4215,7 @@ local function GetAggro(unit)
         return minionTar[unit.NetworkId] and minionTar[unit.NetworkId] or nil
     end
 end
-local _FAST, _MEDIUM, _SLOW = 1, 2, 3
+local _FAST, _MEDIUM, _SLOW = 0, 1, 2
 local PA = {}
 
 for i, champ in pairs(GetEnemyHeroes()) do
@@ -4174,8 +4241,8 @@ function VPrediction:__init(menu)
         self.DontUseWayPoints = false
         self.ShotAtMaxRange = true
 
-        if menu then
-            self.VPredictionMenu = menu.addItem(SubMenu.new("<SDK> VPrediction"))
+        --if menu then
+            --[[self.VPredictionMenu = menu.addItem(SubMenu.new("<SDK> VPrediction"))
             self.VPMenu_Mode = self.VPredictionMenu.addItem(MenuStringList.new("Cast Mode:", {"Fast", "Medium", "Slow"}, 1))
             self.VPMenu_Collision = self.VPredictionMenu.addItem(SubMenu.new("Collision Settings"))
             self.VPMenu_Buffer = self.VPMenu_Collision.addItem(MenuSlider.new("Collision Buffer", 20, 0, 100, 1))
@@ -4194,8 +4261,10 @@ function VPrediction:__init(menu)
             --self.VPMenu_SC = self.VPMenu_Developers.addItem(MenuBool.new("Show Collision", false))
             --self.VPMenu_ColRect = self.VPMenu_Developers.addItem(MenuSlider.new("Skillshot Width: ", 65, 0, 200, 5))
             self.VPMenu_Version = self.VPredictionMenu.addItem(MenuSeparator.new(string.format("Version: " .. tostring(self.version)), true))
-            self.VPMenu_Credit = self.VPredictionMenu.addItem(MenuSeparator.new("Ported & Updated By: Dewblackio2", true))
-        end
+            self.VPMenu_Credit = self.VPredictionMenu.addItem(MenuSeparator.new("Ported & Updated By: Dewblackio2", true))]]
+            self:MenuValueDefault()
+            Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
+        --end
 
         --[[Use waypoints from the last 10 seconds]]
         self.WaypointsTime = 10
@@ -4216,6 +4285,8 @@ function VPrediction:__init(menu)
         self.DontShootUntilNewWaypoints = {}
 
 
+        
+
 --[[
 
         AddProcessSpellCallback(function(unit, spell) self:OnProcessSpell(unit, spell) end)
@@ -4231,6 +4302,7 @@ function VPrediction:__init(menu)
         Callback.Add("UpdateBuff", function(unit, buff) self:OnGainBuff(unit, buff) end)
         Callback.Add("PlayAnimation", function(unit, anim) self:Animation(unit, anim) end)
         Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
+        
 
         self.BlackList =
         {
@@ -4335,6 +4407,63 @@ function VPrediction:__init(menu)
 
         __PrintTextGame("<b><font color=\"#ff00ff\">[SDK]VPrediction:</font></b> <b><font color=\"#ffffff\">Loaded! (v" .. self.version .. ").</font></b><b><font color=\"#ff00ff\"></font></b> </font>")
         return self
+end
+
+function VPrediction:MenuValueDefault()
+    self.menu = "VPrediction"
+    self.VPMenu_Mode = self:MenuComboBox("Cast Mode:", 0)
+    self.VPMenu_Buffer = self:MenuSliderInt("Collision Buffer", 20)
+    self.VPMenu_Minions = self:MenuBool("Normal Minions", true)
+    self.VPMenu_Mobs = self:MenuBool("Jungle Minions", true)
+    self.VPMenu_Others = self:MenuBool("Others", true)
+    self.VPMenu_UnitPos = self:MenuBool("Check Collision at Unit Pos", true)
+    self.VPMenu_CastPos = self:MenuBool("Check Collision at Cast Pos", true)
+    self.VPMenu_PredictPos = self:MenuBool("Check Collision at Predicted Pos", true)
+    self.VPMenu_Debug = self:MenuBool("Draw Enemy Hitboxes", true)
+end
+
+function VPrediction:OnDrawMenu()
+    if Menu_Begin(self.menu) then
+        self.VPMenu_Mode = Menu_ComboBox("Cast Mode:", self.VPMenu_Mode, "Fast\0Medium\0Slow\0\0\0", self.menu)
+        --Menu_End()
+        if Menu_Begin("Collision Settings") then
+            self.VPMenu_Buffer = Menu_SliderInt("Collision Buffer", self.VPMenu_Buffer, 0, 100, self.menu)
+            self.VPMenu_Minions = Menu_Bool("Normal Minions", self.VPMenu_Minions, self.menu)
+            self.VPMenu_Mobs = Menu_Bool("Jungle Minions", self.VPMenu_Mobs, self.menu)
+            self.VPMenu_Others = Menu_Bool("Others", self.VPMenu_Others, self.menu)
+            self.VPMenu_UnitPos = Menu_Bool("Check Collision at Unit Pos", self.VPMenu_UnitPos, self.menu)
+            self.VPMenu_CastPos = Menu_Bool("Check Collision at Cast Pos", self.VPMenu_CastPos, self.menu)
+            self.VPMenu_PredictPos = Menu_Bool("Check Collision at Predicted Pos", self.VPMenu_PredictPos, self.menu)
+            Menu_End()
+        end
+        if Menu_Begin("Developer Settings") then
+            self.VPMenu_Debug = Menu_Bool("Draw Enemy Hitboxes", self.VPMenu_Debug, self.menu)
+            Menu_End()
+        end
+        Menu_Text(string.format("Version: " .. tostring(self.version)))
+        Menu_Text("Ported & Updated By: Dewblackio2")
+        Menu_End()
+    end
+end
+
+function VPrediction:MenuBool(stringKey, bool)
+    return ReadIniBoolean(self.menu, stringKey, bool)
+end
+
+function VPrediction:MenuSliderInt(stringKey, valueDefault)
+    return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function VPrediction:MenuSliderFloat(stringKey, valueDefault)
+    return ReadIniFloat(self.menu, stringKey, valueDefault)
+end
+
+function VPrediction:MenuComboBox(stringKey, valueDefault)
+    return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function VPrediction:MenuKeyBinding(stringKey, valueDefault)
+    return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
 
 function VPrediction:GetTime()
@@ -4696,8 +4825,8 @@ function VPrediction:WayPointAnalysis(unit, delay, radius, range, speed, from, s
     local t1 = 0
 
     if self.VPMenu_Mode then
-        N = (self.VPMenu_Mode.getValue() == _SLOW) and 3 or 2
-        t1 = (self.VPMenu_Mode.getValue() == _SLOW) and 1 or 0.5
+        N = (self.VPMenu_Mode == _SLOW) and 3 or 2
+        t1 = (self.VPMenu_Mode == _SLOW) and 1 or 0.5
     else
         N = 2
         t1 = 0.5
@@ -4713,7 +4842,7 @@ function VPrediction:WayPointAnalysis(unit, delay, radius, range, speed, from, s
     end
 
     if self.VPMenu_Mode then
-        N = (self.VPMenu_Mode.getValue() == _SLOW) and 2 or 1
+        N = (self.VPMenu_Mode == _SLOW) and 2 or 1
     else
         N = 1
     end
@@ -4722,7 +4851,7 @@ function VPrediction:WayPointAnalysis(unit, delay, radius, range, speed, from, s
     end
 
     if self.VPMenu_Mode then
-        if self.VPMenu_Mode.getValue() == _FAST then
+        if self.VPMenu_Mode == _FAST then
             HitChance = 2
         end
     else
@@ -4850,12 +4979,12 @@ function VPrediction:GetBestCastPosition(unit, delay, radius, range, speed, from
     self.AllyMinions:update()
 
         if self.VPMenu_Collision then
-            if self.VPMenu_CastPos.getValue() and self:CheckMinionCollision(unit, CastPosition, delay, radius, range, speed, from, false, false) then
+            if self.VPMenu_CastPos and self:CheckMinionCollision(unit, CastPosition, delay, radius, range, speed, from, false, false) then
                 HitChance = -1
-            elseif self.VPMenu_PredictPos.getValue() and self:CheckMinionCollision(unit, Position, delay, radius, range, speed, from, false, false) then
+            elseif self.VPMenu_PredictPos and self:CheckMinionCollision(unit, Position, delay, radius, range, speed, from, false, false) then
                 HitChance = -1
             end
-            if self.VPMenu_UnitPos.getValue() and self:CheckMinionCollision(unit, unit, delay, radius, range, speed, from, false, false) then
+            if self.VPMenu_UnitPos and self:CheckMinionCollision(unit, unit, delay, radius, range, speed, from, false, false) then
                 HitChance = -1
             end
         else
@@ -5005,7 +5134,7 @@ function VPrediction:CheckCol(unit, minion, Position, delay, radius, range, spee
     if GetDistanceSqr(from, MPos) <= (range)^2 and GetDistanceSqr(from, minion) <= (range + 100)^2 then
         local buffer = 0
         if self.VPMenu_Buffer then
-            buffer = (minion.PathCount > 1) and self.VPMenu_Buffer.getValue() or 8
+            buffer = (minion.PathCount > 1) and self.VPMenu_Buffer or 8
         else
             if (minion.PathCount > 1) then
                 buffer = 20
@@ -5056,7 +5185,7 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
 
     local result = false
     if self.VPMenu_Collision then
-        if self.VPMenu_Minions.getValue() then
+        if self.VPMenu_Minions then
             for i, minion in ipairs(self.EnemyMinions.objects) do
                 if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
                     if not draw then
@@ -5068,7 +5197,7 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
             end
         end
 
-        if self.VPMenu_Mobs.getValue() then
+        if self.VPMenu_Mobs then
             for i, minion in ipairs(self.JungleMinions.objects) do
                 if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
                     if not draw then
@@ -5080,7 +5209,7 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
             end
         end
 
-        if self.VPMenu_Others.getValue() then
+        if self.VPMenu_Others then
             for i, minion in ipairs(self.OtherMinions.objects) do
                 if minion.TeamId ~= myHero.TeamId and self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
                     if not draw then
@@ -5487,7 +5616,7 @@ end
 
 function VPrediction:OnDraw()
     if self.VPMenu_Developers then
-        if self.VPMenu_Debug.getValue() then
+        if self.VPMenu_Debug then
             --local listofminionpos = {}
             GetAllObjectAroundAnObject(myHero.Addr, 3000)
             for i, enemy in pairs(pObject) do

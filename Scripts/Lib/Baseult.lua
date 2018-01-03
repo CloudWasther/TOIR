@@ -34,7 +34,7 @@ function Baseult:__init()
     }
   }
   
-  self.Rcast = 0
+  self.Rcast = false
 
   if not self.SpellData[myHero.CharName] then __PrintTextGame("<b><font color='#EE2EC'>Baseult -</font></b><b><font color='#ff0000'> "..myHero.CharName.." Is Not Supported! </font></b>") return end
   __PrintTextGame(string.format("<b><font color='#EE2EC'>Baseult</font></b> For "..myHero.CharName.." Loaded, Have Fun ! "))

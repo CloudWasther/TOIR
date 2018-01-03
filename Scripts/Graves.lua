@@ -1,5 +1,5 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbNew.lua")
+--IncludeFile("Lib\\OrbNew.lua")
 --IncludeFile("Lib\\AntiGapCloser.lua")
 
 Graves = class()
@@ -11,73 +11,24 @@ function OnLoad()
 end
 
 function Graves:__init()
-	orbwalk = Orbwalking()
-	self.menuOrbwalk = menuInst.addItem(SubMenu.new("Orbwalking", Lua_ARGB(255, 100, 250, 50)))
-	orbwalk:LoadToMenu(self.menuOrbwalk)
+	--orbwalk = Orbwalking()
+	--self.menuOrbwalk = menuInst.addItem(SubMenu.new("Orbwalking", Lua_ARGB(255, 100, 250, 50)))
+	--orbwalk:LoadToMenu(self.menuOrbwalk)
 
 	--antiGap = ChallengerAntiGapcloser()
 	--self.menuantiGap = menuInst.addItem(SubMenu.new("Anti-Gapcloser", Lua_ARGB(255, 100, 250, 50)))
 	--antiGap:LoadToMenu(self.menuantiGap)
 
 	--Main menu
-	self.menu = menuInst.addItem(SubMenu.new("Graves", Lua_ARGB(255, 100, 250, 50)))
+	--self.menu = menuInst.addItem(SubMenu.new("Graves", Lua_ARGB(255, 100, 250, 50)))
 
 	-- VPrediction
-	vpred = VPrediction(self.menu)
+	self.vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, self.menu, true)
+    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
-	--Draw
-	self.menu_Draw = self.menu.addItem(SubMenu.new("Drawings Spell"))
-	self.menu_Draw_Already = self.menu_Draw.addItem(MenuBool.new("Draw When Already", true))
-	self.menu_Draw_Q = self.menu_Draw.addItem(MenuBool.new("Draw Q Range", true))
-	self.menu_Draw_W = self.menu_Draw.addItem(MenuBool.new("Draw W Range", true))
-	self.menu_Draw_E = self.menu_Draw.addItem(MenuBool.new("Draw E Range", true))
-	self.menu_Draw_R = self.menu_Draw.addItem(MenuBool.new("Draw R1 Range", true))
-	self.menu_Draw_R2 = self.menu_Draw.addItem(MenuBool.new("Draw R2 Range", true))
-
-	--Combo
-	--self.menu_Combo = self.menu.addItem(SubMenu.new("Combo"))
-	self.menu_ComboQ = self.menu.addItem(SubMenu.new("Setting Q"))
-	self.menu_Combo_Q = self.menu_ComboQ.addItem(MenuBool.new("Use Q", true))
-	self.menu_Combo_QendDash = self.menu_ComboQ.addItem(MenuBool.new("Auto Q End Dash", true))
-	self.menu_Combo_Qtowall = self.menu_ComboQ.addItem(MenuBool.new("Auto Q If Wall", true))
-	self.menu_Combo_Qks = self.menu_ComboQ.addItem(MenuBool.new("Use Q Kill Steal", true))
-
-
-	self.menu_ComboW = self.menu.addItem(SubMenu.new("Setting W"))
-	self.menu_Combo_W = self.menu_ComboW.addItem(MenuBool.new("Auto Use W Combo", false))
-	self.menu_Combo_Wgap = self.menu_ComboW.addItem(MenuBool.new("Use W Anti GapClose", true))
-	self.menu_Combo_WendDash = self.menu_ComboW.addItem(MenuBool.new("Use W End Dash", true))
-	self.menu_Combo_Wks = self.menu_ComboQ.addItem(MenuBool.new("Use W Kill Steal", true))
-
-	self.menu_ComboE = self.menu.addItem(SubMenu.new("Setting E"))
-	self.menu_Combo_E = self.menu_ComboE.addItem(MenuBool.new("Enable E", true))
-	self.menu_Combo_EJungle = self.menu_ComboE.addItem(MenuBool.new("Enable E Reload JungFarm", true))
-	self.menu_Combo_EMode = self.menu_ComboE.addItem(MenuStringList.new("E Mode", { "Mouse ", "Side  ", "Safe position" }, 3))
-
-	self.menu_ComboR = self.menu.addItem(SubMenu.new("Setting R"))
-	self.menu_Combo_R = self.menu_ComboR.addItem(MenuBool.new("Enable R", true))
-	self.menu_Combo_Rhit = self.menu_ComboR.addItem(MenuSlider.new("Auto R if Hit", 2, 1, 5, 1))
-	self.menu_Combo_Rks = self.menu_ComboR.addItem(MenuBool.new("Use R Kill Steal", true))
-
-	self.menu_ComboSmite = self.menu.addItem(SubMenu.new("Setting Smite"))
-	self.menu_Combo_Smiteks = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite Kill Steal", true))
-	self.menu_Combo_Smite = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite in Combo", true))
-	self.menu_ComboSmite.addItem(MenuSeparator.new("Smite Jungle"))
-	--self.menu_keybin_Smite = self.menu_ComboSmite.addItem(MenuKeyBind.new("Enable Smite Jungle", 32))
-	self.menu_Combo_SmiteSmall = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite Small Jungle", true))
-	self.menu_Combo_SmiteBlue = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite Blue", true))
-	self.menu_Combo_SmiteRed = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite Red", true))
-	self.menu_Combo_SmiteDragon = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite Dragon", true))
-	self.menu_Combo_SmiteBaron = self.menu_ComboSmite.addItem(MenuBool.new("Use Smite Baron", true))
-
-	self.menu_ModSkin = self.menu.addItem(SubMenu.new("Mod Skin"))
-	self.menu_ModSkinOnoff = self.menu_ModSkin.addItem(MenuBool.new("Enalble Mod Skin", false))
-	self.menu_ModSkinValue = self.menu_ModSkin.addItem(MenuSlider.new("Set Skin", 16, 0, 20, 1))
-
-	menuInstSep.setValue("Graves Magic")
+    
 
 	self.Q = Spell(_Q, 1000)
     self.W = Spell(_W, 1100)
@@ -93,30 +44,164 @@ function Graves:__init()
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
+    --Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
+    Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
+    Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
+
+    self:MenuValueDefault()
 end
 
-function Graves:OnDoCast(unit, spell)
-	local spellName = spell.Name:lower()
-    if unit.IsMe and orbwalk:IsAutoAttack(spellName) then
-    	DelayAction(function() self:AfterAttack() end, 0.1, {})
-    end
+function Graves:MenuValueDefault()
+	self.menu = "Graves_Magic"
+	self.Use_Combo_Q = self:MenuBool("Use Combo Q", true)
+	self.Auto_Q_End_Dash = self:MenuBool("Auto Q End Dash", true)
+	self.Auto_Q_If_Wall = self:MenuBool("Auto Q If Wall", true)
+	self.Auto_Q_Kill_Steal = self:MenuBool("Auto Q Kill Steal", true)
+
+	self.Use_Combo_W = self:MenuBool("Use Combo W", false)
+	self.Use_W_Anti_GapClose = self:MenuBool("Use W Anti GapClose", true)
+	self.Use_W_End_Dash = self:MenuBool("Use W End Dash", true)
+	self.Auto_W_Kill_Steal = self:MenuBool("Auto W Kill Steal", true)
+
+	self.Enable_E = self:MenuBool("Enable E", true)
+	self.Enable_E_Reload_JungFarm = self:MenuBool("Enable E Reload JungFarm", true)
+	self.E_Mode = self:MenuComboBox("E Mode", 2)
+
+	self.Enable_R = self:MenuBool("Enable R", true)
+	self.Auto_R_if_Hit = self:MenuSliderInt("Auto R if Hit", 2)
+	self.Use_R_Kill_Steal = self:MenuBool("Use R Kill Steal", true)
+
+	self.Use_Smite_Kill_Steal = self:MenuBool("Use Smite Kill Steal", true)
+	self.Use_Smite_in_Combo = self:MenuBool("Use Smite in Combo", true)
+	self.Use_Smite_Small_Jungle = self:MenuBool("Use Smite Small Jungle", true)
+	self.Use_Smite_Blue = self:MenuBool("Use Smite Blue", true)
+	self.Use_Smite_Red = self:MenuBool("Use Smite Red", true)
+	self.Use_Smite_Dragon = self:MenuBool("Use Smite Dragon", true)
+	self.Use_Smite_Baron = self:MenuBool("Use Smite Baron", true)
+
+	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
+	self.Draw_Q_Range = self:MenuBool("Draw Q Range", true)
+	self.Draw_W_Range = self:MenuBool("Draw W Range", true)
+	self.Draw_E_Range = self:MenuBool("Draw E Range", true)
+	self.Draw_R_Range = self:MenuBool("Draw R Range", true)
+	self.Draw_R2_Range = self:MenuBool("Draw R2 Range", true)
+
+	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", true)
+	self.Set_Skin = self:MenuSliderInt("Set Skin", 16)
+
+	self.Combo = self:MenuKeyBinding("Combo", 32)
+	self.Harass = self:MenuKeyBinding("Harass", 67)
+	self.Lane_Clear = self:MenuKeyBinding("Lane Clear", 86)
+	self.Last_Hit = self:MenuKeyBinding("Last Hit", 88)
 end
 
-function Graves:OnTick()
+function Graves:OnDrawMenu()
+	if Menu_Begin(self.menu) then
+		if Menu_Begin("Setting Q") then
+			self.Use_Combo_Q = Menu_Bool("Use Combo Q", self.Use_Combo_Q, self.menu)
+			self.Auto_Q_End_Dash = Menu_Bool("Auto Q End Dash", self.Auto_Q_End_Dash, self.menu)
+			self.Auto_Q_If_Wall = Menu_Bool("Auto Q If Wall", self.Auto_Q_If_Wall, self.menu)
+			self.Auto_Q_Kill_Steal = Menu_Bool("Auto Q Kill Steal", self.Auto_Q_Kill_Steal, self.menu)
+			Menu_End()
+		end
+		if Menu_Begin("Setting W") then
+			self.Use_Combo_W = Menu_Bool("Use Combo W", self.Use_Combo_W, self.menu)
+			self.Use_W_Anti_GapClose = Menu_Bool("Use W Anti GapClose", self.Use_W_Anti_GapClose, self.menu)
+			self.Use_W_End_Dash = Menu_Bool("Use W End Dash", self.Use_W_End_Dash, self.menu)
+			self.Auto_W_Kill_Steal = Menu_Bool("Auto W Kill Steal", self.Auto_W_Kill_Steal, self.menu)
+			Menu_End()
+		end
+		if Menu_Begin("Setting E") then
+			self.Enable_E = Menu_Bool("Enable E", self.Enable_E, self.menu)
+			self.Enable_E_Reload_JungFarm = Menu_Bool("Enable E Reload JungFarm", self.Enable_E_Reload_JungFarm, self.menu)
+			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)		
+			Menu_End()
+		end
+		if Menu_Begin("Setting R") then
+			self.Enable_R = Menu_Bool("Enable R", self.Enable_R, self.menu)
+			self.Auto_R_if_Hit = Menu_SliderInt("Auto R if Hit", self.Auto_R_if_Hit, 1, 5, self.menu)
+			self.Use_R_Kill_Steal = Menu_Bool("Use R Kill Steal", self.Use_R_Kill_Steal, self.menu)
+			Menu_End()
+		end
+		if Menu_Begin("Setting Smite") then
+			Menu_Text("Smite In Combo")
+			self.Use_Smite_Kill_Steal = Menu_Bool("Use Smite Kill Steal", self.Use_Smite_Kill_Steal, self.menu)
+			self.Use_Smite_in_Combo = Menu_Bool("Use Smite in Combo", self.Use_Smite_in_Combo, self.menu)
+			Menu_Text("Smite In Jungle")
+			self.Use_Smite_Small_Jungle = Menu_Bool("Use Smite Small Jungle", self.Use_Smite_Small_Jungle, self.menu)
+			self.Use_Smite_Blue = Menu_Bool("Use Smite Blue", self.Use_Smite_Blue, self.menu)
+			self.Use_Smite_Red = Menu_Bool("Use Smite Red", self.Use_Smite_Red, self.menu)
+			self.Use_Smite_Dragon = Menu_Bool("Use Smite Dragon", self.Use_Smite_Dragon, self.menu)
+			self.Use_Smite_Baron = Menu_Bool("Use Smite Baron", self.Use_Smite_Baron, self.menu)
+			Menu_End()
+		end
+		if Menu_Begin("Draw Spell") then
+			self.Draw_When_Already = Menu_Bool("Draw When Already", self.Draw_When_Already, self.menu)
+			self.Draw_Q_Range = Menu_Bool("Draw Q Range", self.Draw_Q_Range, self.menu)
+			self.Draw_W_Range = Menu_Bool("Draw W Range", self.Draw_W_Range, self.menu)
+			self.Draw_E_Range = Menu_Bool("Draw E Range", self.Draw_E_Range, self.menu)
+			self.Draw_R_Range = Menu_Bool("Draw R Range", self.Draw_R_Range, self.menu)
+			self.Draw_R2_Range = Menu_Bool("Draw R2 Range", self.Draw_R2_Range, self.menu)
+			Menu_End()
+		end
+		if Menu_Begin("Mod Skin") then
+			self.Enalble_Mod_Skin = Menu_Bool("Enalble Mod Skin", self.Enalble_Mod_Skin, self.menu)
+			self.Set_Skin = Menu_SliderInt("Set Skin", self.Set_Skin, 0, 20, self.menu)
+			Menu_End()
+		end
+		if Menu_Begin("Key Mode") then
+			self.Combo = Menu_KeyBinding("Combo", self.Combo, self.menu)
+			self.Harass = Menu_KeyBinding("Harass", self.Harass, self.menu)
+			self.Lane_Clear = Menu_KeyBinding("Lane Clear", self.Lane_Clear, self.menu)
+			self.Last_Hit = Menu_KeyBinding("Last Hit", self.Last_Hit, self.menu)
+			Menu_End()
+		end
+		Menu_End()
+	end
+end
 
-	--[[orbwalk:RegisterAfterAttackCallback(function()
-		if CanCast(_E) and orbwalk:ComboMode("Combo") and self.menu_Combo_E.getValue() then
+function Graves:MenuBool(stringKey, bool)
+	return ReadIniBoolean(self.menu, stringKey, bool)
+end
+
+function Graves:MenuSliderInt(stringKey, valueDefault)
+	return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function Graves:MenuSliderFloat(stringKey, valueDefault)
+	return ReadIniFloat(self.menu, stringKey, valueDefault)
+end
+
+function Graves:MenuComboBox(stringKey, valueDefault)
+	return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function Graves:MenuKeyBinding(stringKey, valueDefault)
+	return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function Graves:OnAfterAttack(unit, target)
+	if unit.IsMe then
+		if CanCast(_E) and GetKeyPress(self.Combo) > 0 and self.Enable_E then
 			self:LogicE()
 		end
 
-		if CanCast(_E) and self.menu_Combo_EJungle.getValue() then
-			local orbT = orbwalk:GetTargetOrb()
+		if CanCast(_E) and self.Enable_E_Reload_JungFarm then			
+	    	local orbT = GetTargetOrb()
     		if orbT ~= nil and GetType(orbT) == 3 then
     			CastSpellToPos(GetMousePos().x,GetMousePos().z, _E)
     		end
 		end
-	end)]]
+	end
+end
+
+function Graves:GetTarget(range)
+	return GetEnemyChampCanKillFastest(range)
+end
+
+
+function Graves:OnTick()
+	SetLuaCombo(true)
 
 	self:AutoQW()
 
@@ -124,15 +209,27 @@ function Graves:OnTick()
 
 	self:LogicSmiteJungle()
 
-	if orbwalk:ComboMode("Combo") then
-		SetLuaCombo(true)
+	if GetKeyPress(self.Combo) > 0 then	
 		self:LogicQ()
 		self:LogicW()
 		self:LogicR()
 	end
-	if self.menu_ModSkinValue.getValue() ~= 0 and self.menu_ModSkinOnoff.getValue() then
-		ModSkin(self.menu_ModSkinValue.getValue())
+
+	if self.Enalble_Mod_Skin then
+		ModSkin(self.Set_Skin)
 	end
+end
+
+function Graves:JungleTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+            table.insert(result, minions)
+        end
+    end
+
+    return result
 end
 
 function Graves:GetIndexSmite()
@@ -164,34 +261,34 @@ function Graves:GetSmiteDamage(target)
 end
 
 function Graves:LogicSmiteJungle()
-	for i, minions in ipairs(orbwalk:JungleTbl()) do
+	for i, minions in ipairs(self:JungleTbl()) do
         if minions ~= 0 then
             local jungle = GetUnit(minions)
             if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
                 (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
 
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.menu_Combo_SmiteRed.getValue() then
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.Use_Smite_Red then
                     CastSpellTarget(jungle.Addr, self:GetIndexSmite())
                 end
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Blue" and self.menu_Combo_SmiteBlue.getValue() then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_RiftHerald" and self.menu_Combo_SmiteDragon.getValue() then
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Blue" and self.Use_Smite_Blue then
                     CastSpellTarget(jungle.Addr, self:GetIndexSmite())
                 end
 
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Baron" and self.menu_Combo_SmiteBaron.getValue() then
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_RiftHerald" and self.Use_Smite_Baron then
                     CastSpellTarget(jungle.Addr, self:GetIndexSmite())
                 end
 
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and self.menu_Combo_SmiteSmall.getValue() then
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Baron" and self.Use_Smite_Baron then
+                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                end
+
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and self.Use_Smite_Small_Jungle then
                 	if jungle.CharName == "SRU_Razorbeak" or jungle.CharName == "SRU_Murkwolf" or jungle.CharName == "SRU_Gromp" or jungle.CharName == "SRU_Krug" then
                     	CastSpellTarget(jungle.Addr, self:GetIndexSmite())
                 	end
                 end
 
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.menu_Combo_SmiteDragon.getValue() then
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.Use_Smite_Dragon then
                     CastSpellTarget(jungle.Addr, self:GetIndexSmite())
                 end
             end
@@ -211,7 +308,7 @@ function Graves:LogicE()
 		end
 	end
 
-	if orbwalk:ComboMode("Combo") and myHero.MP > 140 and not myHero.HasBuff("gravesbasicattackammo2") then
+	if GetKeyPress(self.Combo) > 0 and myHero.MP > 140 and not myHero.HasBuff("gravesbasicattackammo2") then
 		local dashPos = self:CastDash();
 		if CanCast(_E) and dashPos ~= Vector(0, 0, 0) then
 			CastSpellToPos(dashPos.x,dashPos.z, _E)
@@ -223,19 +320,17 @@ function Graves:LogicQ()
 	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
     	local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 100) --endPosition
-
-
 
 		if TargetQ ~= nil then
 			if (GetDistance(TargetQ) < self.Q.range - 100 and GetDistance(TargetQ) > 300  or self:IsImmobileTarget(TargetQ) or
 				IsWall(QPred.x, QPred.y, QPred.z)) then
-				if self:GetIndexSmite() > -1 and self.menu_Combo_Smite.getValue() then
+				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
 					CastSpellTarget(TargetQ, self:GetIndexSmite())
 				end
-				if CastPosition and HitChance >= 2 and self.menu_Combo_Q.getValue() then
+				if CastPosition and HitChance >= 2 and self.Use_Combo_Q then
 		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		    	end
 		    end
@@ -247,24 +342,24 @@ function Graves:LogicW()
 	local TargetW = self.menu_ts:GetTarget(self.W.range)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
 		if TargetW ~= nil then
 			if (GetDistance(TargetW) < self.W.range - 100 and GetDistance(TargetW) > 300  or self:IsImmobileTarget(TargetW)) then
-				if self:GetIndexSmite() > -1 and self.menu_Combo_Smite.getValue() then
+				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
 					CastSpellTarget(TargetW, self:GetIndexSmite())
 				end
 
-				if CastPosition and HitChance >= 2 and self.menu_Combo_W.getValue() then
+				if CastPosition and HitChance >= 2 and self.Use_Combo_W then
 		        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		    	end
 		    end
 		end
 
 		if DashPosition ~= nil then
-			if GetDistance(DashPosition) <= 300 and self.menu_Combo_Wgap.getValue() then
+			if GetDistance(DashPosition) <= 300 and self.Use_W_Anti_GapClose then
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 	    	end
 		end
@@ -275,8 +370,9 @@ function Graves:LogicR()
 	local TargetR = self.menu_ts:GetTarget(self.R.range)
 	if CanCast(_R) and TargetR ~= 0 then
 		target = GetAIHero(TargetR)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
-		if HitChance >= 2 and self:CountEnemyInLine(target) > self.menu_Combo_Rhit.getValue() then
+		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+		--__PrintTextGame(tostring(self:CountEnemyInLine(target)).."--"..tostring(self:MenuSliderInt("Auto R if Hit")))
+		if HitChance >= 2 and self:CountEnemyInLine(target) > self.Auto_R_if_Hit then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 		end
 	end
@@ -286,19 +382,19 @@ function Graves:AutoQW()
 	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
     	local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 150)
 
 	    if CastPosition ~= nil and HitChance >= 2 then
-	    	if GetDistance(CastPosition) <= self.Q.range and IsWall(QPred.x, QPred.y, QPred.z) and self.menu_Combo_Qtowall.getValue()  then
+	    	if GetDistance(CastPosition) <= self.Q.range and IsWall(QPred.x, QPred.y, QPred.z) and self.Auto_Q_If_Wall then
 	        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 	        end
 	    end
 
 	    if DashPosition ~= nil then
-	    	if GetDistance(DashPosition) <= self.Q.range and self.menu_Combo_QendDash.getValue() then
+	    	if GetDistance(DashPosition) <= self.Q.range and self.Auto_Q_End_Dash then
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    	end
 		end
@@ -307,12 +403,12 @@ function Graves:AutoQW()
 	local TargetW = self.menu_ts:GetTarget(self.W.range)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
 	    if DashPosition ~= nil then
-	    	if GetDistance(DashPosition) <= self.W.range and self.menu_Combo_WendDash.getValue() then
+	    	if GetDistance(DashPosition) <= self.W.range and self.Use_W_End_Dash then
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 	    	end
 		end
@@ -321,186 +417,116 @@ end
 
 function Graves:KillSteal()
 	local TargetR = self.menu_ts:GetTarget(self.R.range)
-	if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) and self.menu_Combo_Rks.getValue() then
+	if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) and self.Use_R_Kill_Steal then
 		targetR = GetAIHero(TargetR)
 
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
 		if GetDistance(TargetR) < self.R.range and GetDamage("R", targetR) > GetHealthPoint(TargetR) then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 		end
 	end
 
 	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
-	if TargetQ ~= nil and IsValidTarget(TargetQ, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks.getValue() then
+	if TargetQ ~= nil and IsValidTarget(TargetQ, self.Q.range) and CanCast(_Q) and self.Auto_Q_Kill_Steal then
 		targetQ = GetAIHero(TargetQ)
 
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetQ, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetQ, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		if GetDistance(TargetQ) < self.Q.range and GetDamage("Q", targetQ) > GetHealthPoint(TargetQ) then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		end
 	end
 
 	local TargetW = self.menu_ts:GetTarget(self.W.range)
-	if TargetW ~= nil and IsValidTarget(TargetW, self.W.range) and CanCast(_W) and self.menu_Combo_Wks.getValue() then
+	if TargetW ~= nil and IsValidTarget(TargetW, self.W.range) and CanCast(_W) and self.Auto_W_Kill_Steal then
 		targetW = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetW, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetW, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
 		if GetDistance(TargetW) < self.W.range and GetDamage("W", targetW) > GetHealthPoint(TargetW) then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		end
 	end
 
 	local TargetSmite = self.menu_ts:GetTarget(650)
-	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.menu_Combo_Smiteks.getValue() then
+	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.Use_Smite_Kill_Steal then
 		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
 			CastSpellTarget(TargetSmite, self:GetIndexSmite())
 		end
 	end
 end
 
+local function GetDistanceSqr(p1, p2)
+    p2 = p2 or GetOrigin(myHero)
+    return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
+end
+
 function Graves:CountEnemyInLine(target)
 	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+    local targetPos = Vector(target.x, target.y, target.z)
+    --local targetPosEx = myHeroPos:Extended(targetPos, 500)
+	local NH = 0
+	for i, heros in ipairs(GetEnemyHeroes()) do
+		if heros ~= nil then
+		local hero = GetUnit(heros)
+			local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPos, Vector(hero))
+			--__PrintTextGame(tostring(proj2.z).."--"..tostring(pointLine.z).."--"..tostring(isOnSegment))
+			--__PrintTextGame(tostring(GetDistanceSqr(proj2, pointLine)))
+		    if isOnSegment and (GetDistanceSqr(hero, proj2) <= (65) ^ 2) then
+		        NH = NH + 1
+		    end
+		end
+	end
+    return NH
+
+
+
+	--[[local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
     local targetPos = Vector(target.x, target.y, target.z)
     local targetPosEx = myHeroPos:Extended(targetPos, 500)
     local NH = 1
 	for i=1, 4 do
 		local h = GetAIHero(GetEnemyHeroes()[i])
 		local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPosEx, h)
-		if isOnSegment and GetDistance(proj2, h) < 65 then
+		if isOnSegment and GetDistanceSqr(proj2, h) < 65 ^ 2 then
 			NH = NH + 1
 		end
 	end
-	return NH
+	return NH]]
 end
 
 function Graves:OnDraw()
 
-	--for i = 1, 15, 1 do
-    	--local angle = i * 2 * math.pi / 15
-    	--local point = Vector(myHero.x + self.Q.range * math.cos(angle), myHero.y + self.Q.range * math.sin(angle), myHero.z);
-    	--table.insert(points, point)
-    	--DrawCircleGame(point.x , point.y, point.z, 20, Lua_ARGB(255,255,0,0))
-  	--end
-
-    --local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-    --local targetPos = Vector(GetMousePos().x, GetMousePos().y, GetMousePos().z)
-    --local EPred = myHeroPos:Extended(targetPos, self.Q.range - 100) --endPosition
-
-
-
-    --local A = Vector(100, 200, 300)
-
-    --local B = Vector(400, 500, 600)
-
-    --DrawLineGame(myHero.x, myHero.y, myHero.z, targetPos.x, targetPos.y, targetPos.z, 3)
-    --DrawLineGame(GetMousePos().x, GetMousePos().y, GetMousePos().z, 400, 500, 600, 3)
-
-    --[[local TargetSmite = self.menu_ts:GetTarget(650)
-    if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) then
-	    targetSmite = GetAIHero(TargetSmite)
-	    DrawCircleGame(targetSmite.x , targetSmite.y, targetSmite.z, 65, Lua_ARGB(255,255,255,0))
-	    local target = Vector(GetPos(targetSmite.Addr))
-	   	local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPos, target)
-	   	proj = Vector(proj2.x, 0, proj2.z)
-	   	__PrintTextGame(tostring(proj))
-	    --if isOnSegment and (GetDistanceSqr(target, proj2) <= (65) ^ 2) then
-
-	    	--__PrintTextGame(tostring(proj2).."--"..tostring(pointLine).."--"..tostring(isOnSegment))
-	        --return true
-	    --end
-	end]]
-				--local CP, HC = HP:GetPredict(HP_R, t, Vector(myHero))
-
-				--__PrintTextGame(tostring(NH))
-    --DrawCircleGame(C.x , C.y, C.z, 300, Lua_ARGB(255,255,0,0))
-    --for i = 1, 6 * (self.Q.range - 100), self.Q.range - 100 do
-    	--local VL = myHeroPos:Extended(targetPos, i)
-    	--if IsWall(EPred.x, EPred.y, EPred.z) then
-    		--DrawCircleGame(EPred.x , EPred.y, EPred.z, 300, Lua_ARGB(255,255,0,0))
-    	--end
-    --end
-
-    --[[local radius = 250;
-    local start2 = Vector(GetMousePos().x, GetMousePos().y, GetMousePos().z)
-    local end2 = myHeroPos:Extended(start2, self.Q.range - 100)
-    local dir = (end2 - start2):Normalized()
-    local pDir = dir:Perpendicular();
-    local rightEndPos = end2 + pDir * radius;
-    local leftEndPos = end2 - pDir * radius;
-    local rEndPos = Vector(rightEndPos.x, rightEndPos.y, myHero.z)
-    local lEndPos = Vector(leftEndPos.x, leftEndPos.y, myHero.z)
-	local step = GetDistance(start2, rEndPos) / 10;
-	for i = 1, 10, 1 do
-		local pr = start2:Extended(rEndPos, step * i);
-        local pl = start2:Extended(lEndPos, step * i);
-        if IsWall(pr.x, pr.y, pr.z) and IsWall(pl.x, pl.y, pl.z) then
-        	DrawCircleGame(pr.x , pr.y, pr.z, 300, Lua_ARGB(255,255,0,0))
-    		DrawCircleGame(pl.x , pl.y, pl.z, 300, Lua_ARGB(255,255,0,0))
-        end
-	end]]
-	--for i = 1, 70, 1 do
-		--for j = 1, 6, 1 do
-			--newPos = Vector(GetMousePos().x + 65 * j, GetMousePos().y + 65 * j, GetMousePos().z);
-			--rotated = myHeroPos:RotateAroundPoint(targetPos, 45 * i)
-
-			--DrawCircleGame(rotated.x , rotated.y, rotated.z, 100, Lua_ARGB(255,255,0,0))
-		--end
-	--end
-
-
-
-	if self.menu_Draw_Already.getValue() then
-		if self.menu_Draw_Q.getValue() and self.Q:IsReady() then
+	if self.Draw_When_Already then
+		if self.Draw_Q_Range and self.Q:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_W.getValue() and self.W:IsReady() then
+		if self.Draw_W_Range and self.W:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.W.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_E.getValue() and self.E:IsReady() then
+		if self.Draw_E_Range and self.E:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.E.range, Lua_ARGB(255,0,255,0))
 		end
-		if self.menu_Draw_R.getValue() and self.R:IsReady() then
+		if self.Draw_R_Range and self.R:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,0,0,255))
 		end
-		if self.menu_Draw_R2.getValue() and self.R:IsReady() then
+		if self.Draw_R2_Range and self.R:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R2.range, Lua_ARGB(255,0,0,255))
 		end
 	else
-		if self.menu_Draw_Q.getValue() then
+		if self.Draw_Q_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_W.getValue() and self.W:IsReady() then
+		if self.Draw_W_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.W.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_E.getValue() then
+		if self.Draw_E_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.E.range, Lua_ARGB(255,0,255,0))
 		end
-		if self.menu_Draw_R.getValue() then
+		if self.Draw_R_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,0,0,255))
 		end
-		if self.menu_Draw_R2.getValue() and self.R:IsReady() then
+		if self.Draw_R2_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R2.range, Lua_ARGB(255,0,0,255))
 		end
 	end
-end
-
-function Graves:AfterAttack()
-	if CanCast(_E) and orbwalk:ComboMode("Combo") and self.menu_Combo_E.getValue() then
-		self:LogicE()
-	end
-
-	if CanCast(_E) and self.menu_Combo_EJungle.getValue() then
-		local orbT = orbwalk:GetTargetOrb()
-    	if orbT ~= nil and GetType(orbT) == 3 then
-    		CastSpellToPos(GetMousePos().x,GetMousePos().z, _E)
-    	end
-	end
-end
-
-function Graves:OnProcessSpell(unit, spell)
-	local spellName = spell.Name:lower()
-    if unit.IsMe and orbwalk:IsAutoAttack(spellName) then
-    	DelayAction(function() self:AfterAttack() end, 0.1, {})
-    end
 end
 
 function Graves:IsImmobileTarget(unit)
@@ -523,16 +549,6 @@ function Graves:CheckWalls(enemyPos)
 	end
 	--return false
 end
-
-local function GetDistanceSqr(Pos1, Pos2)
-  --local Pos2 = Pos2 or Vector(myHero)
-  local P2 = GetOrigin(Pos2) or GetOrigin(myHero)
-  local P1 = GetOrigin(Pos1)
-  local dx = Pos1.x - Pos2.x
-  local dz = (Pos1.z or Pos1.y) - (Pos2.z or Pos2.y)
-  return dx * dx + dz * dz
-end
-
 
 function Graves:IsUnderTurretEnemy(pos)			--Will Only work near myHero
 	GetAllUnitAroundAnObject(myHero.Addr, 2000)
@@ -589,7 +605,7 @@ local function CountAlliesInRange(pos, range)
 end
 
 
-local function CirclePoints(CircleLineSegmentN, radius, position)
+function Graves:CirclePoints(CircleLineSegmentN, radius, position)
   local points = {}
   for i = 1, CircleLineSegmentN, 1 do
     local angle = i * 2 * math.pi / CircleLineSegmentN
@@ -601,16 +617,16 @@ end
 
 function Graves:CastDash(asap)
     asap = asap and asap or false
-    local DashMode = self.menu_Combo_EMode.getValue()
+    local DashMode = self.E_Mode
     local bestpoint = Vector(0, 0, 0)
     local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
-    if DashMode == 1 then
+    if DashMode == 0 then
     	bestpoint = myHeroPos:Extended(GetMousePos(), self.E.range)
     end
 
-    if DashMode == 2 then
-    	local orbT = orbwalk:GetTargetOrb()
+    if DashMode == 1 then
+    	local orbT = GetTargetOrb()
     	if orbT ~= nil and GetType(orbT) == 0 then
 	    	target = GetAIHero(orbT)
 		    local startpos = Vector(myHero.x, myHero.y, myHero.z)
@@ -629,8 +645,8 @@ function Graves:CastDash(asap)
    		end
   	end
 
-    if DashMode == 3 then
-	    points = CirclePoints(15, self.E.range, myHeroPos)
+    if DashMode == 2 then
+	    points = self:CirclePoints(15, self.E.range, myHeroPos)
 	    bestpoint = myHeroPos:Extended(GetMousePos(), self.E.range);
 	    local enemies = self:CountEnemiesInRange(bestpoint, 350)
 
@@ -669,9 +685,9 @@ function Graves:InAARange(point)
   --if not "AAcheck" then
     --return true
   --end
-  if orbwalk:GetTargetOrb() ~= nil and GetType(orbwalk:GetTargetOrb()) == 0 then
+  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
     --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(orbwalk:GetTargetOrb())
+    local target = GetAIHero(GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)
     return GetDistance(point, targetpos) < GetTrueAttackRange()
   else

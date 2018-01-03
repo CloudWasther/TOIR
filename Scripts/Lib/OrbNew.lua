@@ -169,10 +169,10 @@ function Orbwalking:LoadToMenu(m)
 
     --Advanced
     self.menu_advanced = self.menu.addItem(SubMenu.new("Advanced"))
-    self.menu_advanced.addItem(MenuSeparator.new("MovementAdvanced"))
+    --self.menu_advanced.addItem(MenuSeparator.new("MovementAdvanced"))
     --self.menu_advanced_movementRandomize = self.menu_advanced.addItem(MenuBool.new("Randomize Location", true))
-    self.menu_advanced_movementExtraHold = self.menu_advanced.addItem(MenuSlider.new("Extra Hold Position", 100, 0, 250, 1))
-    self.menu_advanced_movementMaximumDistance1 = self.menu_advanced.addItem(MenuSlider.new("Maximum Distance", 1500, 500, 1500, 1))
+    --self.menu_advanced_movementExtraHold = self.menu_advanced.addItem(MenuSlider.new("Extra Hold Position", 100, 0, 250, 1))
+    --self.menu_advanced_movementMaximumDistance1 = self.menu_advanced.addItem(MenuSlider.new("Maximum Distance", 1500, 500, 1500, 1))
     --self.menu_advanced.addItem(MenuSeparator.new("Delay"))
     --self.menu_advanced_delayMovement = self.menu_advanced.addItem(MenuSlider.new("Movement", 0, 0, 500, 1))
     self.menu_advanced_delayWindup = self.menu_advanced.addItem(MenuSlider.new("Windup", 80, 0, 200, 1))
@@ -668,7 +668,7 @@ function Orbwalking:OnProcessSpell(unit, spell)
         self:OnAttack(GetTargetById(spell.TargetId))
         self._missileLaunched = false;
 
-        DelayAction(function(t) self:AfterAttack(t) end, self:WindUpTime() - GetLatency(), {GetTargetById(spell.TargetId)})
+        --DelayAction(function(t) self:AfterAttack(t) end, self:WindUpTime() - GetLatency(), {GetTargetById(spell.TargetId)})
     end
 
     if unit.IsMe and self.SpellAttack[string.lower(spellName)] then
@@ -750,6 +750,7 @@ function Orbwalking:OnDoCast(unit, spell)
 
     if unit.IsMe and self:IsAutoAttack(spellName) then
     	self._missileLaunched = true;
+    	DelayAction(function(t) self:AfterAttack(t) end, self:WindUpTime() - GetLatency(), {GetTargetById(spell.TargetId)})
    	end
 end
 
@@ -923,7 +924,7 @@ function Orbwalking:OnTick()
 
     local result = nil
     local mousePos = nil
-    if self.menu_keybin_combo.getValue() or self.menu_keybin_lasthitKey.getValue() or self.menu_keybin_harassKey.getValue() or self.menu_keybin_laneclearKey.getValue() then
+    if self.menu_keybin_combo.getValue() then --or self.menu_keybin_lasthitKey.getValue() or self.menu_keybin_harassKey.getValue() or self.menu_keybin_laneclearKey.getValue() then
     	result = self:GetTargetOrb()
     	mousePos = GetMousePos()
     end
@@ -1065,7 +1066,7 @@ function Orbwalking:GetTargetOrb()
     local result = nil
     --local i = 0
     --/*Killable Minion*/
-    local N = math.huge
+    --[[local N = math.huge
     for i, minions in pairs(self:EnemyMinionsTbl()) do
         local minion = GetUnit(minions)
         if self.menu_keybin_laneclearKey.getValue() or self.menu_keybin_harassKey.getValue() or self.menu_keybin_lasthitKey.getValue() then
@@ -1166,7 +1167,7 @@ function Orbwalking:GetTargetOrb()
                 end
             end
         end
-    end
+    end]]
 
     if IsValidTarget(self.forcetarget, GetTrueAttackRange()) then
         return self.forcetarget
@@ -1194,9 +1195,9 @@ function Orbwalking:GetTargetOrb()
     end
 
     --/* UnderTurret Farming */
-    if self.menu_keybin_laneclearKey.getValue() or self.menu_keybin_harassKey.getValue() or self.menu_keybin_lasthitKey.getValue() then
+    --[[if self.menu_keybin_laneclearKey.getValue() or self.menu_keybin_harassKey.getValue() or self.menu_keybin_lasthitKey.getValue() then
         self:UnderTurretMode()
-    end
+    end]]
 
     return result
 end

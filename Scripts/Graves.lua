@@ -5,9 +5,9 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Graves = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Graves" then
+	--if GetChampName(GetMyChamp()) == "Graves" then
 		Graves:__init()
-	end
+	--end
 end
 
 function Graves:__init()
@@ -193,10 +193,6 @@ function Graves:OnAfterAttack(unit, target)
     		end
 		end
 	end
-end
-
-function Graves:GetTarget(range)
-	return GetEnemyChampCanKillFastest(range)
 end
 
 

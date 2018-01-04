@@ -3516,19 +3516,6 @@ function TargetSelector:__init(range, damageType, from, focusSelected, menu, dra
         if menu then
             self:MenuValueDefault()
             Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
-                --[[self.tsMenu = menu.addItem(SubMenu.new("Target Selector"))
-                self.tsMenu_focus = self.tsMenu.addItem(SubMenu.new("Focus Target Settings"))
-                self.tsMenu_focus_selected = self.tsMenu_focus.addItem(MenuBool.new("Focus Selected Target", true))
-                self.tsMenu_focus_selected_only = self.tsMenu_focus.addItem(MenuBool.new("Attack Only Selected Target", true))
-
-                self.tsMenu_mode = self.tsMenu.addItem(MenuStringList.new("Mode", {"Auto Priority", "Less Attack", "Less Cast", "Lowest HP", "Most AD", "Most AP", "Closest", "Closest to Mouse"}, 1))
-
-                self.ts_prio = {}
-                self.tsMenu.addItem(MenuSeparator.new("    Priority Settings", true))
-
-                for i, enemy in pairs(GetEnemyHeroes()) do
-                        t.insert(self.ts_prio, { charName = GetAIHero(enemy).CharName, menu = self.tsMenu.addItem(MenuSlider.new(GetAIHero(enemy).CharName, self:GetDBPriority(GetAIHero(enemy).CharName), 1, 4, 1)) })
-                end]]
         end      
 
         if draw then
@@ -3541,16 +3528,17 @@ function TargetSelector:MenuValueDefault()
     self.menu = "Target Selector"
     self.Focus_Selected_Target = self:MenuBool("Focus Selected Target", true)
     self.Mode = self:MenuComboBox("Mode", 0)
+
+    self.ts_prio = {}
     for i, enemy in pairs(GetEnemyHeroes()) do
-        self.hero = self:MenuSliderFloat(GetAIHero(enemy).CharName, self:GetDBPriority(GetAIHero(enemy).CharName))
+        t.insert(self.ts_prio, { charName = GetAIHero(enemy).CharName, menu = self:MenuSliderFloat(GetAIHero(enemy).CharName, self:GetDBPriority(GetAIHero(enemy).CharName)) })  
     end
 end
 
 function TargetSelector:OnDrawMenu()
-
     if Menu_Begin(self.menu) then
         if Menu_Begin("Focus Target Settings") then
-            Menu_Bool("Focus Selected Target", self.Focus_Selected_Target, self.menu)
+            self.Focus_Selected_Target = Menu_Bool("Focus Selected Target", self.Focus_Selected_Target, self.menu)
             --Menu_Bool("Attack Only Selected Target", self:MenuBool("Attack Only Selected Target", true), self.menu)
             Menu_End()
         end
@@ -3558,14 +3546,7 @@ function TargetSelector:OnDrawMenu()
         self.Mode = Menu_ComboBox("Mode", self.Mode, "Auto Priority\0Less Attack\0Less Cast\0Lowest HP\0Most AD\0Most AP\0Closest\0Closest to Mouse", self.menu) 
 
         for i, enemy in pairs(GetEnemyHeroes()) do
-            self.hero = Menu_SliderInt(GetAIHero(enemy).CharName, self.hero, 1, 4, self.menu)
-        end
-
-        self.ts_prio = {}
-        Menu_Text("Priority Settings")
-
-        for i, enemy in pairs(GetEnemyHeroes()) do
-            t.insert(self.ts_prio, { charName = GetAIHero(enemy).CharName, menu = self.hero })
+            self.ts_prio[i].menu = Menu_SliderInt(GetAIHero(enemy).CharName, self.ts_prio[i].menu, 1, 4, self.menu)
         end
 
         Menu_End()
@@ -3622,8 +3603,9 @@ function TargetSelector:GetPriority(unit)
                 end
 
                 if index ~= 0 then
-                        prio = self.ts_prio[index].menu
+                    prio = self.ts_prio[index].menu
                 end
+            __PrintTextGame(tostring(self.ts_prio[index].menu))
         end
 
         if prio == 2 then
@@ -3660,10 +3642,10 @@ function TargetSelector:GetTarget(range)
                 t.insert(targets, enemy)
             end
         end
-
-        --[[table.sort(targets, function(a, b)            
+        
+        table.sort(targets, function(a, b)            
                 return GetHealthPoint(a) < GetHealthPoint(b) or GetDistance(a) < GetDistance(b)
-            end)]]
+            end)
 
         self.SortMode = self.Mode or 0
         t.sort(targets, self.sorting[self.SortMode])

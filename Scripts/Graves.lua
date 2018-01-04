@@ -1,26 +1,17 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
---IncludeFile("Lib\\OrbNew.lua")
+IncludeFile("Lib\\OrbCustom.lua")
 --IncludeFile("Lib\\AntiGapCloser.lua")
 
 Graves = class()
 
 function OnLoad()
-	--if GetChampName(GetMyChamp()) == "Graves" then
+	if GetChampName(GetMyChamp()) == "Graves" then
 		Graves:__init()
-	--end
+	end
 end
 
 function Graves:__init()
-	--orbwalk = Orbwalking()
-	--self.menuOrbwalk = menuInst.addItem(SubMenu.new("Orbwalking", Lua_ARGB(255, 100, 250, 50)))
-	--orbwalk:LoadToMenu(self.menuOrbwalk)
-
-	--antiGap = ChallengerAntiGapcloser()
-	--self.menuantiGap = menuInst.addItem(SubMenu.new("Anti-Gapcloser", Lua_ARGB(255, 100, 250, 50)))
-	--antiGap:LoadToMenu(self.menuantiGap)
-
-	--Main menu
-	--self.menu = menuInst.addItem(SubMenu.new("Graves", Lua_ARGB(255, 100, 250, 50)))
+	orbwalk = Orbwalking()
 
 	-- VPrediction
 	self.vpred = VPrediction(true)

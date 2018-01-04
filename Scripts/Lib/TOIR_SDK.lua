@@ -3513,13 +3513,13 @@ function TargetSelector:__init(range, damageType, from, focusSelected, menu, dra
 
         self.SelectedTarget = nil
 
-        if menu then
-            self:MenuValueDefault()
+        self:MenuValueDefault()
+        if menu then            
             Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
         end      
 
         if draw then
-                Callback.Add("Draw", function(...) self:OnDraw(...) end)
+            Callback.Add("Draw", function(...) self:OnDraw(...) end)
         end
         Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
 end
@@ -3605,7 +3605,7 @@ function TargetSelector:GetPriority(unit)
                 if index ~= 0 then
                     prio = self.ts_prio[index].menu
                 end
-            __PrintTextGame(tostring(self.ts_prio[index].menu))
+            --__PrintTextGame(tostring(self.ts_prio[i].menu))
         end
 
         if prio == 2 then

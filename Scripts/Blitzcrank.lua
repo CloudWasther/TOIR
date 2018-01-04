@@ -171,24 +171,24 @@ end
 
 function Blitzcrank:OnDraw()
 
-	if self.menu_Draw_Already then
-		if self.menu_Draw_Q and self.Q:IsReady() then
+	if self.Draw_When_Already then
+		if self.Draw_Q_Range and self.Q:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_E and self.E:IsReady() then
+		if self.Draw_E_Range and self.E:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.E.range, Lua_ARGB(255,0,255,0))
 		end
-		if self.menu_Draw_R and self.R:IsReady() then
+		if self.Draw_R_Range and self.R:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,0,0,255))
 		end
 	else
-		if self.menu_Draw_Q then
+		if self.Draw_Q_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_E then
+		if self.Draw_E_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.E.range, Lua_ARGB(255,0,255,0))
 		end
-		if self.menu_Draw_R then
+		if self.Draw_R_Range then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,0,0,255))
 		end
 	end
@@ -256,10 +256,10 @@ function Blitzcrank:autoQtoEndDash()
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
+	    local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   	end
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range then
-  		local Collision = vpred:CheckMinionCollision(hero, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   		if not Collision then
 	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    end
@@ -271,7 +271,7 @@ function Blitzcrank:KillSteal()
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
 			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
-				CastSpellTarget(myHero.Addr, R)
+				CastSpellTarget(myHero.Addr, _R)
 			end
 
 			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then

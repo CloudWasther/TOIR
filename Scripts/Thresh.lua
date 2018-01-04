@@ -78,8 +78,8 @@ function Thresh:MenuValueDefault()
 	self.Draw_R_Range = self:MenuBool("Draw R Range", true)
 	self.menu_Draw_CountQ = self:MenuBool("Draw Q Counter", true)
 
-	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", true)
-	self.Set_Skin = self:MenuSliderInt("Set Skin", 20)
+	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
+	self.Set_Skin = self:MenuSliderInt("Set Skin", 5)
 
 	self.Combo = self:MenuKeyBinding("Combo", 32)
 end
@@ -285,10 +285,10 @@ function Thresh:autoQtoEndDash()
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
+	    local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   	end
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range and not self:Qstat(TargetQ) then
-  		local Collision = vpred:CheckMinionCollision(hero, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   		if not Collision then
 	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    end

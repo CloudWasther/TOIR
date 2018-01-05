@@ -210,7 +210,7 @@ end
 
 
 function Lucian:OnTick()
-
+	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
 
 	self:AutoQW()
@@ -218,6 +218,7 @@ function Lucian:OnTick()
 	self:KillSteal()
 	self:OnWaypointLoop()
 	self:LogicR()
+	self:AntiGapCloser()
 
 	if GetKeyPress(self.Combo) > 0 then
 		if not self.passRdy and not self:SpellLock() then
@@ -440,7 +441,7 @@ end
 function Lucian:KillSteal()
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
-			local hero = GetUnit(heros)
+			local hero = GetAIHero(heros)
 			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks then
 				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, true)	
 				if HitChance >= 2 and GetDistance(GetOrigin(hero.Addr)) < self.R.range and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
@@ -453,8 +454,7 @@ function Lucian:KillSteal()
 						if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
 							CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
 						end	
-					end
-								
+					end							
 				end	
 				orbwalk:EnableMove()
 			end
@@ -698,7 +698,7 @@ function Lucian:CastDash(asap)
     end
 
     if DashMode == 1 then
-    	local orbT = GetTargetOrb()
+    	local orbT = orbwalk:GetTargetOrb()
     	if orbT ~= nil and GetType(orbT) == 0 then
 	    	target = GetAIHero(orbT)
 		    local startpos = Vector(myHero.x, myHero.y, myHero.z)
@@ -757,9 +757,9 @@ function Lucian:InAARange(point)
   --if not "AAcheck" then
     --return true
   --end
-  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
+  if GetType(orbwalk:GetTargetOrb()) == 0 then
     --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(GetTargetOrb())
+    local target = GetAIHero(orbwalk:GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)
     return GetDistance(point, targetpos) < GetTrueAttackRange()
   else
@@ -792,5 +792,37 @@ function Lucian:IsGoodPosition(dashPos)
     end
 
     return false
+end
+
+function Lucian:AntiGapCloser()
+	for i, heros in pairs(GetEnemyHeroes()) do
+    	if heros ~= nil then
+      		local hero = GetAIHero(heros)
+      		if hero.IsDash then
+        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
+        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+        		if DashPosition ~= nil then
+          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
+          				points = self:CirclePoints(10, self.E.range, myHeroPos)
+	    				bestpoint = myHeroPos:Extended(DashPosition, - self.E.range);
+	    				local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
+	    				for i, point in pairs(points) do
+	    					local count = self:CountEnemiesInRange(point, self.E.range)
+	    					if count < enemies then
+	    						enemies = count;
+                            	bestpoint = point;
+                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+                            	enemies = count;
+                            	bestpoint = point;
+	    					end
+	    				end
+	    				if self:IsGoodPosition(bestpoint) then   
+                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)     				
+          				end
+          			end
+        		end
+      		end
+    	end
+	end
 end
 

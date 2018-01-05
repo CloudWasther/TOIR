@@ -188,6 +188,7 @@ end
 
 
 function Graves:OnTick()
+	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
 
 	self:AutoQW()
@@ -195,6 +196,8 @@ function Graves:OnTick()
 	self:KillSteal()
 
 	self:LogicSmiteJungle()
+
+	self:AntiGapCloser()
 
 	if GetKeyPress(self.Combo) > 0 then	
 		self:LogicQ()
@@ -206,6 +209,8 @@ function Graves:OnTick()
 		ModSkin(self.Set_Skin)
 	end
 end
+
+
 
 function Graves:JungleTbl()
     GetAllUnitAroundAnObject(myHero.Addr, 2000)
@@ -613,7 +618,7 @@ function Graves:CastDash(asap)
     end
 
     if DashMode == 1 then
-    	local orbT = GetTargetOrb()
+    	local orbT = orbwalk:GetTargetOrb()
     	if orbT ~= nil and GetType(orbT) == 0 then
 	    	target = GetAIHero(orbT)
 		    local startpos = Vector(myHero.x, myHero.y, myHero.z)
@@ -672,9 +677,9 @@ function Graves:InAARange(point)
   --if not "AAcheck" then
     --return true
   --end
-  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
+  if GetType(orbwalk:GetTargetOrb()) == 0 then
     --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(GetTargetOrb())
+    local target = GetAIHero(orbwalk:GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)
     return GetDistance(point, targetpos) < GetTrueAttackRange()
   else
@@ -707,4 +712,36 @@ function Graves:IsGoodPosition(dashPos)
     end
 
     return false
+end
+
+function Graves:AntiGapCloser()
+	for i, heros in pairs(GetEnemyHeroes()) do
+    	if heros ~= nil then
+      		local hero = GetAIHero(heros)
+      		if hero.IsDash then
+        		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
+        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+        		if DashPosition ~= nil then
+          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
+          				points = self:CirclePoints(10, self.E.range, myHeroPos)
+	    				bestpoint = myHeroPos:Extended(DashPosition, - self.E.range);
+	    				local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
+	    				for i, point in pairs(points) do
+	    					local count = self:CountEnemiesInRange(point, self.E.range)
+	    					if count < enemies then
+	    						enemies = count;
+                            	bestpoint = point;
+                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+                            	enemies = count;
+                            	bestpoint = point;
+	    					end
+	    				end
+	    				if self:IsGoodPosition(bestpoint) then   
+                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)     				
+          				end
+          			end
+        		end
+      		end
+    	end
+	end
 end

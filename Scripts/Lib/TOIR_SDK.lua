@@ -760,7 +760,12 @@ function VPGetLineCastPosition(target, delay, speed)
         return realDistance
 end
 
-function GetCollision(target, width, range, distance)
+-- nMode = 0  --> ObjectCollistion = enemy minion
+-- nMode = 1  --> ObjectCollistion = enemy minion or enemy Champ
+-- nMode = 2  --> ObjectCollistion = enemy Champ
+
+function GetCollision(target, width, range, distance, typec)
+        typec = typec or 0
         local predPos = GetPredictionPos(target)
         local myHeroPos = GetOrigin(myHero)
         local targetPos = GetOrigin(target)
@@ -768,9 +773,9 @@ function GetCollision(target, width, range, distance)
         local count = 0
 
         if predPos.x ~= 0 and predPos.z ~= 0 then
-                count = CountObjectCollision(0, target, myHeroPos.x, myHeroPos.z, predPos.x, predPos.z, width, range, 10)
+                count = CountObjectCollision(type, target, myHeroPos.x, myHeroPos.z, predPos.x, predPos.z, width, range, 10)
         else
-                count = CountObjectCollision(0, target, myHeroPos.x, myHeroPos.z, targetPos.x, targetPos.z, width, range, 10)
+                count = CountObjectCollision(type, target, myHeroPos.x, myHeroPos.z, targetPos.x, targetPos.z, width, range, 10)
         end
 
         if count == 0 then
@@ -3543,7 +3548,7 @@ function TargetSelector:OnDrawMenu()
             Menu_End()
         end
 
-        self.Mode = Menu_ComboBox("Mode", self.Mode, "Auto Priority\0Less Attack\0Less Cast\0Lowest HP\0Most AD\0Most AP\0Closest\0Closest to Mouse", self.menu) 
+        self.Mode = Menu_ComboBox("Mode", self.Mode, "Auto Priority\0Less Attack\0Less Cast\0Lowest HP\0Most AD\0Most AP\0Closest\0Closest to Mouse\0\0", self.menu) 
 
         for i, enemy in pairs(GetEnemyHeroes()) do
             self.ts_prio[i].menu = Menu_SliderInt(GetAIHero(enemy).CharName, self.ts_prio[i].menu, 1, 4, self.menu)
@@ -3621,9 +3626,9 @@ function TargetSelector:GetPriority(unit)
 end
 
 function TargetSelector:GetDBPriority(charName)
-        local p1 = {"Alistar", "Amumu", "Bard", "Blitzcrank", "Braum", "Cho'Gath", "Dr. Mundo", "Garen", "Gnar", "Hecarim", "Janna", "Jarvan IV", "Leona", "Lulu", "Malphite", "Nami", "Nasus", "Nautilus", "Nunu", "Olaf", "Rammus", "Renekton", "Sejuani", "Shen", "Shyvana", "Singed", "Sion", "Skarner", "Sona", "Taric", "TahmKench", "Thresh", "Volibear", "Warwick", "MonkeyKing", "Yorick", "Zac", "Zyra"}
+        local p1 = {"Alistar", "Amumu", "Bard", "Blitzcrank", "Braum", "Chogath", "Dr Mundo", "Garen", "Gnar", "Hecarim", "Janna", "Jarvan IV", "Leona", "Lulu", "Malphite", "Nami", "Nasus", "Nautilus", "Nunu", "Olaf", "Rammus", "Renekton", "Sejuani", "Shen", "Shyvana", "Singed", "Sion", "Skarner", "Sona", "Taric", "TahmKench", "Thresh", "Volibear", "Warwick", "MonkeyKing", "Yorick", "Zac", "Zyra"}
         local p2 = {"Aatrox", "Darius", "Elise", "Evelynn", "Galio", "Gangplank", "Gragas", "Irelia", "Jax", "Lee Sin", "Maokai", "Morgana", "Nocturne", "Pantheon", "Poppy", "Rengar", "Rumble", "Ryze", "Swain", "Trundle", "Tryndamere", "Udyr", "Urgot", "Vi", "XinZhao", "RekSai", "Kayn"}
-        local p3 = {"Akali", "Diana", "Ekko", "Fiddlesticks", "Fiora", "Fizz", "Heimerdinger", "Jayce", "Kassadin", "Kayle", "Kha'Zix", "Lissandra", "Mordekaiser", "Nidalee", "Riven", "Shaco", "Vladimir", "Yasuo", "Zilean"}
+        local p3 = {"Akali", "Diana", "Ekko", "FiddleSticks", "Fiora", "Fizz", "Heimerdinger", "Jayce", "Kassadin", "Kayle", "Kha'Zix", "Lissandra", "Mordekaiser", "Nidalee", "Riven", "Shaco", "Vladimir", "Yasuo", "Zilean"}
         local p4 = {"Ahri", "Anivia", "Annie", "Ashe", "Azir", "Brand", "Caitlyn", "Cassiopeia", "Corki", "Draven", "Ezreal", "Graves", "Jinx", "Kalista", "Karma", "Karthus", "Katarina", "Kennen", "KogMaw", "Kindred", "Leblanc", "Lucian", "Lux", "Malzahar", "MasterYi", "MissFortune", "Orianna", "Quinn", "Sivir", "Syndra", "Talon", "Teemo", "Tristana", "TwistedFate", "Twitch", "Varus", "Vayne", "Veigar", "Velkoz", "Viktor", "Xerath", "Zed", "Ziggs", "Jhin", "Soraka", "Xayah", "Zoe"}
         if table.contains(p1, charName) then return 1 end
         if table.contains(p2, charName) then return 2 end
@@ -4223,7 +4228,7 @@ function VPrediction:__init(menu)
         self.DontUseWayPoints = false
         self.ShotAtMaxRange = true
 
-        --if menu then
+        if menu then
             --[[self.VPredictionMenu = menu.addItem(SubMenu.new("<SDK> VPrediction"))
             self.VPMenu_Mode = self.VPredictionMenu.addItem(MenuStringList.new("Cast Mode:", {"Fast", "Medium", "Slow"}, 1))
             self.VPMenu_Collision = self.VPredictionMenu.addItem(SubMenu.new("Collision Settings"))
@@ -4246,7 +4251,7 @@ function VPrediction:__init(menu)
             self.VPMenu_Credit = self.VPredictionMenu.addItem(MenuSeparator.new("Ported & Updated By: Dewblackio2", true))]]
             self:MenuValueDefault()
             Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
-        --end
+        end
 
         --[[Use waypoints from the last 10 seconds]]
         self.WaypointsTime = 10
@@ -4294,6 +4299,7 @@ function VPrediction:__init(menu)
         --[[Spells that will cause OnDash to fire, dont shoot and wait to OnDash]]
         self.dashAboutToHappend =
         {
+            --{name = "zedw2", duration = 0.25},--zed w
             {name = "ahritumble", duration = 0.25},--ahri's r
             {name = "akalishadowdance", duration = 0.25},--akali r
             {name = "headbutt", duration = 0.25},--alistar w
@@ -4375,7 +4381,8 @@ function VPrediction:__init(menu)
         }
 
         self.blinks = {
-            {name = "akalismokebomb", range = 250, delay = 0.25, delay2=0.8},--flash r,
+                {name = "zedw", range = 475, delay = 0.25, delay2=0.8},--zed w
+                {name = "akalismokebomb", range = 250, delay = 0.25, delay2=0.8},--flash r,
                 {name = "summonerflash", range = 400, delay = 0.25, delay2=0.8},--flash r,
                 {name = "zoer", range = 570, delay = 0.25, delay2=0.8},--zoe r,
                 {name = "ezrealarcaneshift", range = 475, delay = 0.25, delay2=0.8},--Ezreals E
@@ -4398,10 +4405,12 @@ function VPrediction:MenuValueDefault()
     self.VPMenu_Minions = self:MenuBool("Normal Minions", true)
     self.VPMenu_Mobs = self:MenuBool("Jungle Minions", true)
     self.VPMenu_Others = self:MenuBool("Others", true)
+    self.ChampionCollision = self:MenuBool("Enemy Collision", true)
     self.VPMenu_UnitPos = self:MenuBool("Check Collision at Unit Pos", true)
     self.VPMenu_CastPos = self:MenuBool("Check Collision at Cast Pos", true)
-    self.VPMenu_PredictPos = self:MenuBool("Check Collision at Predicted Pos", true)
-    self.VPMenu_Debug = self:MenuBool("Draw Enemy Hitboxes", true)
+    self.VPMenu_PredictPos = self:MenuBool("Check Collision at Predicted Pos", false)
+    self.VPMenu_Debug = self:MenuBool("Draw Enemy Hitboxes", false)
+
 end
 
 function VPrediction:OnDrawMenu()
@@ -4413,6 +4422,7 @@ function VPrediction:OnDrawMenu()
             self.VPMenu_Minions = Menu_Bool("Normal Minions", self.VPMenu_Minions, self.menu)
             self.VPMenu_Mobs = Menu_Bool("Jungle Minions", self.VPMenu_Mobs, self.menu)
             self.VPMenu_Others = Menu_Bool("Others", self.VPMenu_Others, self.menu)
+            self.ChampionCollision = Menu_Bool("Enemy Collision", self.ChampionCollision, self.menu)
             self.VPMenu_UnitPos = Menu_Bool("Check Collision at Unit Pos", self.VPMenu_UnitPos, self.menu)
             self.VPMenu_CastPos = Menu_Bool("Check Collision at Cast Pos", self.VPMenu_CastPos, self.menu)
             self.VPMenu_PredictPos = Menu_Bool("Check Collision at Predicted Pos", self.VPMenu_PredictPos, self.menu)
@@ -4597,7 +4607,7 @@ end
 function VPrediction:IsDashing(unit, delay, radius, speed, from)
     local TargetDashing = false
     local CanHit = false
-    local Position
+    local Position = nil
 
     if self.TargetsDashing[unit.NetworkId] then
         local dash = self.TargetsDashing[unit.NetworkId]
@@ -4885,7 +4895,7 @@ function VPrediction:GetBestCastPosition(unit, delay, radius, range, speed, from
     assert(unit, "[SDK]VPrediction: Target can't be nil")
     --self.LastFocusedTarget = unit
     range = range and range - 15 or math.huge
-    radius = radius == 0 and 1 or (radius + self:GetHitBox(unit)) - 4
+    radius = radius == 0 and 1 or (radius + GetBoundingRadius(unit.Addr)) - 4
     speed = speed and speed or math.huge
     from = from and from or Vector(myHero)
     --excludeWaypoints = excludeWaypoints and excludeWaypoints or false
@@ -4949,7 +4959,7 @@ function VPrediction:GetBestCastPosition(unit, delay, radius, range, speed, from
         end
     end
 
-    radius = radius - self:GetHitBox(unit) + 4
+    radius = radius - GetBoundingRadius(unit.Addr) + 4
 
     if collision and HitChance > 0 then
         self.EnemyMinions.range = range + 500 * (delay + range/speed)
@@ -4958,7 +4968,7 @@ function VPrediction:GetBestCastPosition(unit, delay, radius, range, speed, from
         self.EnemyMinions:update()
         self.JungleMinions:update()
         self.OtherMinions:update()
-    self.AllyMinions:update()
+        self.AllyMinions:update()
 
         if self.VPMenu_Collision then
             if self.VPMenu_CastPos and self:CheckMinionCollision(unit, CastPosition, delay, radius, range, speed, from, false, false) then
@@ -5126,7 +5136,7 @@ function VPrediction:CheckCol(unit, minion, Position, delay, radius, range, spee
         end
 
         if minion.Type == myHero.Type then
-            buffer = buffer + self:GetHitBox(minion)
+            buffer = buffer + GetBoundingRadius(minion.Addr)
         end
 
         --[[if draw then
@@ -5138,13 +5148,13 @@ function VPrediction:CheckCol(unit, minion, Position, delay, radius, range, spee
 
         if minion.PathCount > 1 then
             local proj1, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(Vector(from), Vector(Position), Vector(MPos))
-            if isOnSegment and (GetDistanceSqr(MPos, proj1) <= (self:GetHitBox(minion) + radius + buffer) ^ 2) then
+            if isOnSegment and (GetDistanceSqr(MPos, proj1) <= (GetBoundingRadius(minion.Addr) + radius + buffer) ^ 2) then
                 return true
             end
         end
 
         local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(from, Position, Vector(minion))
-        if isOnSegment and (GetDistanceSqr(minion, proj2) <= (self:GetHitBox(minion) + radius + buffer) ^ 2) then
+        if isOnSegment and (GetDistanceSqr(minion, proj2) <= (GetBoundingRadius(minion.Addr) + radius + buffer) ^ 2) then
             return true
         end
     end
@@ -5202,8 +5212,8 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
                 end
             end
         end
-    else
-        if (1 + 1) == 2 then --lol
+    --else
+        --[[if (1 + 1) == 2 then --lol
             for i, minion in ipairs(self.EnemyMinions.objects) do
                 if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
                     if not draw then
@@ -5237,7 +5247,7 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
                     end
                 end
             end
-        end
+        end]]
     end
 
     --[[if self.ChampionCollision then
@@ -5307,7 +5317,7 @@ function VPrediction:GetCircularAOECastPosition(unit, delay, radius, range, spee
         local Mec = MEC(points)
         local Circle = Mec:Compute()
 
-        if Circle.radius <= radius + self:GetHitBox(unit) - 8 then
+        if Circle.radius <= radius + GetBoundingRadius(unit.Addr) - 8 then
             return Circle.center, mainHitChance, #points
         end
 
@@ -5339,7 +5349,7 @@ function VPrediction:GetLineAOECastPosition(unit, delay, radius, range, speed, f
     table.insert(points, Position)
 
     range = range and range - 4 or 20000
-    radius = radius == 0 and 1 or (radius + self:GetHitBox(unit)) - 4
+    radius = radius == 0 and 1 or (radius + GetBoundingRadius(unit.Addr)) - 4
     from = from and Vector(from) or Vector(myHero)
 
     local function CircleCircleIntersection(C1, C2, R1, R2)

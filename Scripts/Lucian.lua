@@ -210,7 +210,7 @@ end
 
 
 function Lucian:OnTick()
-	if IsDead(myHero.Addr) then return end
+
 	SetLuaCombo(true)
 
 	self:AutoQW()
@@ -218,7 +218,6 @@ function Lucian:OnTick()
 	self:KillSteal()
 	self:OnWaypointLoop()
 	self:LogicR()
-	self:AntiGapCloser()
 
 	if GetKeyPress(self.Combo) > 0 then
 		if not self.passRdy and not self:SpellLock() then
@@ -366,17 +365,15 @@ function Lucian:LogicW()
 	local TargetW = self.menu_ts:GetTarget(self.W.range)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, true)
-		--local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
-		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-
-		if TargetW ~= nil then
-			if (GetDistance(GetOrigin(TargetW)) < self.W.range - 100 and GetDistance(GetOrigin(TargetW)) > 300 and not CanCast(_E) and not CanCast(_Q))  or self:IsImmobileTarget(TargetW) then
+		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+		local distance = VPGetLineCastPosition(target.Addr, self.W.delay, self.W.speed)
+	    if not GetCollision(target.Addr, self.W.width, self.W.range, distance, 1) then
+	    	if (GetDistance(GetOrigin(TargetW)) < self.W.range - 100 and GetDistance(GetOrigin(TargetW)) > 300 and not CanCast(_E) and not CanCast(_Q))  or self:IsImmobileTarget(TargetW) then
 				if CastPosition and HitChance >= 2 and self.menu_Combo_W then
 		        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		    	end
 		    end
-		end
+	    end
 	end
 end
 
@@ -387,18 +384,16 @@ function Lucian:LogicR()
 		if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) then
 			local target = GetAIHero(TargetR)
 			local targetPos = Vector(target.x, target.y, target.z)
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, true)
+			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+			local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
 			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 and 10 * GetDamage("R", target) + GetDamage("Q", target) + GetDamage("W", target) > GetHealthPoint(TargetR) and self.menu_Combo_R then				
 				if self.newMovePos ~= nil then
-						--__PrintTextGame("33333333333333333")
 					orbwalk:DisableMove()
 					MoveToPos(self.newMovePos.x, self.newMovePos.z)
-					if not self.lucianR then					
-							--__PrintTextGame("2222222222222")
+					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then					
 						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})	
 					end	
 					if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
-							--__PrintTextGame("444444444444444")
 						CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
 					end
 				end						
@@ -441,20 +436,22 @@ end
 function Lucian:KillSteal()
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
-			local hero = GetAIHero(heros)
+			local hero = GetUnit(heros)
 			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks then
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, true)	
+				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)	
+				local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
 				if HitChance >= 2 and GetDistance(GetOrigin(hero.Addr)) < self.R.range and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 					if self.newMovePos ~= nil then
 						orbwalk:DisableMove()
 						MoveToPos(self.newMovePos.x, self.newMovePos.z)
-						if not self.lucianR then
+						if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then
 							DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
 						end	
 						if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
 							CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
 						end	
-					end							
+					end
+								
 				end	
 				orbwalk:EnableMove()
 			end
@@ -698,7 +695,7 @@ function Lucian:CastDash(asap)
     end
 
     if DashMode == 1 then
-    	local orbT = orbwalk:GetTargetOrb()
+    	local orbT = GetTargetOrb()
     	if orbT ~= nil and GetType(orbT) == 0 then
 	    	target = GetAIHero(orbT)
 		    local startpos = Vector(myHero.x, myHero.y, myHero.z)
@@ -757,9 +754,9 @@ function Lucian:InAARange(point)
   --if not "AAcheck" then
     --return true
   --end
-  if GetType(orbwalk:GetTargetOrb()) == 0 then
+  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
     --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(orbwalk:GetTargetOrb())
+    local target = GetAIHero(GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)
     return GetDistance(point, targetpos) < GetTrueAttackRange()
   else
@@ -792,37 +789,5 @@ function Lucian:IsGoodPosition(dashPos)
     end
 
     return false
-end
-
-function Lucian:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
-          				points = self:CirclePoints(10, self.E.range, myHeroPos)
-	    				bestpoint = myHeroPos:Extended(DashPosition, - self.E.range);
-	    				local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
-	    				for i, point in pairs(points) do
-	    					local count = self:CountEnemiesInRange(point, self.E.range)
-	    					if count < enemies then
-	    						enemies = count;
-                            	bestpoint = point;
-                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
-                            	enemies = count;
-                            	bestpoint = point;
-	    					end
-	    				end
-	    				if self:IsGoodPosition(bestpoint) then   
-                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)     				
-          				end
-          			end
-        		end
-      		end
-    	end
-	end
 end
 

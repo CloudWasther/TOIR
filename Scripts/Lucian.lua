@@ -210,11 +210,12 @@ end
 
 
 function Lucian:OnTick()
+	if myHero.IsDead then return end
 
 	SetLuaCombo(true)
 
 	self:AutoQW()
-
+	self:AntiGapCloser()
 	self:KillSteal()
 	self:OnWaypointLoop()
 	self:LogicR()
@@ -246,7 +247,7 @@ function Lucian:LogicE()
 		return
 	end
 
-	local TargetE = self.menu_ts:GetTarget(GetTrueAttackRange())
+	local TargetE = self.menu_ts:GetTarget(self.E.range)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		if target.IsMelee then
@@ -789,5 +790,37 @@ function Lucian:IsGoodPosition(dashPos)
     end
 
     return false
+end
+
+function Lucian:AntiGapCloser()
+	for i, heros in pairs(GetEnemyHeroes()) do
+    	if heros ~= nil then
+      		local hero = GetAIHero(heros)
+      		if hero.IsDash then
+        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
+        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+        		if DashPosition ~= nil then
+          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
+          				points = self:CirclePoints(10, self.E.range, myHeroPos)
+	    				bestpoint = myHeroPos:Extended(DashPosition, - self.E.range);
+	    				local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
+	    				for i, point in pairs(points) do
+	    					local count = self:CountEnemiesInRange(point, self.E.range)
+	    					if count < enemies then
+	    						enemies = count;
+                            	bestpoint = point;
+                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+                            	enemies = count;
+                            	bestpoint = point;
+	    					end
+	    				end
+	    				if self:IsGoodPosition(bestpoint) then   
+                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)     				
+          				end
+          			end
+        		end
+      		end
+    	end
+	end
 end
 

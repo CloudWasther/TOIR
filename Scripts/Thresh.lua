@@ -158,10 +158,10 @@ end
 function Thresh:OnTick()
 
 	if IsDead(myHero.Addr) then return end
-
+	self:ComboMode()
 	if GetKeyPress(self.Combo) > 0 then
 		SetLuaCombo(true)
-		self:ComboMode()
+		
 	end
 
 	if self.menu_Combo_QendDash then
@@ -285,11 +285,12 @@ function Thresh:autoQtoEndDash()
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
-	    local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
+	    --local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   	end
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range and not self:Qstat(TargetQ) then
-  		if not Collision then
+	    local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
+  		if Collision == 0 then
 	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    end
 	end
@@ -324,7 +325,10 @@ function Thresh:KillSteal()
 
 			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
 				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				end
 			end
 
 			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_E) and self.menu_Combo_Eks and GetDamage("E", hero) > GetHealthPoint(hero.Addr) then

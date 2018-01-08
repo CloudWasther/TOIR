@@ -256,11 +256,12 @@ function Blitzcrank:autoQtoEndDash()
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
-	    local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
+	    --local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   	end
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range then
-  		if not Collision then
+  		local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
+  		if Collision == 0 then
 	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    end
 	end
@@ -276,7 +277,10 @@ function Blitzcrank:KillSteal()
 
 			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
 				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				end
 			end
 		end
 	end
@@ -286,13 +290,13 @@ function Blitzcrank:ComboMode()
 	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-    	local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 100) --endPosition
+		local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
 
 		if TargetQ ~= nil then
 			if (GetDistance(TargetQ) < self.Q.range - 100 and GetDistance(TargetQ) > 300  or self:IsImmobileTarget(TargetQ)) then
-				if CastPosition and HitChance >= 2 and self.menu_Combo_Q then
+				if CastPosition and HitChance >= 2 and self.menu_Combo_Q and not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
 		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		    	end
 		    end

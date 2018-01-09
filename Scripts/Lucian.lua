@@ -404,6 +404,7 @@ function Lucian:LogicR()
 			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 and 10 * GetDamage("R", target) + GetDamage("Q", target) + GetDamage("W", target) > GetHealthPoint(TargetR) and self.menu_Combo_R then				
 				if self.newMovePos ~= nil then
 					--orbwalk:DisableMove()
+					BlockMove()
 					MoveToPos(self.newMovePos.x, self.newMovePos.z)
 					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then					
 						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})	
@@ -415,6 +416,31 @@ function Lucian:LogicR()
 			end
 		end	
 		--orbwalk:EnableMove()	
+		UnBlockMove()
+	end
+
+	--__PrintTextGame(tostring(self.menu_Combo_Rlock))
+	if GetKeyPress(self.menu_Combo_Rlock) > 0 and self.menu_Combo_Rlock ~= 32 and myHero.MP > 250 then
+
+		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		local TargetR = self.menu_ts:GetTarget(self.R.range)
+		if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) then
+			local target = GetAIHero(TargetR)
+			local targetPos = Vector(target.x, target.y, target.z)
+			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+			local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
+			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 then
+				if self.newMovePos ~= nil then
+					MoveToPos(self.newMovePos.x, self.newMovePos.z)
+					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then					
+						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})	
+					end	
+					if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
+						CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
+					end
+				end						
+			end
+		end	
 	end
 end
 
@@ -454,10 +480,11 @@ function Lucian:KillSteal()
 			local hero = GetUnit(heros)
 			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks then
 				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)	
-				local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
+				local distance = VPGetLineCastPosition(hero.Addr, self.R.delay, self.R.speed)
 				if HitChance >= 2 and GetDistance(GetOrigin(hero.Addr)) < self.R.range and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 					if self.newMovePos ~= nil then
 						--orbwalk:DisableMove()
+						BlockMove()
 						MoveToPos(self.newMovePos.x, self.newMovePos.z)
 						if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then
 							DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
@@ -469,6 +496,7 @@ function Lucian:KillSteal()
 								
 				end	
 				--orbwalk:EnableMove()
+				UnBlockMove()
 			end
 
 			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks then

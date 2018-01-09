@@ -11,7 +11,7 @@ function OnLoad()
 end
 
 function Twitch:__init()
-	orbwalk = Orbwalking()
+	--orbwalk = Orbwalking()
 
 	-- VPrediction
 	vpred = VPrediction(true)
@@ -36,7 +36,7 @@ function Twitch:__init()
 
     self:MenuValueDefault()
 
-    self.JungleMobs = minionManager(MINION_JUNGLE, 2000, myHero, MINION_SORT_MAXHEALTH_DEC)
+    --self.JungleMobs = minionManager(MINION_JUNGLE, 2000, myHero, MINION_SORT_MAXHEALTH_DEC)
 end
 
 function Twitch:MenuValueDefault()
@@ -97,14 +97,14 @@ function Twitch:OnDrawMenu()
 		end
 		if Menu_Begin("Setting W") then
 			self.menu_Combo_W = Menu_Bool("Auto Use W Combo", self.menu_Combo_W, self.menu)
-			self.menu_Combo_Wmode = Menu_ComboBox("W Mode", self.menu_Combo_Wmode, "Normal\0Behind Target\0Front Target\0\0\0", self.menu)	
+			self.menu_Combo_Wmode = Menu_ComboBox("W Mode", self.menu_Combo_Wmode, "Normal\0Behind Target\0Front Target\0\0", self.menu)	
 			self.menu_Combo_Wgap = Menu_Bool("Use W Anti GapClose", self.menu_Combo_Wgap, self.menu)
 			self.menu_Combo_WendDash = Menu_Bool("Use W End Dash", self.menu_Combo_WendDash, self.menu)
 			self.menu_Combo_WCount = Menu_SliderInt("Auto W if Hit", self.menu_Combo_WCount, 1, 5, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting E") then
-			self.menu_Combo_E = Menu_ComboBox("Mode Target", self.menu_Combo_E, "Normal\0Have E\0\0\0\0", self.menu)
+			--self.menu_Combo_E = Menu_ComboBox("Mode Target", self.menu_Combo_E, "Normal\0Have E\0\0\0\0", self.menu)
 			self.menu_Combo_EAuto = Menu_SliderInt("Auto E Out Range & Stack", self.menu_Combo_EAuto, 1, 6, self.menu)
 			self.menu_Combo_EKs = Menu_Bool("Auto E Kill Steal", self.menu_Combo_EKs, self.menu)
 			Menu_Text("E In Jungle")
@@ -178,20 +178,7 @@ function Twitch:MenuKeyBinding(stringKey, valueDefault)
 end
 
 function Twitch:OnTick()
-
-	--[[orbwalk:RegisterAfterAttackCallback(function()
-		if CanCast(_E) and orbwalk:ComboMode("Combo") and self.menu_Combo_E then
-			self:LogicE()
-		end
-
-		if CanCast(_E) and self.menu_Combo_EJungle then
-			local orbT = orbwalk:GetTargetOrb()
-    		if orbT ~= nil and GetType(orbT) == 3 then
-    			CastSpellToPos(GetMousePos().x,GetMousePos().z, _E)
-    		end
-		end
-	end)]]
-	--__PrintTextGame(tostring(self:RemainQ()))
+	if myHero.IsDead then return end
 	SetLuaCombo(true)
 
 	self:AutoQ()
@@ -252,9 +239,20 @@ function Twitch:GetSmiteDamage(target)
 	return 0
 end
 
+function Twitch:JungleTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+            table.insert(result, minions)
+        end
+    end
+
+    return result
+end
+
 function Twitch:LogicSmiteJungle()
-	self.JungleMobs:update()
-	for i, minions in ipairs(self.JungleMobs.objects) do
+	for i, minions in ipairs(self:JungleTbl()) do
         if minions ~= 0 then
             local jungle = GetUnit(minions)
             if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
@@ -290,7 +288,7 @@ function Twitch:LogicSmiteJungle()
 end
 
 function Twitch:LogicQ()
-    local orbT = orbwalk:GetTargetOrb()
+    local orbT = GetTargetOrb()
 	if orbT ~= nil and GetType(orbT) == 0 then
 		if myHero.MP > 180 and GetDistance(orbT) < GetTrueAttackRange() and self.menu_Combo_Q and CanCast(_Q) then
 			CastSpellTarget(myHero.Addr, _Q)
@@ -306,19 +304,19 @@ function Twitch:LogicW()
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
-		if (GetDistance(TargetW) < self.W.range - 300 and GetDistance(TargetW) > 300  or self:IsImmobileTarget(TargetW)) then
+		if (GetDistance(target.Addr) < self.W.range - 300 and GetDistance(target.Addr) > 300  or self:IsImmobileTarget(TargetW)) then
 			if self:GetIndexSmite() > -1 and self.menu_Combo_Smite then
 				CastSpellTarget(TargetW, self:GetIndexSmite())
 			end
 			if self.menu_Combo_W then
-				if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 1 then
+				if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 0 then
 		        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		    	end
-		    	if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 2 then
+		    	if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 1 then
 		    		posBehind = CastPosition:Extended(myHero, -150)
 		        	CastSpellToPos(posBehind.x, posBehind.z, _W)
 		    	end
-		    	if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 3 then
+		    	if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 2 then
 		    		posFront = CastPosition:Extended(myHero, 150)
 		        	CastSpellToPos(posFront.x, posFront.z, _W)
 		    	end
@@ -336,12 +334,12 @@ end
 function Twitch:LogicE()
 	if self.menu_Combo_E == 2 then
 		local target = self:GetTargetBuffE(GetTrueAttackRange() + 50)
-		orbwalk:ForceTarget(target)
+		--ForceTarget(target)
 	end
 end
 
 function Twitch:LogicR()
-    local orbT = orbwalk:GetTargetOrb()
+    local orbT = GetTargetOrb()
 	if orbT ~= nil and GetType(orbT) == 0 and myHero.MP > 140 and self.menu_Combo_R and CanCast(_R) then
 		CastSpellTarget(myHero.Addr, _Q)
 	end
@@ -372,19 +370,19 @@ end
 function Twitch:AutoE()
 	local target = self:GetTargetBuffE(self.E.range)
 	if target ~= nil then		
-		--targetE = GetAIHero(target)	
+		targetE = GetAIHero(target)	
 		--__PrintTextGame(tostring(self:GetStackBuffE(target)))
 		--if self:GetStackBuffE(target) >= self.menu_Combo_ECount and CanCast(_E) then
 			--CastSpellTarget(myHero.Addr, _E)
 		--end
 		
-		if IsValidTarget(target, self.E.range) and self:GetStackBuffE(target) >= self.menu_Combo_EAuto and GetDistance(target) >= self.E.range * 0.80 and CanCast(_E) then
+		if IsValidTarget(targetE.Addr, self.E.range) and self:GetStackBuffE(target) >= self.menu_Combo_EAuto and GetDistance(targetE.Addr) >= self.E.range * 0.80 and CanCast(_E) then
 			--__PrintTextGame(tostring(GetDistance(target)))
 			CastSpellTarget(myHero.Addr, _E)
 		end
 	end
-	self.JungleMobs:update()
-    for i, minions in ipairs(self.JungleMobs.objects) do
+	--self.JungleMobs:update()
+    for i, minions in ipairs(self:JungleTbl()) do
         if minions ~= 0 then
             local jungle = GetUnit(minions)
             if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < self.E.range and
@@ -563,61 +561,21 @@ function Twitch:IsImmobileTarget(unit)
 	return false
 end
 
-function Twitch:CountEnemiesInRange(pos, range)
-    local n = 0
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    for i, object in ipairs(pUnit) do
-        if GetType(object) == 0 and not IsDead(object) and not IsInFog(object) and GetTargetableToTeam(object) == 4 and IsEnemy(object) then
-        	local objectPos = Vector(GetPos(object))
-          	if GetDistanceSqr(pos, objectPos) <= math.pow(range, 2) then
-            	n = n + 1
-          	end
-        end
-    end
-    return n
-end
-
-local function CountAlliesInRange(pos, range)
-    local n = 0
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    for i, object in ipairs(pUnit) do
-        if GetType(object) == 0 and not IsDead(object) and not IsInFog(object) and GetTargetableToTeam(object) == 4 and IsAlly(object) then
-          if GetDistanceSqr(pos, object) <= math.pow(range, 2) then
-              n = n + 1
-          end
-        end
-    end
-    return n
-end
-
-function Twitch:InAARange(point)
-  --if not "AAcheck" then
-    --return true
-  --end
-  if orbwalk:GetTargetOrb() ~= nil and GetType(orbwalk:GetTargetOrb()) == 0 then
-    --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(orbwalk:GetTargetOrb())
-    local targetpos = Vector(target.x, target.y, target.z)
-    return GetDistance(point, targetpos) < GetTrueAttackRange()
-  else
-    return self:CountEnemiesInRange(point, GetTrueAttackRange()) > 0
-  end
-end
 
 function Twitch:getEDmg(target)
-	if target == 0 then
-		return
-	end
-	local Damage = 0
-	local DamageAP = {15, 20, 25, 30, 35}
-	local DamageAD = {20, 35, 50, 65, 80}
+	if target ~= 0 and CanCast(_E) then
+		local Damage = 0
+		local DamageAP = {15, 20, 25, 30, 35}
+		local DamageAD = {20, 35, 50, 65, 80}
 
-	local stack = GetBuff(GetBuffByName(target.Addr, "TwitchDeadlyVenom"))
-	--__PrintTextGame(tostring(stack.Count).."--"..tostring(myHero.BonusDmg).."--"..tostring(myHero.MagicDmg).."--"..tostring(DamageAP[myHero.LevelSpell(_E)]).."--"..tostring(DamageAD[myHero.LevelSpell(_E)]))
-	if stack.Count > 0 then
-		Damage = stack.Count * (0.25 * myHero.BonusDmg + DamageAP[myHero.LevelSpell(_E)] + 0.2 * myHero.MagicDmg) + DamageAD[myHero.LevelSpell(_E)]
+		local stack = GetBuff(GetBuffByName(target.Addr, "TwitchDeadlyVenom"))
+		--__PrintTextGame(tostring(stack.Count).."--"..tostring(myHero.BonusDmg).."--"..tostring(myHero.MagicDmg).."--"..tostring(DamageAP[myHero.LevelSpell(_E)]).."--"..tostring(DamageAD[myHero.LevelSpell(_E)]))
+		if stack.Count > 0 then
+			Damage = stack.Count * (0.25 * myHero.BonusDmg + DamageAP[myHero.LevelSpell(_E)] + 0.2 * myHero.MagicDmg) + DamageAD[myHero.LevelSpell(_E)]
+		end
+		return myHero.CalcDamage(target.Addr, Damage)
 	end
-	return myHero.CalcDamage(target.Addr, Damage)
+	return 0
 end
 
 function Twitch:RealEDamage(target)

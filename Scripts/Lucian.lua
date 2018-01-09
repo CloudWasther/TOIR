@@ -11,7 +11,7 @@ function OnLoad()
 end
 
 function Lucian:__init()
-	orbwalk = Orbwalking()
+	--orbwalk = Orbwalking()
 
 	-- VPrediction
 	vpred = VPrediction(true)
@@ -48,7 +48,7 @@ function Lucian:__init()
 
     self:MenuValueDefault()
 
-    self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
+    --self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
 end
 
 function Lucian:MenuValueDefault()
@@ -103,7 +103,7 @@ function Lucian:OnDrawMenu()
 		end
 		if Menu_Begin("Setting E") then
 			self.menu_Combo_E = Menu_Bool("Enable E", self.menu_Combo_E, self.menu)
-			self.menu_Combo_EMode = Menu_ComboBox("E Mode", self.menu_Combo_EMode, "Mouse\0Side\0Safe position\0\0\0", self.menu)		
+			self.menu_Combo_EMode = Menu_ComboBox("E Mode", self.menu_Combo_EMode, "Mouse\0Side\0Safe position\0\0", self.menu)		
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
@@ -258,14 +258,15 @@ function Lucian:LogicE()
 				CastSpellToPos(dashPos.x,dashPos.z, _E)
 			end
 		else
-			if GetKeyPress(self.Combo) == 0 or self.passRdy or self:SpellLock() then
-                return
-            end
+			if GetKeyPress(self.Combo) > 0 and not self.passRdy and not self:SpellLock() then
+                --return
+            --end
 
-            local dashPos = self:CastDash();
-			if dashPos ~= Vector(0, 0, 0) then
-				--__PrintTextGame("222222222222")
-				CastSpellToPos(dashPos.x,dashPos.z, _E)
+	            local dashPos = self:CastDash();
+				if dashPos ~= Vector(0, 0, 0) then
+					--__PrintTextGame("222222222222")
+					CastSpellToPos(dashPos.x,dashPos.z, _E)
+				end
 			end
 		end
 	end
@@ -322,8 +323,7 @@ function Lucian:CountMinionInLine(target)
     local targetPos = Vector(target.x, target.y, target.z)
 	local NH = 0
 	local minioncollision
-	self.EnemyMinions:update()
-	for i, minions in ipairs(self.EnemyMinions.objects) do
+	for i, minions in ipairs(self:EnemyMinionsTbl()) do
 		if minions ~= nil then
 		local minion = GetUnit(minions)
 			local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPos, Vector(minion))
@@ -362,6 +362,20 @@ function Lucian:CountMinionInLine(target)
 	return NH , minioncollision]]
 end
 
+function Lucian:EnemyMinionsTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, obj in pairs(pUnit) do
+        if obj ~= 0  then
+            local minions = GetUnit(obj)
+            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
+                table.insert(result, minions.Addr)
+            end
+        end
+    end
+    return result
+end
+
 function Lucian:LogicW()
 	local TargetW = self.menu_ts:GetTarget(self.W.range)
 	if CanCast(_W) and TargetW ~= 0 then
@@ -389,7 +403,7 @@ function Lucian:LogicR()
 			local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
 			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 and 10 * GetDamage("R", target) + GetDamage("Q", target) + GetDamage("W", target) > GetHealthPoint(TargetR) and self.menu_Combo_R then				
 				if self.newMovePos ~= nil then
-					orbwalk:DisableMove()
+					--orbwalk:DisableMove()
 					MoveToPos(self.newMovePos.x, self.newMovePos.z)
 					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then					
 						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})	
@@ -400,7 +414,7 @@ function Lucian:LogicR()
 				end						
 			end
 		end	
-		orbwalk:EnableMove()	
+		--orbwalk:EnableMove()	
 	end
 end
 
@@ -443,7 +457,7 @@ function Lucian:KillSteal()
 				local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
 				if HitChance >= 2 and GetDistance(GetOrigin(hero.Addr)) < self.R.range and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 					if self.newMovePos ~= nil then
-						orbwalk:DisableMove()
+						--orbwalk:DisableMove()
 						MoveToPos(self.newMovePos.x, self.newMovePos.z)
 						if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then
 							DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
@@ -454,7 +468,7 @@ function Lucian:KillSteal()
 					end
 								
 				end	
-				orbwalk:EnableMove()
+				--orbwalk:EnableMove()
 			end
 
 			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks then

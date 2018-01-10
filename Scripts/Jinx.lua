@@ -55,8 +55,6 @@ function Jinx:__init()
     Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
 
-    self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
-
     self:MenuValueDefault()
 end
 
@@ -325,8 +323,7 @@ function Jinx:LogicQ()
 	--__PrintTextGame(tostring((self:FishBoneActive())))
 	if GetKeyPress(self.Lane_Clear) > 0 and not self:FishBoneActive() and self.menu_Combo_farmQout and myHero.MP > 200 then --and GetTargetOrb == nil then
 		--__PrintTextGame("11111111111")
-		self.EnemyMinions:update()
-		for i, minions in ipairs(self.EnemyMinions.objects) do
+		for i, minions in ipairs(self:EnemyMinionsTbl()) do
 			if minions ~= nil then
 				local minion = GetUnit(minions)
 				if IsValidTarget(minion.Addr, self.bonusRange() + 30) and GetDistance(minion.Addr) > GetTrueAttackRange() and self:GetRealPowPowRange(minion) < self:GetRealDistance(minion) and self.bonusRange() < self:GetRealDistance(minion) then
@@ -364,6 +361,20 @@ function Jinx:LogicQ()
 	--elseif	self:FishBoneActive() and GetKeyPress(self.Lane_Clear) > 0 then
 		--CastSpellTarget(myHero.Addr, _Q)
 	end
+end
+
+function Jinx:EnemyMinionsTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, obj in pairs(pUnit) do
+        if obj ~= 0  then
+            local minions = GetUnit(obj)
+            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
+                table.insert(result, minions.Addr)
+            end
+        end
+    end
+    return result
 end
 
 function Jinx:LogicW()
@@ -465,8 +476,10 @@ function Jinx:AutoEW()
 			target = GetAIHero(hero)
 			if IsValidTarget(target, self.E.range) then
 				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
+
 				if DashPosition ~= nil then
-			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash then
+					local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
+			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash and Collision == 0 then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 			    	end
 				end
@@ -481,7 +494,8 @@ function Jinx:AutoEW()
 
 				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
 			    if DashPosition ~= nil then
-			    	if GetDistance(DashPosition) <= self.W.range and self.menu_Combo_WendDash then
+			    	local collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
+			    	if GetDistance(DashPosition) <= self.W.range and self.menu_Combo_WendDash and collision == 0 then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 			    	end
 				end

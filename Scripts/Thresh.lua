@@ -17,7 +17,7 @@ function Thresh:__init()
 	--TS
     self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
-	menuInstSep.setValue("Thresh Magic")
+	--menuInstSep.setValue("Thresh Magic")
 
 	self.Q = Spell(_Q, 1175)
     self.W = Spell(_W, 1075)
@@ -158,10 +158,10 @@ end
 function Thresh:OnTick()
 
 	if IsDead(myHero.Addr) then return end
-	self:ComboMode()
-	if GetKeyPress(self.Combo) > 0 then
-		SetLuaCombo(true)
-		
+	SetLuaCombo(true)
+	
+	if GetKeyPress(self.Combo) > 0 then			
+		self:ComboMode()	
 	end
 
 	if self.menu_Combo_QendDash then
@@ -284,7 +284,7 @@ function Thresh:autoQtoEndDash()
 	local TargetDashing, CanHitDashing, DashPosition
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
-	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
+	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero)
 	    --local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   	end
 
@@ -298,7 +298,7 @@ function Thresh:autoQtoEndDash()
 	local TargetE = self.menu_ts:GetTarget(self.E.range)
 	if CanCast(_E) and IsValidTarget(TargetE) then
     	Target = GetAIHero(TargetE)
-	    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.E.delay, self.E.width, self.E.speed, myHero, true)
+	    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.E.delay, self.E.width, self.E.speed, myHero)
 
 	    if DashPosition ~= nil and GetDistance(DashPosition) <= self.E.range then
 	        local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -434,9 +434,12 @@ end
 function Thresh:CastQ(target)
     if CanCast(_Q) and IsValidTarget(target) then
     	Target = GetAIHero(target)
-	    local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+	    local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 	    if CastPosition and HitChance >= 2 and GetDistance(CastPosition) <= self.Q.range then
-	        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+	    	local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
+	    	if Collision == 0 then
+	        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+	        end
 	    end
   	end
 end

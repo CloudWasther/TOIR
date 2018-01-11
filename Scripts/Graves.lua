@@ -314,11 +314,10 @@ function Graves:LogicQ()
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-    	local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 100) --endPosition
+    	--local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 100) --endPosition
 
 		if TargetQ ~= nil then
-			if (GetDistance(TargetQ) < self.Q.range - 100 and GetDistance(TargetQ) > 300  or self:IsImmobileTarget(TargetQ) or
-				IsWall(QPred.x, QPred.y, QPred.z)) then
+			if (GetDistance(TargetQ) < self.Q.range - 100 and GetDistance(TargetQ) > 300  or (self:IsImmobileTarget(TargetQ))) then
 				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
 					CastSpellTarget(TargetQ, self:GetIndexSmite())
 				end
@@ -381,7 +380,7 @@ function Graves:AutoQW()
 
 	    if CastPosition ~= nil and HitChance >= 2 then
 	    	if GetDistance(CastPosition) <= self.Q.range and IsWall(QPred.x, QPred.y, QPred.z) and self.Auto_Q_If_Wall then
-	        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+	        	CastSpellToPos(QPred.x, QPred.z, _Q)
 	        end
 	    end
 

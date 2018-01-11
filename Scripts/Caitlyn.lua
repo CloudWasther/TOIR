@@ -5,9 +5,9 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Caitlyn = class()
 
 function OnLoad()
-	--if GetChampName(GetMyChamp()) == "Caitlyn" then
+	if GetChampName(GetMyChamp()) == "Caitlyn" then
 		Caitlyn:__init()
-	--end
+	end
 end
 
 function Caitlyn:__init()
@@ -18,7 +18,7 @@ function Caitlyn:__init()
     self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 
-    self.Q = Spell(_Q, 1300) -- catlyn
+    self.Q = Spell(_Q, 1250) -- catlyn
     self.W = Spell(_W, 900) -- catlyn
     self.E = Spell(_E, 900)  -- catlyn
     self.R = Spell(_R, 2300) -- catlyn
@@ -70,8 +70,8 @@ function Caitlyn:__init()
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
-    --Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
-    --Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
+    Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
+    Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
     self:MenuValueDefault()
 end
@@ -85,6 +85,7 @@ function Caitlyn:MenuValueDefault()
 	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
 
 	self.autoQ2 = self:MenuBool("Auto Q", true)
+	self.autoQcc = self:MenuBool("Auto Q on CC", true)
 	self.autoQ = self:MenuBool("Reduce Q use", true)
 	self.Qaoe = self:MenuBool("Q Aoe", true)
 	self.Qslow = self:MenuBool("Q slow", true)
@@ -106,7 +107,7 @@ function Caitlyn:MenuValueDefault()
 	self.EQks = self:MenuBool("Ks E + Q + AA", true)
 	self.useE = self:MenuKeyBinding("Dash E HotKey Smartcast", 71)
 	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
-	self.eendDas = self:MenuBool("E End Dash", true)
+	--self.eendDas = self:MenuBool("E End Dash", true)
 
 	self.autoR = self:MenuBool("Auto R KS", true)
 	self.Rturrent = self:MenuBool("Don't R under turret", true)
@@ -125,6 +126,7 @@ function Caitlyn:OnDrawMenu()
 	if Menu_Begin(self.menu) then
 		if Menu_Begin("Setting Q") then
 			self.autoQ2 = Menu_Bool("Auto Q", self.autoQ2, self.menu)
+			self.autoQcc = Menu_Bool("Auto Q on CC", self.autoQcc, self.menu)
 			self.autoQ = Menu_Bool("Reduce Q use", self.autoQ, self.menu)
 			self.Qaoe = Menu_Bool("Q Aoe", self.Qaoe, self.menu)
 			self.Qslow = Menu_Bool("Q slow", self.Qslow, self.menu)
@@ -152,7 +154,7 @@ function Caitlyn:OnDrawMenu()
 			self.EQks = Menu_Bool("Ks E + Q + AA", self.EQks, self.menu)
 			self.useE = Menu_KeyBinding("Dash E HotKey Smartcast", self.useE, self.menu)
 			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.WmodeGC, "Dash end position\0Cursor position\0Enemy position\0\0", self.menu)
-			self.eendDas = Menu_Bool("E End Dash", self.eendDas, self.menu)
+			--self.eendDas = Menu_Bool("E End Dash", self.eendDas, self.menu)
 			Menu_End()
 		end
 
@@ -208,20 +210,37 @@ function Caitlyn:MenuKeyBinding(stringKey, valueDefault)
 end
 
 function Caitlyn:OnCreateObject(obj)
+	--__PrintDebug(obj.Name)
+	
 	local objPos = Vector(GetPosX(obj.Addr), GetPosY(obj.Addr), GetPosZ(obj.Addr))
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
 			heroPos = Vector(hero.x, hero.y, hero.z)
-			if GetDistance(objPos) < self.W.range and obj.IsValid then
-				if string.find(obj.Name, "GateMarker_red.troy") or string.find(obj.Name, "global_ss_teleport_target_red.troy") or
-					string.find(obj.Name, "r_indicator_red.troy") or (string.find(obj.Name, "LifeAura.troy") and hero.IsValid and GetDistance(objPos, heroPos) < 200) then
+			
+			if string.find(obj.Name, "GateMarker_red.troy") or string.find(obj.Name, "global_ss_teleport_target_red.troy") or
+				string.find(obj.Name, "r_indicator_red.troy") or (string.find(obj.Name, "LifeAura.troy") and hero.IsValid and GetDistance(objPos, heroPos) < 200) then
+				if GetDistance(objPos) < self.W.range and obj.IsValid then
 					self.GetTrapPos = objPos
 				else
 					self.GetTrapPos = nil
 				end
 			end
+
+			if (hero.Name == "Rengar" or hero.Name == "Khazix") and hero.IsValid then
+				if obj.Name == "Rengar_LeapSound.troy" and GetDistance(heroPos) < self.W.range then
+					CastSpellToPos(hero.x, hero.z, _E)
+				end
+
+				if obj.Name == "Khazix_Base_E_Tar.troy" and GetDistance(heroPos) < 300 then
+					CastSpellToPos(hero.x, hero.z, _E)
+				end
+			end
 		end
+	end
+
+	if obj.IsValid and GetDistance(objPos, heroPos) < 300 and string.find(obj.Name:lower(), "yordleTrap_idle_green.troy") then
+		Process = false;
 	end
 end
 
@@ -229,7 +248,7 @@ function Caitlyn:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravit
 	if unit.IsMe then
 		local myLastPath = endPos
 	end
-	local TargetE = self.menu_ts:GetTarget(self.E.range)
+	local TargetE = self.menu_ts:GetTarget(self.W.range)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		if unit.NetworkId == unit.NetworkId then
@@ -251,6 +270,26 @@ end
 function Caitlyn:OnTick()
 	if myHero.IsDead then return end
 	SetLuaCombo(true)
+
+	for i,hero in pairs(GetEnemyHeroes()) do
+		if IsValidTarget(hero, 1000) then
+			target = GetAIHero(hero)
+			if IsValidTarget(target.Addr, 1000) then
+				if GetBuffByName(target.Addr, "slow") ~= 0 then
+					if self.Qaoe then
+						--local CastPosition, HitChance, Position = vpred:GetLineAOECastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero)
+						--__PrintTextGame("string szText")						
+						CastSpellToPos(target.x, target.z, _W)
+						CastSpellToPos(target.x, target.z, _Q)
+					end			
+				end
+				--GetAllBuffNameActive(882209824)
+				--for i,v in pairs(pBuffName) do
+					--__PrintDebug(tostring(v))				      
+				--end
+			end
+		end
+	end
 
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
@@ -276,7 +315,7 @@ function Caitlyn:OnTick()
 
 	self:AutoQEW()
 
-	if CanCast(_E) and self:CanMoveOrb(40) then
+	if CanCast(_E) then --and self:CanMoveOrb(40) then
 		self:LogicE()
 	end
 
@@ -291,8 +330,18 @@ function Caitlyn:OnTick()
 		self:LogicW()
 	end
 
-	if CanCast(_Q) and self:CanMoveOrb(40) and self.autoQ2 then
+	if CanCast(_Q) and self.autoQ2 then --and self:CanMoveOrb(40) 
 		self:LogicQ()
+	end
+
+	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+    if CanCast(_R) and self.autoR and GetTimeGame() - self.QCastTime > 1 and not self:IsUnderTurretEnemy(myHeroPos) then
+    	self:LogicR();
+	end
+
+	if GetKeyPress(self.useE) > 0 and CanCast(_E) then
+		local Position = Vector(myHero) - (GetMousePos() - Vector(myHero))
+		CastSpellToPos(Position.x, Position.z, _E)
 	end
 
 	if self.Enalble_Mod_Skin then
@@ -326,31 +375,35 @@ function Caitlyn:LogicQ()
 	if IsValidTarget(TargetQ, self.Q.range) then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
-			--CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 and HitChance > 2 then
+			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 250 and CountEnemyChampAroundObject(myHero.Addr, self:bonusRange() + 100 + GetBoundingRadius(target.Addr)) == 0 and not self.autoQ then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		end
+
+		for i,hero in pairs(GetEnemyHeroes()) do
+			if IsValidTarget(hero, self.Q.range) then
+				target = GetAIHero(hero)
+				if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range and self.autoQcc then
+					CastSpellToPos(target.x, target.z, _Q)
+				end
+			end
 		end
 
 		if GetKeyPress(self.Combo) > 0 and myHero.MP > 150 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
 			for i,hero in pairs(GetEnemyHeroes()) do
 				if IsValidTarget(hero, self.Q.range) then
 					target = GetAIHero(hero)
-					if not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal") then
+					if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range then
 						CastSpellToPos(target.x, target.z, _Q)
 					end
 				end
 			end
 
 			if CountEnemyChampAroundObject(myHero.Addr, self:bonusRange()) == 0 and self:CanHarras() then
-				if CountBuffByType(target.Addr, 10) > 0 and self.Qslow then
+				if GetBuffByName(target.Addr, "slow") ~= 0 and self.Qslow then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				end
-
-				if self.Qaoe then
-					local CastPosition, HitChance, Position = vpred:GetLineAOECastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero)
-					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				end
+				end				
 			end
 		end
 	end
@@ -374,6 +427,10 @@ function Caitlyn:LogicW()
 				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 				return
 			end
+
+			if self.IsMovingInSameDirection then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			end
 		end
 	end
 	if self.telE then
@@ -381,6 +438,8 @@ function Caitlyn:LogicW()
 			CastSpellToPos(self.GetTrapPos.x, self.GetTrapPos.z, _W)
 		end
 	end
+
+	
 
 	if (GetTimeGame() * 10) % 2 < 0.03 and self.bushW2 then
 		local AmmoW = {3, 3, 4, 4, 5}
@@ -437,11 +496,6 @@ function Caitlyn:LogicE()
 			end
 		end
 	end
-
-	if GetKeyPress(self.useE) > 0 then
-		local Position = Vector(myHero) - (GetMousePos() - Vector(myHero))
-		CastSpellToPos(Position.x, Position.z, _E)
-	end
 end
 
 function Caitlyn:LogicR()
@@ -455,11 +509,11 @@ function Caitlyn:LogicR()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if hero ~= nil then
 			target = GetAIHero(hero)
-			if IsValidTarget(target.Addr, self.RRange) and target.CountAlliesInRange(500) == 0 and self:ValidUlt(target) then
-				if GetDamage("R", target) > target.HP then
+			if IsValidTarget(target.Addr, self.RRange) and self:ValidUlt(target) then
+				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 300 and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 and CountEnemyChampAroundObject(target.Addr, 400) == 0 then
 					cast = true
-					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.R.delay, self.R.width, self.RRange, self.R.speed, myHero, false)
-
+					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.R.delay, self.R.width, self.RRange, self.R.speed, myHero, false)
+					CastSpellTarget(target.Addr, _R)
 				end
 			end
 		end
@@ -519,11 +573,12 @@ function Caitlyn:AutoQEW()
 	    if DashPosition ~= nil then
 	    	if GetDistance(DashPosition) <= self.W.range and self.wendDas then
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+	    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    	end
 		end
 	end
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	--[[local TargetQ = self.menu_ts:GetTarget(self.Q.range)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
@@ -534,9 +589,9 @@ function Caitlyn:AutoQEW()
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    	end
 		end
-	end
+	end]]
 
-	local TargetE = self.menu_ts:GetTarget(self.E.range)
+	--[[local TargetE = self.menu_ts:GetTarget(self.E.range)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
@@ -549,7 +604,7 @@ function Caitlyn:AutoQEW()
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _E)
 	    	end
 		end
-	end
+	end]]
 end
 
 function Caitlyn:KillSteal()
@@ -558,7 +613,7 @@ function Caitlyn:KillSteal()
 		targetQ = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetQ, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		if GetDistance(TargetQ) < self.Q.range and GetDamage("Q", targetQ) > targetQ.HP then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		end
 	end
 end
@@ -570,6 +625,7 @@ function Caitlyn:OnDraw()
 			if IsValidTarget(target.Addr, self.RRange) and GetDamage("R", target) > target.HP then
 				local a,b = WorldToScreen(target.x, target.y, target.z)
 				DrawTextD3DX(a, b, "CAN KILL by R", Lua_ARGB(255, 0, 255, 10))
+				--__PrintDebug(tostring(GetAllBuffNameActive(target.Addr)))
 			end
 		end
 	end
@@ -591,7 +647,7 @@ function Caitlyn:OnDraw()
 		if self.menu_Draw_Q then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
 		end
-		if self.menu_Draw_W and self.W:IsReady() then
+		if self.menu_Draw_W then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.W.range, Lua_ARGB(255,255,0,0))
 		end
 		if self.menu_Draw_E then
@@ -609,7 +665,6 @@ function Caitlyn:OnProcessSpell(unit, spell)
 		--__PrintDebug(spell.Name)
 	end
 	if unit.IsMe and (spell.Name == "CaitlynPiltoverPeacemaker" or spell.Name == "CaitlynEntrapment") then
-
 		self.QCastTime = GetTimeGame()
 	end
 
@@ -618,7 +673,19 @@ function Caitlyn:OnProcessSpell(unit, spell)
         	CastSpellToPos(unit.x, unit.z, _W)
         end
     end
+
+    if unit.IsMe then
+    	if spell.Name == "CaitlynEntrapment" and self.forceW and myHero.MP > 110 then
+    		myHeroDestPos = Vector(GetMousePos().x, GetMousePos().y, GetMousePos().z)
+    		if GetDistance(myHeroDestPos) < self.W.range then
+	    		myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+	    		cast = myHeroPos:Extended(myHeroDestPos, GetDistance(myHeroPos, myHeroDestPos) - 50)
+	    		CastSpellToPos(cast.x, cast.z, _W)
+	    	end	    	
+    	end
+    end
 end
+
 
 function Caitlyn:AntiGapCloser()
 	for i, heros in pairs(GetEnemyHeroes()) do
@@ -731,7 +798,7 @@ function Caitlyn:IsUnderAllyTurret(pos)
   for k,v in pairs(pUnit) do
     if not IsDead(v) and IsTurret(v) and IsAlly(v) and GetTargetableToTeam(v) == 4 then
       local turretPos = Vector(GetPosX(v), GetPosY(v), GetPosZ(v))
-      if GetDistance(turretPos,pos) < 915 then
+      if GetDistanceSqr(turretPos,pos) < 915 ^ 2 then
         return true
       end
     end

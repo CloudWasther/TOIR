@@ -204,7 +204,7 @@ function Blitzcrank:OnDraw()
 		end
 	end]]
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if IsValidTarget(TargetQ) and CanCast(_Q) and (GetDistance(TargetQ) <= self.Q.range) then
 		Target = GetAIHero(TargetQ)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -215,14 +215,13 @@ function Blitzcrank:OnDraw()
 		end
 	end
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
 	local TargetDashing, CanHitDashing, DashPosition
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
   	end
 
-  	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range then
+  	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range - 150 then
 	    CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
 	end
@@ -251,7 +250,7 @@ function Blitzcrank:OnProcessSpell(unit, spell)
 end
 
 function Blitzcrank:autoQtoEndDash()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	local TargetDashing, CanHitDashing, DashPosition
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
@@ -271,11 +270,11 @@ function Blitzcrank:KillSteal()
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
-			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
+			if IsValidTarget(hero.Addr, self.R.range - 150) and CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 				CastSpellTarget(myHero.Addr, _R)
 			end
 
-			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
+			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
 				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 				local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
 				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
@@ -287,7 +286,7 @@ function Blitzcrank:KillSteal()
 end
 
 function Blitzcrank:ComboMode()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -327,7 +326,7 @@ function Blitzcrank:ComboMode()
 		end
 	end
 
-	local TargetR = self.menu_ts:GetTarget(self.R.range)
+	local TargetR = self.menu_ts:GetTarget(self.R.range - 150)
 	if self.menu_Combo_R then
 		if CanCast(_R) and IsValidTarget(TargetR, self.R.range - 100) then
 			if GetDistance(TargetR) <= self.R.range then

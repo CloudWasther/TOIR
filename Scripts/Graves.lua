@@ -1,6 +1,4 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbCustom.lua")
---IncludeFile("Lib\\AntiGapCloser.lua")
 
 Graves = class()
 
@@ -11,8 +9,6 @@ function OnLoad()
 end
 
 function Graves:__init()
-	orbwalk = Orbwalking()
-
 	-- VPrediction
 	self.vpred = VPrediction(true)
 
@@ -173,7 +169,7 @@ end
 
 function Graves:OnAfterAttack(unit, target)
 	if unit.IsMe then
-		if CanCast(_E) and GetKeyPress(self.Combo) > 0 and self.Enable_E then
+		if CanCast(_E) and self.Enable_E then
 			self:LogicE()
 		end
 
@@ -289,35 +285,35 @@ function Graves:LogicSmiteJungle()
 end
 
 function Graves:LogicE()
-	local TargetE = self.menu_ts:GetTarget(GetTrueAttackRange())
-	if CanCast(_E) and TargetE ~= 0 then
-		target = GetAIHero(TargetE)
-		if target.IsMelee then
-			local dashPos = self:CastDash(true);
-			if dashPos ~= Vector(0, 0, 0) then
-				CastSpellToPos(dashPos.x,dashPos.z, _E)
+	for i,hero in pairs(GetEnemyHeroes()) do
+		if hero ~= nil then
+			target = GetAIHero(hero)
+			if IsValidTarget(target.Addr, GetTrueAttackRange()) then --and target.IsMelee then
+				local dashPos = self:CastDash(true);
+				if dashPos ~= Vector(0, 0, 0) then
+					CastSpellToPos(dashPos.x,dashPos.z, _E)
+				end
 			end
 		end
 	end
 
-	if GetKeyPress(self.Combo) > 0 and myHero.MP > 140 and not myHero.HasBuff("gravesbasicattackammo2") then
+	if GetKeyPress(self.Combo) > 0 and myHero.MP > 140 and not myHero.HasBuff("gravesbasicattackammo2") and myHero.HasBuff("gravesbasicattackammo1") then
 		local dashPos = self:CastDash();
-		if CanCast(_E) and dashPos ~= Vector(0, 0, 0) then
+		if dashPos ~= Vector(0, 0, 0) then
 			CastSpellToPos(dashPos.x,dashPos.z, _E)
 		end
 	end
 end
 
 function Graves:LogicQ()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-    	--local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 100) --endPosition
 
 		if TargetQ ~= nil then
-			if (GetDistance(TargetQ) < self.Q.range - 100 and GetDistance(TargetQ) > 300  or (self:IsImmobileTarget(TargetQ))) then
+			if (GetDistance(TargetQ) < self.Q.range - 150 and GetDistance(TargetQ) > 300  or (self:IsImmobileTarget(TargetQ))) then
 				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
 					CastSpellTarget(TargetQ, self:GetIndexSmite())
 				end
@@ -330,7 +326,7 @@ function Graves:LogicQ()
 end
 
 function Graves:LogicW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range)
+	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -338,7 +334,7 @@ function Graves:LogicW()
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
 		if TargetW ~= nil then
-			if (GetDistance(TargetW) < self.W.range - 100 and GetDistance(TargetW) > 300  or self:IsImmobileTarget(TargetW)) then
+			if (GetDistance(TargetW) < self.W.range - 150 and GetDistance(TargetW) > 300  or self:IsImmobileTarget(TargetW)) then
 				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
 					CastSpellTarget(TargetW, self:GetIndexSmite())
 				end
@@ -370,7 +366,7 @@ function Graves:LogicR()
 end
 
 function Graves:AutoQW()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -391,7 +387,7 @@ function Graves:AutoQW()
 		end
 	end
 
-	local TargetW = self.menu_ts:GetTarget(self.W.range)
+	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -417,7 +413,7 @@ function Graves:KillSteal()
 		end
 	end
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if TargetQ ~= nil and IsValidTarget(TargetQ, self.Q.range) and CanCast(_Q) and self.Auto_Q_Kill_Steal then
 		targetQ = GetAIHero(TargetQ)
 
@@ -427,7 +423,7 @@ function Graves:KillSteal()
 		end
 	end
 
-	local TargetW = self.menu_ts:GetTarget(self.W.range)
+	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
 	if TargetW ~= nil and IsValidTarget(TargetW, self.W.range) and CanCast(_W) and self.Auto_W_Kill_Steal then
 		targetW = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetW, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -617,7 +613,7 @@ function Graves:CastDash(asap)
     end
 
     if DashMode == 1 then
-    	local orbT = orbwalk:GetTargetOrb()
+    	local orbT = GetTargetOrb()
     	if orbT ~= nil and GetType(orbT) == 0 then
 	    	target = GetAIHero(orbT)
 		    local startpos = Vector(myHero.x, myHero.y, myHero.z)
@@ -673,12 +669,8 @@ function Graves:CastDash(asap)
 end
 
 function Graves:InAARange(point)
-  --if not "AAcheck" then
-    --return true
-  --end
-  if GetType(orbwalk:GetTargetOrb()) == 0 then
-    --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(orbwalk:GetTargetOrb())
+  if GetType(GetTargetOrb()) == 0 then
+    local target = GetAIHero(GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)
     return GetDistance(point, targetpos) < GetTrueAttackRange()
   else

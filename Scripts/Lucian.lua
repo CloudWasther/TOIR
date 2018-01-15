@@ -327,7 +327,7 @@ function Lucian:CountMinionInLine(target)
 		if minions ~= nil then
 		local minion = GetUnit(minions)
 			local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPos, Vector(minion))
-		    if isOnSegment and (GetDistance(GetOrigin(minion), GetOrigin(proj2)) <= (50)) then
+		    if isOnSegment and (GetDistance(GetOrigin(minion), GetOrigin(proj2)) <= (65)) then
 		        NH = NH + 1
 		        minioncollision = minion
 		    end

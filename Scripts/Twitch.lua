@@ -297,7 +297,7 @@ function Twitch:LogicQ()
 end
 
 function Twitch:LogicW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range)
+	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -352,7 +352,7 @@ function Twitch:AutoQ()
 end
 
 function Twitch:AutoW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range)
+	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)

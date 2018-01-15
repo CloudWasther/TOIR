@@ -220,7 +220,7 @@ function Caitlyn:OnCreateObject(obj)
 			
 			if string.find(obj.Name, "GateMarker_red.troy") or string.find(obj.Name, "global_ss_teleport_target_red.troy") or
 				string.find(obj.Name, "r_indicator_red.troy") or (string.find(obj.Name, "LifeAura.troy") and hero.IsValid and GetDistance(objPos, heroPos) < 200) then
-				if GetDistance(objPos) < self.W.range and obj.IsValid then
+				if GetDistance(objPos) < self.W.range - 150 and obj.IsValid then
 					self.GetTrapPos = objPos
 				else
 					self.GetTrapPos = nil
@@ -228,7 +228,7 @@ function Caitlyn:OnCreateObject(obj)
 			end
 
 			if (hero.Name == "Rengar" or hero.Name == "Khazix") and hero.IsValid then
-				if obj.Name == "Rengar_LeapSound.troy" and GetDistance(heroPos) < self.W.range then
+				if obj.Name == "Rengar_LeapSound.troy" and GetDistance(heroPos) < self.W.range - 150 then
 					CastSpellToPos(hero.x, hero.z, _E)
 				end
 
@@ -248,7 +248,7 @@ function Caitlyn:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravit
 	if unit.IsMe then
 		local myLastPath = endPos
 	end
-	local TargetE = self.menu_ts:GetTarget(self.W.range)
+	local TargetE = self.menu_ts:GetTarget(self.W.range - 150)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		if unit.NetworkId == unit.NetworkId then
@@ -294,7 +294,7 @@ function Caitlyn:OnTick()
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
-			if not hero.IsDead and GetDistance(hero.Addr) < self.W.range and (hero.HasBuff("bardrstasis") or CountBuffByType(hero.Addr, 17) > 0) then
+			if not hero.IsDead and GetDistance(hero.Addr) < self.W.range - 150 and (hero.HasBuff("bardrstasis") or CountBuffByType(hero.Addr, 17) > 0) then
 				self.GetTrapPos = Vector(hero.x, hero.y, hero.z)
 			else
 				self.GetTrapPos = nil
@@ -371,8 +371,8 @@ function Caitlyn:GetRealDistance(target)
 end
 
 function Caitlyn:LogicQ()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
-	if IsValidTarget(TargetQ, self.Q.range) then
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	if IsValidTarget(TargetQ, self.Q.range - 150) then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 and HitChance > 2 then
@@ -382,9 +382,9 @@ function Caitlyn:LogicQ()
 		end
 
 		for i,hero in pairs(GetEnemyHeroes()) do
-			if IsValidTarget(hero, self.Q.range) then
+			if IsValidTarget(hero, self.Q.range - 150) then
 				target = GetAIHero(hero)
-				if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range and self.autoQcc then
+				if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range - 150 and self.autoQcc then
 					CastSpellToPos(target.x, target.z, _Q)
 				end
 			end
@@ -392,9 +392,9 @@ function Caitlyn:LogicQ()
 
 		if GetKeyPress(self.Combo) > 0 and myHero.MP > 150 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
 			for i,hero in pairs(GetEnemyHeroes()) do
-				if IsValidTarget(hero, self.Q.range) then
+				if IsValidTarget(hero, self.Q.range - 150) then
 					target = GetAIHero(hero)
-					if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range then
+					if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range - 150 then
 						CastSpellToPos(target.x, target.z, _Q)
 					end
 				end
@@ -458,7 +458,7 @@ end
 
 function Caitlyn:LogicE()
 	if self.autoE then
-		local TargetE = self.menu_ts:GetTarget(self.E.range)
+		local TargetE = self.menu_ts:GetTarget(self.E.range - 200)
 		if IsValidTarget(TargetE, self.E.range) then
 			target = GetAIHero(TargetE)
 			local positionT = Vector(myHero) - (Vector(target) - Vector(myHero))
@@ -564,7 +564,7 @@ function Caitlyn:ValidUlt(unit)
 end
 
 function Caitlyn:AutoQEW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range)
+	local TargetW = self.menu_ts:GetTarget(self.W.range  - 150)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, true)
@@ -608,7 +608,7 @@ function Caitlyn:AutoQEW()
 end
 
 function Caitlyn:KillSteal()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if TargetQ ~= nil and IsValidTarget(TargetW, self.Q.range) and CanCast(_Q) and self.qks then
 		targetQ = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetQ, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -696,7 +696,7 @@ function Caitlyn:AntiGapCloser()
         		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
         		if DashPosition ~= nil then
           			if GetDistance(DashPosition) < 400 then
-          				if CanCast(_E) and IsValidTarget(hero.Addr, self.E.range) then
+          				if CanCast(_E) and IsValidTarget(hero.Addr, self.E.range - 150) then
           					if self.EmodeGC == 0 then
           						CastSpellToPos(DashPosition.x, DashPosition.z, _E)
           					end
@@ -708,7 +708,7 @@ function Caitlyn:AntiGapCloser()
           					end
           				end
 
-          				if CanCast(_W) and IsValidTarget(hero.Addr, self.W.range) then
+          				if CanCast(_W) and IsValidTarget(hero.Addr, self.W.range - 150) then
           					if self.WmodeGC == 0 then
           						CastSpellToPos(DashPosition.x, DashPosition.z, _W)
           					end

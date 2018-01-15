@@ -478,7 +478,7 @@ function Jinx:AutoEW()
 				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
 
 				if DashPosition ~= nil then
-					local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
+					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
 			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash and Collision == 0 then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 			    	end

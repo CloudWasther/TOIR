@@ -226,7 +226,7 @@ function Thresh:OnDraw()
 end
 
 function Thresh:Qstat(t)
-	target = t or self.menu_ts:GetTarget(self.Q.range)
+	target = t or self.menu_ts:GetTarget(self.Q.range - 150)
 	if not self.Q:IsReady() then
 		return false
 	end
@@ -280,7 +280,7 @@ function Thresh:IsUnderAllyTurret(pos)
 end
 
 function Thresh:autoQtoEndDash()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	local TargetDashing, CanHitDashing, DashPosition
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
@@ -288,14 +288,14 @@ function Thresh:autoQtoEndDash()
 	    --local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
   	end
 
-  	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range and not self:Qstat(TargetQ) then
+  	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range - 150 and not self:Qstat(TargetQ) then
 	    local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
   		if Collision == 0 then
 	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    end
 	end
 
-	local TargetE = self.menu_ts:GetTarget(self.E.range)
+	local TargetE = self.menu_ts:GetTarget(self.E.range - 150)
 	if CanCast(_E) and IsValidTarget(TargetE) then
     	Target = GetAIHero(TargetE)
 	    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.E.delay, self.E.width, self.E.speed, myHero)
@@ -307,7 +307,7 @@ function Thresh:autoQtoEndDash()
 				CastSpellToPos(DashPosition.x, DashPosition.z, _E)
 			end
 
-			if GetDistance(myHeroPos, targetPos) < self.E.range and GetDistance(DashPosition) < self.E.range and (self:IsUnderAllyTurret(myHeroPos) or self:CountAlliesInRange(myHero.Addr, 1000) > 0) then
+			if GetDistance(myHeroPos, targetPos) < self.E.range - 150 and GetDistance(DashPosition) < self.E.range and (self:IsUnderAllyTurret(myHeroPos) or self:CountAlliesInRange(myHero.Addr, 1000) > 0) then
 				pos = myHeroPos:Extended(DashPosition, - self.E.range)
 				CastSpellToPos(pos.x, pos.z, _E)
 			end
@@ -319,13 +319,13 @@ function Thresh:KillSteal()
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
-			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
+			if IsValidTarget(hero.Addr, self.R.range - 150) and CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 				CastSpellTarget(myHero.Addr, _R)
 			end
 
-			if IsValidTarget(hero.Addr, self.Q.range) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-				local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
+				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+				local distance = VPGetLineCastPosition(hero.Addr, self.Q.delay, self.Q.speed)
 				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 				end
@@ -359,13 +359,14 @@ function Thresh:Pull(t)
 end
 
 function Thresh:ComboMode()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
 	if self.menu_Combo_Q then
-		--if TargetQ ~= nil and (GetDistance(TargetQ) < self.Q.range - 150  or self:IsImmobileTarget(TargetQ)) and self.menu_Combo_Q then
+		if TargetQ ~= nil then --and (GetDistance(TargetQ) < self.Q.range - 150  or self:IsImmobileTarget(TargetQ)) and self.menu_Combo_Q then
 		--__PrintTextGame(tostring(self:Qstat(TargetQ)))
-		if TargetQ ~= nil and (GetDistance(TargetQ) < self.Q.range - 150 and GetDistance(TargetQ) > 300
-			or self:IsImmobileTarget(TargetQ)) and self.menu_Combo_Q and not self:Qstat(TargetQ) then
-			self:CastQ(TargetQ)
+			if TargetQ ~= nil and (GetDistance(TargetQ) < self.Q.range - 150 and GetDistance(TargetQ) > 300
+				or self:IsImmobileTarget(TargetQ)) and not self:Qstat(TargetQ) then
+				self:CastQ(TargetQ)
+			end
 		end
 	end
 
@@ -373,7 +374,7 @@ function Thresh:ComboMode()
 		CastSpellTarget(myHero.Addr, _Q)
 	end
 
-	local TargetE = self.menu_ts:GetTarget(self.E.range)
+	local TargetE = self.menu_ts:GetTarget(self.E.range - 150)
 	if CanCast(_E) and GetKeyPress(self.menu_Combo_Epull) > 0 and IsValidTarget(TargetE, self.E.range) then
 		self:Pull(TargetE)
 	end
@@ -381,7 +382,7 @@ function Thresh:ComboMode()
 		self:Push(TargetE)
 	end
 
-	local TargetR = self.menu_ts:GetTarget(self.R.range)
+	local TargetR = self.menu_ts:GetTarget(self.R.range - 150)
 	if CanCast(_R) and self:CountEnemiesInRange(myHero.Addr, self.R.range) >= self.menu_Combo_Reneme and IsValidTarget(TargetR, self.R.range) then
 		CastSpellTarget(myHero.Addr, _R)
 	end
@@ -390,7 +391,7 @@ function Thresh:ComboMode()
 		self:autoW()
 	end
 
-	local Ally = self:GetUglyAlly(self.W.range)
+	local Ally = self:GetUglyAlly(self.W.range - 150)
 
 	if CanCast(_W) and (self.menu_Combo_Wshieldhp >= (GetHealthPoint(Ally) / GetHealthPointMax(Ally) * 100) and self:IsImmobileTarget(Ally)) and self:CountEnemiesInRange(Ally, self.W.range) > 1 then
 
@@ -432,7 +433,7 @@ function Thresh:ComboMode()
 end
 
 function Thresh:CastQ(target)
-    if CanCast(_Q) and IsValidTarget(target) then
+    if CanCast(_Q) and IsValidTarget(target - 150) then
     	Target = GetAIHero(target)
 	    local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 	    if CastPosition and HitChance >= 2 and GetDistance(CastPosition) <= self.Q.range then

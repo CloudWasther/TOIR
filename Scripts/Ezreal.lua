@@ -73,7 +73,7 @@ function Ezreal:MenuValueDefault()
 
 	self.autoR = self:MenuBool("Auto R KS", true)
 	self.Rcc = self:MenuBool("R cc", true)
-	self.Raoe = self:MenuBool("R AOE", true)
+	--self.Raoe = self:MenuBool("R AOE", true)
 	self.useR = self:MenuKeyBinding("Semi-manual cast R key", 84)
 	self.Rturrent = self:MenuBool("Don't R under turret", true)
 	self.MaxRangeR = self:MenuSliderInt("Max R range", 3000)
@@ -122,7 +122,7 @@ function Ezreal:OnDrawMenu()
 		if Menu_Begin("Setting R") then
 			self.autoR = Menu_Bool("Auto R KS", self.autoR, self.menu)
 			self.Rcc = Menu_Bool("R cc", self.Rcc, self.menu)
-			self.Raoe = Menu_Bool("R AOE", self.Raoe, self.menu)
+			--self.Raoe = Menu_Bool("R AOE", self.Raoe, self.menu)
 			self.useR = Menu_KeyBinding("Semi-manual cast R key", self.useR, self.menu)
 			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)
 			self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
@@ -217,9 +217,9 @@ function Ezreal:OnTick()
 	SetLuaCombo(true)
 
 	if CanCast(_E) then
-		if self:LagFree(0) then
+		--if self:LagFree(0) then
 			self:LogicE();
-		end
+		--end
 		if GetKeyPress(self.smartEW) > 0 and CanCast(_W) then
 			CastSpellToPos(GetMousePos().x, GetMousePos().z, _W)
 			castE = Vector(myHero.x, myHero.y, myHero.z):Extended(GetMousePos(), self.E.range)
@@ -234,11 +234,11 @@ function Ezreal:OnTick()
 		self:LogicQ()
 	end
 
-	if self:LagFree(3) and CanCast(_W) and self.autoW then
+	if --[[self:LagFree(3) and]] CanCast(_W) and self.autoW then
 		self:LogicW();
 	end
 
-	if self:LagFree(4) and CanCast(_R) then
+	if --[[self:LagFree(4) and]] CanCast(_R) then
 		local TargetR = self.menu_ts:GetTarget(self.R.range)
 	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
 	    	CastSpellTarget(TargetR, _R)
@@ -290,7 +290,7 @@ function Ezreal:GetRealDistance(target)
 end
 
 function Ezreal:LogicQ()
-    if self:LagFree(1) then
+    --if self:LagFree(1) then
     	--if not self:CanMoveOrb(50) then
     		--return
     	--end
@@ -301,7 +301,7 @@ function Ezreal:LogicQ()
 				target = GetAIHero(TargetQ)
     			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
     			local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-		    	if Collision == 0 then
+		    	if Collision == 0 and HitChance >= 2 then
 		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		        end
     		end
@@ -327,7 +327,7 @@ function Ezreal:LogicQ()
 				if not self:CanMove(target) and IsValidTarget(target.Addr, self.Q.range - 150) then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
 			    	if Collision == 0 then
-			        	--CastSpellToPos(target.x, target.z, _Q)
+			        	CastSpellToPos(target.x, target.z, _Q)
 			        end
 				end
 			end
@@ -344,11 +344,11 @@ function Ezreal:LogicQ()
 	    		end
 	    	end 
 	    end
-	elseif self:LagFree(2) then
+	--elseif self:LagFree(2) then
 		if myHero.MP > 30 and GetKeyPress(self.Lane_Clear) > 0 then
 			self:farmQ();
 		end
-    end
+    --end
 
 
 
@@ -379,7 +379,7 @@ function Ezreal:LogicW()
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		if GetKeyPress(self.Combo) > 0 and myHero.MP > 240 then
+		if GetKeyPress(self.Combo) > 0 and myHero.MP > 240 and HitChance >= 2 then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		elseif GetKeyPress(self.Harass) > 0 and self.harassW and myHero.MP > myHero.MaxMP * 0.8 and self:CanHarras() then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
@@ -466,9 +466,9 @@ function Ezreal:LogicR()
 					if GetDamage("R", target) > target.HP and CountEnemyChampAroundObject(target.Addr, 500) == 0 and GetDistance(target.Addr) > self.MinRangeR then
 						CastSpellToPos(CastPosition.x,CastPosition.z, _R)
 					end 
-					if GetKeyPress(self.Combo) > 0 and CountEnemyChampAroundObject(target.Addr, 1200) == 0 and self.Raoe then
-						CastSpellToPos(CastPosition.x,CastPosition.z, _R)
-					end
+					--if GetKeyPress(self.Combo) > 0 and CountEnemyChampAroundObject(target.Addr, 1200) == 0 and self.Raoe then
+						--CastSpellToPos(CastPosition.x,CastPosition.z, _R)
+					--end
 				end
 			end
 		end

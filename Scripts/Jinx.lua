@@ -80,6 +80,10 @@ function Jinx:MenuValueDefault()
 
 	self.menu_Combo_R = self:MenuBool("Auto R", true)
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)
+	self.Rturrent = self:MenuBool("Don't R under turret", true)
+	self.MaxRangeR = self:MenuSliderInt("Max R range", 3000)
+	self.MinRangeR = self:MenuSliderInt("Min R range", 900)
+
 
 	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
 	self.menu_Draw_Q = self:MenuBool("Draw Q Range", true)
@@ -125,6 +129,9 @@ function Jinx:OnDrawMenu()
 		if Menu_Begin("Setting R") then
 			self.menu_Combo_R = Menu_Bool("Auto R", self.menu_Combo_R, self.menu)
 			self.menu_Combo_Rks = Menu_Bool("Use R Kill Steal", self.menu_Combo_Rks, self.menu)
+			self.Rturrent = Menu_Bool("UDon't R under turret", self.Rturrent, self.menu)
+			self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
+			self.MinRangeR = Menu_SliderInt("Min R range", self.MinRangeR, 0, 3000, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Draw Spell") then
@@ -383,7 +390,7 @@ function Jinx:LogicW()
 			local TargetW = self.menu_ts:GetTarget(self.W.range - 200)
 			if CanCast(_W) and TargetW ~= 0 then
 				target = GetAIHero(TargetW)
-				local CastPosition, HitChance, Position = vpred:GetLineAOECastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero)
+				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero)
 
 				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, true)
 				--local Collision = vpred:CheckMinionCollision(target, CastPosition, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false, false)
@@ -458,12 +465,23 @@ function Jinx:ValidUlt(unit)
 end
 
 function Jinx:LogicR()
+	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+	if self:IsUnderTurretEnemy(myHeroPos) and self.Rturrent then
+		return
+	end
 	if GetTimeGame() - self.WCastTime > 0.9 and self.autoR then
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if hero ~= nil then
 				target = GetAIHero(hero)
-				if IsValidTarget(target, self.R.range) and self:ValidUlt(target) then
-
+				if IsValidTarget(target, self.MaxRangeR) and self:ValidUlt(target) then
+					if GetDamage("R", target) > target.HP and self:GetRealDistance(target) > self:bonusRange() + 200 then
+						local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero)
+						if self:GetRealDistance(target) > self:bonusRange() + 300 + GetBoundingRadius(target.Addr) and CountEnemyChampAroundObject(target.Addr, 500) == 0 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
+							CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+						elseif CountEnemyChampAroundObject(target.Addr, 200) > 2 then
+							CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+						end
+					end
 				end
 			end
 		end
@@ -516,7 +534,7 @@ function Jinx:KillSteal()
 			target = GetAIHero(hero)
 			if IsValidTarget(target, self.W.range) then
 				if CanCast(_W) and self.Auto_W_Kill_Steal and GetDamage("W", target) > target.HP then
-					local CastPosition, HitChance, Position = vpred:GetLineAOECastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero) --vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)	                
+					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero) --vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)	                
 	                local distance = VPGetLineCastPosition(target.Addr, self.W.delay, self.W.speed)
 	                --local Collision = vpred:CheckMinionCollision(target, CastPosition, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false, true)
 	                --if distance > 0 and distance < self.W.range then
@@ -528,12 +546,12 @@ function Jinx:KillSteal()
 	            end
 			end
 
-			if IsValidTarget(target, 2000) then
-				if CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", target) > target.HP then
-					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)	                
+			if IsValidTarget(target, self.MaxRangeR) then
+				if CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", target) > target.HP and GetDistance(target.Addr) > self.MinRangeR then
+					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero, false)	                
 	                local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
 	                --if distance > 0 and distance < self.R.range then
-	                    if not GetCollision(target.Addr, self.R.width, self.W.range, distance, 2) then
+	                    if not GetCollision(target.Addr, self.R.width, self.MaxRangeR, distance, 2) then
 	                        --CastSpellToPredictionPos(target.Addr, _R, distance)
 	                        CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 	                    end

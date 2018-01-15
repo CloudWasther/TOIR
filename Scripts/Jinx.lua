@@ -1,5 +1,4 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbNew.lua")
 
 Jinx = class()
 
@@ -395,7 +394,7 @@ function Jinx:LogicW()
 				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, true)
 				--local Collision = vpred:CheckMinionCollision(target, CastPosition, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false, false)
 				if GetDistance(target.Addr) > self:bonusRange() and self.Use_Combo_W and HitChance >= 2 then
-					
+
 					local distance = VPGetLineCastPosition(target.Addr, self.W.delay, self.W.speed)
 	                --if distance > 0 and distance < self.W.range then
 	                    if not GetCollision(target.Addr, self.W.width, self.W.range, distance, 1) then
@@ -505,7 +504,7 @@ function Jinx:AutoEW()
 				if not self:CanMove(target) and self.autoE then
 					local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
 					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
-				end				
+				end
 			end
 
 			if IsValidTarget(target, self.W.range) then
@@ -519,9 +518,9 @@ function Jinx:AutoEW()
 				end
 
 				if not self:CanMove(target) and (self.Use_Combo_Wharras or self.Use_Combo_W) then
-					local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)				
-	                CastSpellToPos(CastPosition.x, CastPosition.z, _W)					
-				end				
+					local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+	                CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+				end
 			end
 		end
 	end
@@ -534,7 +533,7 @@ function Jinx:KillSteal()
 			target = GetAIHero(hero)
 			if IsValidTarget(target, self.W.range) then
 				if CanCast(_W) and self.Auto_W_Kill_Steal and GetDamage("W", target) > target.HP then
-					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero) --vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)	                
+					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero) --vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
 	                local distance = VPGetLineCastPosition(target.Addr, self.W.delay, self.W.speed)
 	                --local Collision = vpred:CheckMinionCollision(target, CastPosition, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false, true)
 	                --if distance > 0 and distance < self.W.range then
@@ -548,7 +547,7 @@ function Jinx:KillSteal()
 
 			if IsValidTarget(target, self.MaxRangeR) then
 				if CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", target) > target.HP and GetDistance(target.Addr) > self.MinRangeR then
-					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero, false)	                
+					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero, false)
 	                local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
 	                --if distance > 0 and distance < self.R.range then
 	                    if not GetCollision(target.Addr, self.R.width, self.MaxRangeR, distance, 2) then
@@ -559,7 +558,7 @@ function Jinx:KillSteal()
 	            end
 			end
 		end
-	end		
+	end
 end
 
 function Jinx:OnDraw()

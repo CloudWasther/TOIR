@@ -1,6 +1,4 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbCustom.lua")
---IncludeFile("Lib\\AntiGapCloser.lua")
 
 Lucian = class()
 
@@ -103,7 +101,7 @@ function Lucian:OnDrawMenu()
 		end
 		if Menu_Begin("Setting E") then
 			self.menu_Combo_E = Menu_Bool("Enable E", self.menu_Combo_E, self.menu)
-			self.menu_Combo_EMode = Menu_ComboBox("E Mode", self.menu_Combo_EMode, "Mouse\0Side\0Safe position\0\0", self.menu)		
+			self.menu_Combo_EMode = Menu_ComboBox("E Mode", self.menu_Combo_EMode, "Mouse\0Side\0Safe position\0\0", self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
@@ -111,14 +109,14 @@ function Lucian:OnDrawMenu()
 			self.menu_Combo_Rks = Menu_Bool("Use R Kill Steal", self.menu_Combo_Rks, self.menu)
 			self.menu_Combo_Rlock = Menu_KeyBinding("Lock R On Target", self.menu_Combo_Rlock, self.menu)
 			Menu_End()
-		end		
+		end
 		if Menu_Begin("Draw Spell") then
 			self.Draw_When_Already = Menu_Bool("Draw When Already", self.Draw_When_Already, self.menu)
 			self.Draw_Q_Range = Menu_Bool("Draw Q Range", self.Draw_Q_Range, self.menu)
 			self.Draw_Q2_Range = Menu_Bool("Draw Q2 Range", self.Draw_R2_Range, self.menu)
 			self.Draw_W_Range = Menu_Bool("Draw W Range", self.Draw_W_Range, self.menu)
 			self.Draw_E_Range = Menu_Bool("Draw E Range", self.Draw_E_Range, self.menu)
-			self.Draw_R_Range = Menu_Bool("Draw R Range", self.Draw_R_Range, self.menu)			
+			self.Draw_R_Range = Menu_Bool("Draw R Range", self.Draw_R_Range, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Mod Skin") then
@@ -157,15 +155,15 @@ function Lucian:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
 
-function Lucian:OnWaypoint(pUnit)            
+function Lucian:OnWaypoint(pUnit)
     local unit = GetAIHero(pUnit)
     local unitPosTo = Vector(GetDestPos(pUnit))
 
-    if self.NewPath[unit.NetworkId] == nil then 
-        self.NewPath[unit.NetworkId] = {pos = unitPosTo} 
-    end 
+    if self.NewPath[unit.NetworkId] == nil then
+        self.NewPath[unit.NetworkId] = {pos = unitPosTo}
+    end
 
-    if self.NewPath[unit.NetworkId].pos ~= unitPosTo then    
+    if self.NewPath[unit.NetworkId].pos ~= unitPosTo then
 
         local unitPos = Vector(GetPos(pUnit))
         self.NewPath[unit.NetworkId] = {startPos = unitPos, pos = unitPosTo}
@@ -177,31 +175,31 @@ function Lucian:OnWaypoint(pUnit)
 			local targetPos = Vector(target.x, target.y, target.z)
 			local trungdiem = unitPosTo:Extended(myHeroPos, GetDistance(unitPosTo, myHeroPos) / 2)
 
-			self.newMovePos = unitPos:Extended(trungdiem, 2 * GetDistance(unitPos, trungdiem))			
+			self.newMovePos = unitPos:Extended(trungdiem, 2 * GetDistance(unitPos, trungdiem))
 
 			--self.Move = false
 			--[[local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
 			if HitChance >= 2 and GetTimeGame() - self.castR > 5 and self.menu_Combo_R.getValue() then
-				DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
+				DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})
 				if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
-					CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
-				end	
+					CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)
+				end
 			end]]
 		else
 			self.newMovePos = nil
 			--self.Move = true
-		end   
-    end                             
+		end
+    end
 end
 
-function Lucian:OnWaypointLoop()            
+function Lucian:OnWaypointLoop()
     --if GetTickCount() - WaypointTick > 50 then
-        SearchAllChamp()                
+        SearchAllChamp()
         local h = pObjChamp
-        for k, v in pairs(h) do                          
+        for k, v in pairs(h) do
             if IsChampion(v) then
-                self:OnWaypoint(v)  
-            end                         
+                self:OnWaypoint(v)
+            end
         end
         self.WaypointTick = GetTickCount()
     --end
@@ -223,9 +221,9 @@ function Lucian:OnTick()
 	if GetKeyPress(self.Combo) > 0 then
 		if not self.passRdy and not self:SpellLock() then
 			self:LogicQ()
-			self:LogicW()	
+			self:LogicW()
 			self:LogicE()
-		end			
+		end
 	end
 
 	if self.Enalble_Mod_Skin then
@@ -273,7 +271,7 @@ function Lucian:LogicE()
 end
 
 function Lucian:LogicQ()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)	
+	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -294,7 +292,7 @@ function Lucian:LogicQ()
 			if minion ~= nil and countMinion >= self.menu_Combo_Qhit then
 				CastSpellTarget(minion.Addr, _Q)
 			end
-			
+
 			--[[local j = 0
 			local distance = GetDistance(CastPosition)
 			GetAllUnitAroundAnObject(myHero.Addr, self.Q.range)
@@ -302,7 +300,7 @@ function Lucian:LogicQ()
 				if minions ~= nil then
 					if GetType(minions) == 1 and IsValidTarget(minions, self.Q.range) and IsEnemy(minions) then
 						local minion = GetUnit(minions)
-						local minionPos = Vector(minion.x, minion.y, minion.z) 
+						local minionPos = Vector(minion.x, minion.y, minion.z)
 						local posEx = myHeroPos:Extended(minionPos, distance)
 						local angle = myHeroPos:AngleBetween(CastPosition, posEx)
 						if GetDistance(CastPosition, posEx) < 25 or angle < 10 then
@@ -310,10 +308,10 @@ function Lucian:LogicQ()
 							j = j + 1
 							--CastSpellTarget(minion.Addr, _Q)
 							DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,0,255))
-						end						
+						end
 					end
 				end
-			end]]       
+			end]]
 		end
 	end
 end
@@ -346,7 +344,7 @@ function Lucian:CountMinionInLine(target)
 			if minions ~= nil then
 				if GetType(minions) == 1 and IsValidTarget(minions, self.Q.range) and IsEnemy(minions) then
 					local minion = GetUnit(minions)
-					local minionPos = Vector(minion.x, minion.y, minion.z) 
+					local minionPos = Vector(minion.x, minion.y, minion.z)
 					local posEx = myHeroPos:Extended(minionPos, distance)
 					--local angle = myHeroPos:AngleBetween(CastPosition, posEx)
 					if GetDistance(CastPosition, posEx) < 25 then --or angle < 10 then
@@ -354,10 +352,10 @@ function Lucian:CountMinionInLine(target)
 						minioncollision = minion
 							--CastSpellTarget(minion.Addr, _Q)
 						DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,0,255))
-					end						
+					end
 				end
 			end
-		end 			        
+		end
 	end
 	return NH , minioncollision]]
 end
@@ -401,21 +399,21 @@ function Lucian:LogicR()
 			local targetPos = Vector(target.x, target.y, target.z)
 			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
 			local distance = VPGetLineCastPosition(target.Addr, self.R.delay, self.R.speed)
-			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 and 10 * GetDamage("R", target) + GetDamage("Q", target) + GetDamage("W", target) > GetHealthPoint(TargetR) and self.menu_Combo_R then				
+			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 and 10 * GetDamage("R", target) + GetDamage("Q", target) + GetDamage("W", target) > GetHealthPoint(TargetR) and self.menu_Combo_R then
 				if self.newMovePos ~= nil then
 					--orbwalk:DisableMove()
 					BlockMove()
 					MoveToPos(self.newMovePos.x, self.newMovePos.z)
-					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then					
-						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})	
-					end	
-					if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
-						CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
+					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then
+						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})
 					end
-				end						
+					if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
+						CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)
+					end
+				end
 			end
-		end	
-		--orbwalk:EnableMove()	
+		end
+		--orbwalk:EnableMove()
 		UnBlockMove()
 	end
 
@@ -432,15 +430,15 @@ function Lucian:LogicR()
 			if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range - 100 then
 				if self.newMovePos ~= nil then
 					MoveToPos(self.newMovePos.x, self.newMovePos.z)
-					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then					
-						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})	
-					end	
-					if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
-						CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
+					if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then
+						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _R) end, 0.1, {})
 					end
-				end						
+					if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
+						CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)
+					end
+				end
 			end
-		end	
+		end
 	end
 end
 
@@ -455,7 +453,7 @@ function Lucian:AutoQW()
 			local countMinion, minion = self:CountMinionInLine(target)
 			if minion ~= nil and myHero.MP / myHero.MaxMP * 100 >= self.menu_Combo_Qmana then
 				CastSpellTarget(minion.Addr, _Q)
-			end		       
+			end
 		end
 	end
 
@@ -479,7 +477,7 @@ function Lucian:KillSteal()
 		if heros ~= nil then
 			local hero = GetUnit(heros)
 			if IsValidTarget(hero.Addr, self.R.range) and CanCast(_R) and self.menu_Combo_Rks then
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)	
+				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
 				local distance = VPGetLineCastPosition(hero.Addr, self.R.delay, self.R.speed)
 				if HitChance >= 2 and GetDistance(GetOrigin(hero.Addr)) < self.R.range and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 					if self.newMovePos ~= nil then
@@ -487,14 +485,14 @@ function Lucian:KillSteal()
 						BlockMove()
 						MoveToPos(self.newMovePos.x, self.newMovePos.z)
 						if not self.lucianR and not GetCollision(target.Addr, self.R.width, self.R.range, distance, 2) then
-							DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
-						end	
+							DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})
+						end
 						if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
-							CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
-						end	
+							CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)
+						end
 					end
-								
-				end	
+
+				end
 				--orbwalk:EnableMove()
 				UnBlockMove()
 			end
@@ -518,19 +516,19 @@ function Lucian:KillSteal()
 	if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) and self.menu_Combo_Rks then
 		targetR = GetAIHero(TargetR)
 		--__PrintTextGame(tostring(myHero.CalcDamage(target.Addr, GetDamage("R", targetR))))
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)		
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
 
 		if HitChance >= 2 and GetDistance(GetOrigin(TargetR)) < self.R.range and 10 * GetDamage("R", targetR) > GetHealthPoint(TargetR) then
 			if self.newMovePos ~= nil then
 				MoveToPos(self.newMovePos.x, self.newMovePos.z)
 			end
 			if not self.lucianR then
-				DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})	
+				DelayAction(function() CastSpellToPos(Position.x, Position.z, _R) end, 0.1, {})
 			end
 			if GetDistance(self.newMovePos) > 100 and GetDistance(self.newMovePos) < self.E.range and CanCast(_E) then
-				CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)	
-			end	
-		end	
+				CastSpellToPos(self.newMovePos.x, self.newMovePos.z, _E)
+			end
+		end
 	end
 
 	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
@@ -605,7 +603,7 @@ function Lucian:OnProcessSpell(unit, spell)
 			self.lucianR = false
     	end
 
-    	if (spellName == "lucianw" or spellName == "luciane" or spellName == "lucianq") then    		
+    	if (spellName == "lucianw" or spellName == "luciane" or spellName == "lucianq") then
             self.passRdy = true
         else
         	self.passRdy = false
@@ -614,15 +612,15 @@ function Lucian:OnProcessSpell(unit, spell)
 
     if unit.IsMe and myHero.NetworkId ~= GetIndex(GetTargetById(spell.TargetId))  and string.find(string.lower(spell.Name), "attack") ~= nil then
     	self.modeTarget = GetType(GetTargetById(spell.TargetId))
-    	self.targetslector = GetTargetById(spell.TargetId)   
+    	self.targetslector = GetTargetById(spell.TargetId)
     else
     	self.modeTarget = 4
-    	self.targetslector = nil	
+    	self.targetslector = nil
     end
 end
 
 function Lucian:OnDoCast(unit, spell)
-	local spellName = spell.Name:lower()	
+	local spellName = spell.Name:lower()
 end
 
 function Lucian:IsImmobileTarget(unit)
@@ -856,8 +854,8 @@ function Lucian:AntiGapCloser()
                             	bestpoint = point;
 	    					end
 	    				end
-	    				if self:IsGoodPosition(bestpoint) then   
-                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)     				
+	    				if self:IsGoodPosition(bestpoint) then
+                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)
           				end
           			end
         		end

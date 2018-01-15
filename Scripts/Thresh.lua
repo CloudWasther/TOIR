@@ -1,6 +1,4 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
---IncludeFile("Lib\\OrbNew.lua")
---IncludeFile("Lib\\AllClass.lua")
 
 Thresh = class()
 
@@ -159,9 +157,9 @@ function Thresh:OnTick()
 
 	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
-	
-	if GetKeyPress(self.Combo) > 0 then			
-		self:ComboMode()	
+
+	if GetKeyPress(self.Combo) > 0 then
+		self:ComboMode()
 	end
 
 	if self.menu_Combo_QendDash then

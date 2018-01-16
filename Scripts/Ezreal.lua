@@ -51,8 +51,8 @@ function Ezreal:MenuValueDefault()
 	self.menu_Draw_E = self:MenuBool("Draw E Range", true)
 	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
 
-	self.autoQ = self:MenuBool("Auto Q Harass", true)
-	--self.farmQ = self:MenuBool("LaneClear Q", true)
+	self.stack = self:MenuBool("Stack Tear if full mana", true)
+	self.jungQ = self:MenuBool("Jungle Q", true)
 	self.FQ = self:MenuBool("Farm Q out range last hit", true)
 	
 	for i, enemy in pairs(GetEnemyHeroes()) do
@@ -79,6 +79,14 @@ function Ezreal:MenuValueDefault()
 	self.MaxRangeR = self:MenuSliderInt("Max R range", 3000)
 	self.MinRangeR = self:MenuSliderInt("Min R range", 900)
 
+	self.Use_Smite_Kill_Steal = self:MenuBool("Use Smite Kill Steal", true)
+	self.Use_Smite_in_Combo = self:MenuBool("Use Smite in Combo", true)
+	self.Use_Smite_Small_Jungle = self:MenuBool("Use Smite Small Jungle", true)
+	self.Use_Smite_Blue = self:MenuBool("Use Smite Blue", true)
+	self.Use_Smite_Red = self:MenuBool("Use Smite Red", true)
+	self.Use_Smite_Dragon = self:MenuBool("Use Smite Dragon", true)
+	self.Use_Smite_Baron = self:MenuBool("Use Smite Baron", true)
+
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 18)
@@ -92,9 +100,10 @@ end
 function Ezreal:OnDrawMenu()
 	if Menu_Begin(self.menu) then
 		if Menu_Begin("Setting Q") then
-			self.autoQ = Menu_Bool("Auto Q Harass", self.autoQ, self.menu)
-			--self.farmQ = Menu_Bool("LaneClear Q", self.farmQ, self.menu)
+			self.stack = Menu_Bool("Stack Tear if full mana", self.stack, self.menu)
+			self.jungQ = Menu_Bool("Jungle Q", self.jungQ, self.menu)
 			self.FQ = Menu_Bool("Farm Q out range last hit", self.FQ, self.menu)
+			Menu_Text("Harass Enemy")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
         	end
@@ -127,6 +136,19 @@ function Ezreal:OnDrawMenu()
 			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)
 			self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
 			self.MinRangeR = Menu_SliderInt("Min R range", self.MinRangeR, 0, 3000, self.menu)
+			Menu_End()
+		end
+
+		if Menu_Begin("Setting Smite") then
+			Menu_Text("Smite In Combo")
+			self.Use_Smite_Kill_Steal = Menu_Bool("Use Smite Kill Steal", self.Use_Smite_Kill_Steal, self.menu)
+			self.Use_Smite_in_Combo = Menu_Bool("Use Smite in Combo", self.Use_Smite_in_Combo, self.menu)
+			Menu_Text("Smite In Jungle")
+			self.Use_Smite_Small_Jungle = Menu_Bool("Use Smite Small Jungle", self.Use_Smite_Small_Jungle, self.menu)
+			self.Use_Smite_Blue = Menu_Bool("Use Smite Blue", self.Use_Smite_Blue, self.menu)
+			self.Use_Smite_Red = Menu_Bool("Use Smite Red", self.Use_Smite_Red, self.menu)
+			self.Use_Smite_Dragon = Menu_Bool("Use Smite Dragon", self.Use_Smite_Dragon, self.menu)
+			self.Use_Smite_Baron = Menu_Bool("Use Smite Baron", self.Use_Smite_Baron, self.menu)
 			Menu_End()
 		end
 
@@ -216,6 +238,8 @@ function Ezreal:OnTick()
 	if myHero.IsDead then return end
 	SetLuaCombo(true)
 
+	self:LogicSmiteJungle()
+
 	if CanCast(_E) then
 		--if self:LagFree(0) then
 			self:LogicE();
@@ -225,6 +249,10 @@ function Ezreal:OnTick()
 			castE = Vector(myHero.x, myHero.y, myHero.z):Extended(GetMousePos(), self.E.range)
 			CastSpellToPos(castE.x, castE.z, _E)
 		end
+	end
+
+	if GetKeyPress(self.Lane_Clear) > 0 then
+		self:LaneClear()
 	end
 
 	self:AntiGapCloser()
@@ -249,6 +277,108 @@ function Ezreal:OnTick()
 	if self.Enalble_Mod_Skin then
 		ModSkin(self.Set_Skin)
 	end		
+end
+
+function Ezreal:JungleTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+            table.insert(result, minions)
+        end
+    end
+
+    return result
+end
+
+function Ezreal:GetIndexSmite()
+	if GetSpellIndexByName("SummonerSmite") > -1 then
+		return GetSpellIndexByName("SummonerSmite")
+	elseif GetSpellIndexByName("S5_SummonerSmiteDuel") > -1 then
+		return GetSpellIndexByName("S5_SummonerSmiteDuel")
+	elseif GetSpellIndexByName("S5_SummonerSmitePlayerGanker") > -1 then
+		return GetSpellIndexByName("S5_SummonerSmitePlayerGanker")
+	end
+	return -1
+end
+
+function Ezreal:GetSmiteDamage(target)
+	if self:GetIndexSmite() > -1 then
+		if GetType(target) == 0 then
+			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmitePlayerGanker" then
+				return 20 + 8*myHero.Level;
+			end
+			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmiteDuel" then
+				return 54 + 6*myHero.Level;
+			end
+
+		end
+		local DamageSpellSmiteTable = {390, 410, 430, 450, 480, 510, 540, 570, 600, 640, 680, 720, 760, 800, 850, 900, 950, 1000}
+		return DamageSpellSmiteTable[myHero.Level]
+	end
+	return 0
+end
+
+function Ezreal:LogicSmiteJungle()
+	for i, minions in ipairs(self:JungleTbl()) do
+        if minions ~= 0 then
+            local jungle = GetUnit(minions)
+            if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
+                (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
+
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.Use_Smite_Red then
+                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                end
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Blue" and self.Use_Smite_Blue then
+                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                end
+
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_RiftHerald" and self.Use_Smite_Baron then
+                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                end
+
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Baron" and self.Use_Smite_Baron then
+                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                end
+
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and self.Use_Smite_Small_Jungle then
+                	if jungle.CharName == "SRU_Razorbeak" or jungle.CharName == "SRU_Murkwolf" or jungle.CharName == "SRU_Gromp" or jungle.CharName == "SRU_Krug" then
+                    	CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                	end
+                end
+
+                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.Use_Smite_Dragon then
+                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
+                end
+            end
+        end
+    end
+
+    local Target = GetTargetSelector(GetTrueAttackRange(), 1)
+	if Target ~= 0 then
+		if (GetDistance(Target) < GetTrueAttackRange() and GetDistance(Target) > 300  or (self:IsImmobileTarget(Target))) then
+			if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo and GetKeyPress(self.Combo) > 0 then
+				CastSpellTarget(Target, self:GetIndexSmite())
+			end
+		end
+	end
+
+	local TargetSmite = GetTargetSelector(650, 1)
+	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.Use_Smite_Kill_Steal then
+		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
+			CastSpellTarget(TargetSmite, self:GetIndexSmite())
+		end
+	end
+end
+
+function Ezreal:LaneClear()
+	if CanCast(_Q) and (GetType(GetTargetOrb()) == 3) and self.jungQ then
+		if (GetObjName(GetTargetOrb()) ~= "PlantSatchel" and GetObjName(GetTargetOrb()) ~= "PlantHealth" and GetObjName(GetTargetOrb()) ~= "PlantVision") then
+			target = GetUnit(GetTargetOrb())
+	    	local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		end
+	end
 end
 
 function Ezreal:OnUpdate()
@@ -318,7 +448,7 @@ function Ezreal:LogicQ()
 				if (qDmg + wDmg > target.HP) and IsValidTarget(target.Addr, self.Q.range - 150) then
 					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 	    			local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-			    	if Collision == 0 then
+			    	if Collision == 0 and HitChance >= 2 then
 			        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			        	self.OverKill = GetTimeGame()
 			        	return
@@ -344,9 +474,13 @@ function Ezreal:LogicQ()
 	    		end
 	    	end 
 	    end
+	    --__PrintTextGame(tostring(GetItemID(1)).."--"..tostring(GetItemByID(3070)))
 	--elseif self:LagFree(2) then
 		if myHero.MP > 30 and GetKeyPress(self.Lane_Clear) > 0 then
 			self:farmQ();
+		elseif self.stack and CanCast(_Q) and not myHero.HasBuff("recall") and myHero.MP > myHero.MaxMP * 0.95 and (GetItemByID(3070) > 0 or GetItemByID(3004) > 0 or GetItemByID(3003) > 0) and CountEnemyChampAroundObject(myHero.Addr, 1000) == 0 then
+			pos = Vector(myHero):Extended(GetMousePos(), 500)
+			CastSpellToPos(pos.x, pos.z, _Q)
 		end
     --end
 
@@ -492,7 +626,7 @@ function Ezreal:AutoQW()
 				if DashPosition ~= nil then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
 			    	if GetDistance(DashPosition) <= self.Q.range and Collision == 0 then
-			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+			    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 			    	end
 				end			
 			end

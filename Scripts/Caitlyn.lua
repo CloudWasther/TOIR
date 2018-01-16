@@ -15,7 +15,7 @@ function Caitlyn:__init()
 	vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
+    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 
     self.Q = Spell(_Q, 1250) -- catlyn
@@ -248,7 +248,7 @@ function Caitlyn:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravit
 	if unit.IsMe then
 		local myLastPath = endPos
 	end
-	local TargetE = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetE = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		if unit.NetworkId == unit.NetworkId then
@@ -302,7 +302,7 @@ function Caitlyn:OnTick()
 		end
 	end
 
-    local TargetR = self.menu_ts:GetTarget(self.RRange)
+    local TargetR = GetTargetSelector(self.RRange, 1)
     if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.RRange) then
     	CastSpellTarget(TargetR, _R)
     end
@@ -371,7 +371,7 @@ function Caitlyn:GetRealDistance(target)
 end
 
 function Caitlyn:LogicQ()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if IsValidTarget(TargetQ, self.Q.range - 150) then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -458,7 +458,7 @@ end
 
 function Caitlyn:LogicE()
 	if self.autoE then
-		local TargetE = self.menu_ts:GetTarget(self.E.range - 300)
+		local TargetE = GetTargetSelector(self.E.range - 300, 0)
 		if IsValidTarget(TargetE, self.E.range) then
 			target = GetAIHero(TargetE)
 			local positionT = Vector(myHero) - (Vector(target) - Vector(myHero))
@@ -564,7 +564,7 @@ function Caitlyn:ValidUlt(unit)
 end
 
 function Caitlyn:AutoQEW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range  - 150)
+	local TargetW = GetTargetSelector(self.W.range  - 150, 1)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, true)
@@ -578,7 +578,7 @@ function Caitlyn:AutoQEW()
 		end
 	end
 
-	--[[local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	--[[local TargetQ = GetTargetSelector(self.Q.range)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
@@ -591,7 +591,7 @@ function Caitlyn:AutoQEW()
 		end
 	end]]
 
-	--[[local TargetE = self.menu_ts:GetTarget(self.E.range)
+	--[[local TargetE = GetTargetSelector(self.E.range)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
@@ -608,7 +608,7 @@ function Caitlyn:AutoQEW()
 end
 
 function Caitlyn:KillSteal()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if TargetQ ~= nil and IsValidTarget(TargetW, self.Q.range) and CanCast(_Q) and self.qks then
 		targetQ = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(targetQ, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)

@@ -15,7 +15,7 @@ function Blitzcrank:__init()
 	vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
+    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 
 	self.Q = Spell(_Q, 1075)
@@ -156,7 +156,7 @@ function Blitzcrank:OnTick()
 	self:KillSteal()
 
 	if not self.Q:IsReady() and GetTimeGame() - self.grabW > 2 then
-		local targetQ = self.menu_ts:GetTarget(self.Q.range) --orbwalk:getTarget(self.Q.range)
+		local targetQ = GetTargetSelector(self.Q.range, 0) --orbwalk:getTarget(self.Q.range)
 		if GetBuffByName(targetQ, "rocketgrab2") ~= 0 and IsValidTarget(targetQ, self.Q.range) then
 			self.grabS = self.grabS + 1
 			self.grabW = GetTimeGame()
@@ -204,7 +204,7 @@ function Blitzcrank:OnDraw()
 		end
 	end]]
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	if IsValidTarget(TargetQ) and CanCast(_Q) and (GetDistance(TargetQ) <= self.Q.range) then
 		Target = GetAIHero(TargetQ)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -250,7 +250,7 @@ function Blitzcrank:OnProcessSpell(unit, spell)
 end
 
 function Blitzcrank:autoQtoEndDash()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	local TargetDashing, CanHitDashing, DashPosition
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
@@ -286,7 +286,7 @@ function Blitzcrank:KillSteal()
 end
 
 function Blitzcrank:ComboMode()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -317,7 +317,7 @@ function Blitzcrank:ComboMode()
 			end
 		end
 	end
-	local TargetE = self.menu_ts:GetTarget(self.E.range)
+	local TargetE = GetTargetSelector(self.E.range, 1)
 	if self.menu_Combo_E then
 		if CanCast(_E) and IsValidTarget(TargetE, self.E.range) then
 			if GetDistance(TargetE) <= self.E.range then
@@ -326,7 +326,7 @@ function Blitzcrank:ComboMode()
 		end
 	end
 
-	local TargetR = self.menu_ts:GetTarget(self.R.range - 150)
+	local TargetR = GetTargetSelector(self.R.range - 150, 0)
 	if self.menu_Combo_R then
 		if CanCast(_R) and IsValidTarget(TargetR, self.R.range - 100) then
 			if GetDistance(TargetR) <= self.R.range then

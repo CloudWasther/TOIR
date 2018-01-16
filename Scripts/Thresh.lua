@@ -1,4 +1,6 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
+--IncludeFile("Lib\\OrbNew.lua")
+--IncludeFile("Lib\\AllClass.lua")
 
 Thresh = class()
 
@@ -13,7 +15,7 @@ function Thresh:__init()
 	vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
+    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 	--menuInstSep.setValue("Thresh Magic")
 
@@ -157,9 +159,9 @@ function Thresh:OnTick()
 
 	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
-
-	if GetKeyPress(self.Combo) > 0 then
-		self:ComboMode()
+	
+	if GetKeyPress(self.Combo) > 0 then			
+		self:ComboMode()	
 	end
 
 	if self.menu_Combo_QendDash then
@@ -169,7 +171,7 @@ function Thresh:OnTick()
 	self:KillSteal()
 
 	if not self.Q:IsReady() and GetTimeGame() - self.grabW > 2 then
-		local targetQ = self.menu_ts:GetTarget(self.Q.range) --orbwalk:getTarget(self.Q.range)
+		local targetQ = GetTargetSelector(self.Q.range, 0) --orbwalk:getTarget(self.Q.range)
 		if GetBuffByName(targetQ, "ThreshQ") ~= 0 and IsValidTarget(targetQ, self.Q.range) then
 			self.grabS = self.grabS + 1
 			self.grabW = GetTimeGame()
@@ -224,7 +226,7 @@ function Thresh:OnDraw()
 end
 
 function Thresh:Qstat(t)
-	target = t or self.menu_ts:GetTarget(self.Q.range - 150)
+	target = t or GetTargetSelector(self.Q.range - 150, 0)
 	if not self.Q:IsReady() then
 		return false
 	end
@@ -278,7 +280,7 @@ function Thresh:IsUnderAllyTurret(pos)
 end
 
 function Thresh:autoQtoEndDash()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	local TargetDashing, CanHitDashing, DashPosition
 	if CanCast(_Q) and IsValidTarget(TargetQ) then
     	Target = GetAIHero(TargetQ)
@@ -293,7 +295,7 @@ function Thresh:autoQtoEndDash()
 	    end
 	end
 
-	local TargetE = self.menu_ts:GetTarget(self.E.range - 150)
+	local TargetE = GetTargetSelector(self.E.range - 150, 0)
 	if CanCast(_E) and IsValidTarget(TargetE) then
     	Target = GetAIHero(TargetE)
 	    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.E.delay, self.E.width, self.E.speed, myHero)
@@ -338,7 +340,7 @@ function Thresh:KillSteal()
 end
 
 function Thresh:Push(t)
-	target = t or self.menu_ts:GetTarget(self.E.range)
+	target = t or GetTargetSelector(self.E.range, 0)
 	hero = GetAIHero(target)
 	if(hero ~= nil) then
 		CastSpellToPos(hero.x,hero.z, _E)
@@ -346,7 +348,7 @@ function Thresh:Push(t)
 end
 
 function Thresh:Pull(t)
-	target = t or self.menu_ts:GetTarget(self.E.range)
+	target = t or GetTargetSelector(self.E.range, 0)
 	if(target ~= nil) then
 		local targetPos = Vector(GetPosX(target), GetPosY(target), GetPosZ(target))
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -357,7 +359,7 @@ function Thresh:Pull(t)
 end
 
 function Thresh:ComboMode()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	if self.menu_Combo_Q then
 		if TargetQ ~= nil then --and (GetDistance(TargetQ) < self.Q.range - 150  or self:IsImmobileTarget(TargetQ)) and self.menu_Combo_Q then
 		--__PrintTextGame(tostring(self:Qstat(TargetQ)))
@@ -372,7 +374,7 @@ function Thresh:ComboMode()
 		CastSpellTarget(myHero.Addr, _Q)
 	end
 
-	local TargetE = self.menu_ts:GetTarget(self.E.range - 150)
+	local TargetE = GetTargetSelector(self.E.range - 150, 0)
 	if CanCast(_E) and GetKeyPress(self.menu_Combo_Epull) > 0 and IsValidTarget(TargetE, self.E.range) then
 		self:Pull(TargetE)
 	end
@@ -380,7 +382,7 @@ function Thresh:ComboMode()
 		self:Push(TargetE)
 	end
 
-	local TargetR = self.menu_ts:GetTarget(self.R.range - 150)
+	local TargetR = GetTargetSelector(self.R.range - 150, 0)
 	if CanCast(_R) and self:CountEnemiesInRange(myHero.Addr, self.R.range) >= self.menu_Combo_Reneme and IsValidTarget(TargetR, self.R.range) then
 		CastSpellTarget(myHero.Addr, _R)
 	end
@@ -467,7 +469,7 @@ function Thresh:autoW()
 	local posW1 = allyPos:Extended(myHeroPos, 300)
 	local posW2 = myHeroPos:Extended(allyPos, self.W.range - 100)
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range)
+	local TargetQ = GetTargetSelector(self.Q.range, 0)
 	if self:Qstat(TargetQ) and CanCast(_W) then
 		if GetDistance(allyPos) < self.W.range + 100 then
 			CastSpellToPos(posW1.x, posW1.z, _W)

@@ -13,7 +13,7 @@ function Graves:__init()
 	self.vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
+    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
     
 
@@ -306,7 +306,7 @@ function Graves:LogicE()
 end
 
 function Graves:LogicQ()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -326,7 +326,7 @@ function Graves:LogicQ()
 end
 
 function Graves:LogicW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -354,7 +354,7 @@ function Graves:LogicW()
 end
 
 function Graves:LogicR()
-	local TargetR = self.menu_ts:GetTarget(self.R.range)
+	local TargetR = GetTargetSelector(self.R.range, 1)
 	if CanCast(_R) and TargetR ~= 0 then
 		target = GetAIHero(TargetR)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
@@ -366,7 +366,7 @@ function Graves:LogicR()
 end
 
 function Graves:AutoQW()
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -387,7 +387,7 @@ function Graves:AutoQW()
 		end
 	end
 
-	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -403,7 +403,7 @@ function Graves:AutoQW()
 end
 
 function Graves:KillSteal()
-	local TargetR = self.menu_ts:GetTarget(self.R.range)
+	local TargetR = GetTargetSelector(self.R.range, 1)
 	if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) and self.Use_R_Kill_Steal then
 		targetR = GetAIHero(TargetR)
 
@@ -413,7 +413,7 @@ function Graves:KillSteal()
 		end
 	end
 
-	local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if TargetQ ~= nil and IsValidTarget(TargetQ, self.Q.range) and CanCast(_Q) and self.Auto_Q_Kill_Steal then
 		targetQ = GetAIHero(TargetQ)
 
@@ -423,7 +423,7 @@ function Graves:KillSteal()
 		end
 	end
 
-	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if TargetW ~= nil and IsValidTarget(TargetW, self.W.range) and CanCast(_W) and self.Auto_W_Kill_Steal then
 		targetW = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetW, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -432,7 +432,7 @@ function Graves:KillSteal()
 		end
 	end
 
-	local TargetSmite = self.menu_ts:GetTarget(650)
+	local TargetSmite = GetTargetSelector(650, 1)
 	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.Use_Smite_Kill_Steal then
 		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
 			CastSpellTarget(TargetSmite, self:GetIndexSmite())

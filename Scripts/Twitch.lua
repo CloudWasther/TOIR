@@ -1,4 +1,6 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
+IncludeFile("Lib\\OrbCustom.lua")
+--IncludeFile("Lib\\AntiGapCloser.lua")
 
 Twitch = class()
 
@@ -15,7 +17,7 @@ function Twitch:__init()
 	vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
+    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 	self.Q = Spell(_Q, GetTrueAttackRange())
     self.W = Spell(_W, 1050)
@@ -95,7 +97,7 @@ function Twitch:OnDrawMenu()
 		end
 		if Menu_Begin("Setting W") then
 			self.menu_Combo_W = Menu_Bool("Auto Use W Combo", self.menu_Combo_W, self.menu)
-			self.menu_Combo_Wmode = Menu_ComboBox("W Mode", self.menu_Combo_Wmode, "Normal\0Behind Target\0Front Target\0\0", self.menu)
+			self.menu_Combo_Wmode = Menu_ComboBox("W Mode", self.menu_Combo_Wmode, "Normal\0Behind Target\0Front Target\0\0", self.menu)	
 			self.menu_Combo_Wgap = Menu_Bool("Use W Anti GapClose", self.menu_Combo_Wgap, self.menu)
 			self.menu_Combo_WendDash = Menu_Bool("Use W End Dash", self.menu_Combo_WendDash, self.menu)
 			self.menu_Combo_WCount = Menu_SliderInt("Auto W if Hit", self.menu_Combo_WCount, 1, 5, self.menu)
@@ -109,7 +111,7 @@ function Twitch:OnDrawMenu()
 			self.menu_Combo_EKsBlue = Menu_Bool("Auto E KS Blue", self.menu_Combo_EKsBlue, self.menu)
 			self.menu_Combo_EKsRed = Menu_Bool("Auto E KS Red", self.menu_Combo_EKsRed, self.menu)
 			self.menu_Combo_EKsDragon = Menu_Bool("Auto E KS Dragon", self.menu_Combo_EKsDragon, self.menu)
-			self.menu_Combo_EKsBaron = Menu_Bool("Auto E KS Baron", self.menu_Combo_EKsBaron, self.menu)
+			self.menu_Combo_EKsBaron = Menu_Bool("Auto E KS Baron", self.menu_Combo_EKsBaron, self.menu)					
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
@@ -190,7 +192,7 @@ function Twitch:OnTick()
 	self:LogicSmiteJungle()
 
 	if GetKeyPress(self.Combo) > 0 then
-
+		
 		self:LogicQ()
 		self:LogicW()
 		self:LogicE()
@@ -295,7 +297,7 @@ function Twitch:LogicQ()
 end
 
 function Twitch:LogicW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetW = GetTargetSelector(self.W.range - 150, 1)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -350,7 +352,7 @@ function Twitch:AutoQ()
 end
 
 function Twitch:AutoW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetW = GetTargetSelector(self.W.range - 150, 1)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -367,13 +369,13 @@ end
 
 function Twitch:AutoE()
 	local target = self:GetTargetBuffE(self.E.range)
-	if target ~= nil then
-		targetE = GetAIHero(target)
+	if target ~= nil then		
+		targetE = GetAIHero(target)	
 		--__PrintTextGame(tostring(self:GetStackBuffE(target)))
 		--if self:GetStackBuffE(target) >= self.menu_Combo_ECount and CanCast(_E) then
 			--CastSpellTarget(myHero.Addr, _E)
 		--end
-
+		
 		if IsValidTarget(targetE.Addr, self.E.range) and self:GetStackBuffE(target) >= self.menu_Combo_EAuto and GetDistance(targetE.Addr) >= self.E.range * 0.80 and CanCast(_E) then
 			--__PrintTextGame(tostring(GetDistance(target)))
 			CastSpellTarget(myHero.Addr, _E)
@@ -450,13 +452,13 @@ function Twitch:KillSteal()
 	for i,hero in pairs(GetEnemyHeroes()) do
         if hero~= 0 and IsValidTarget(hero, self.E.range) and GetBuffByName(hero, "TwitchDeadlyVenom") ~= 0 then
         	target = GetAIHero(hero)
-        	if self:RealEDamage(target) > target.HP and CanCast(_E) and self.menu_Combo_EKs then
+        	if self:RealEDamage(target) > target.HP and CanCast(_E) and self.menu_Combo_EKs then        		
         		CastSpellTarget(myHero.Addr, _E)
         	end
         end
     end
 
-	local TargetSmite = self.menu_ts:GetTarget(650)
+	local TargetSmite = GetTargetSelector(650, 1)
 	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.menu_Combo_Smiteks then
 
 		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
@@ -471,11 +473,11 @@ function Twitch:OnProcessSpell(unit, spell)
 end
 
 function Twitch:ReCall()
-	if GetKeyPress(self.menu_Combo_QRecall) > 0 then
+	if GetKeyPress(self.menu_Combo_QRecall) > 0 then		
 		if self.Q:IsReady() then
-			CastSpellTarget(myHero.Addr, _Q)
+			CastSpellTarget(myHero.Addr, _Q)			
 			DelayAction(function() CastSpellTarget(myHero.Addr, self:GetIndexRecall()) end, 0.5)
-		end
+		end 
 	end
 end
 
@@ -490,7 +492,7 @@ function Twitch:OnDraw()
 		if self.menu_Draw_R and self.R:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,0,0,255))
 		end
-	else
+	else		
 		if self.menu_Draw_W then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.W.range, Lua_ARGB(255,255,0,0))
 		end
@@ -504,12 +506,12 @@ function Twitch:OnDraw()
 	if self.menu_Draw_Qrange then
 		DrawCircleGame(myHero.x , myHero.y, myHero.z, self:RemainQ() * myHero.MoveSpeed, Lua_ARGB(255, 0, 255, 10))
 	end
-
+	
 	if GetKeyPress(self.menu_Combo_QRecall) > 0 then
 		if self.Q:IsReady() then
-			CastSpellTarget(myHero.Addr, _Q)
+			CastSpellTarget(myHero.Addr, _Q)			
 			DelayAction(function() CastSpellTarget(myHero.Addr, self:GetIndexRecall()) end, 0.5)
-		end
+		end 
 	end
 
 	local a,b = WorldToScreen(myHero.x, myHero.y, myHero.z)
@@ -535,7 +537,7 @@ function Twitch:OnDraw()
 	--__PrintTextGame(tostring(CastSpellTarget(myHero.Addr, self:GetIndexRecall())))
 
 
-	--[[local TargetW = self.menu_ts:GetTarget(self.W.range)
+	--[[local TargetW = GetTargetSelector(self.W.range)
 	target = GetAIHero(TargetW)
 	--local aa = (GetBuffCount(target.Addr, "TwitchDeadlyVenom") * ({15, 20, 25, 30, 35})[myHero.Level] + 0.2 * myHero.MagicDmg + 0.25 * myHero.TotalDmg) + ({20, 35, 50, 65, 80})[myHero.Level]
     --{Slot = "E", Stage = 2, DamageType = 1, Damage = function(source, target, level) return ({15, 20, 25, 30, 35})[level] + 0.2 * source.MagicDmg + 0.25 * source.TotalDmg + ({20, 35, 50, 65, 80})[level] end},

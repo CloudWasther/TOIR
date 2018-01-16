@@ -13,7 +13,7 @@ function Ezreal:__init()
 	vpred = VPrediction(true)
 
 	--TS
-    self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
+    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 
     self.Q = Spell(_Q, 1300)
@@ -239,7 +239,7 @@ function Ezreal:OnTick()
 	end
 
 	if --[[self:LagFree(4) and]] CanCast(_R) then
-		local TargetR = self.menu_ts:GetTarget(self.R.range)
+		local TargetR = GetTargetSelector(self.R.range, 1)
 	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
 	    	CastSpellTarget(TargetR, _R)
 	    end
@@ -296,7 +296,7 @@ function Ezreal:LogicQ()
     	--end
 
     	if GetKeyPress(self.Combo) > 0 and myHero.MP > 130 then
-    		local TargetQ = self.menu_ts:GetTarget(self.Q.range - 150)
+    		local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 			if CanCast(_Q) and TargetQ ~= 0 then
 				target = GetAIHero(TargetQ)
     			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
@@ -375,7 +375,7 @@ function Ezreal:CanHarras()
 end
 
 function Ezreal:LogicW()
-	local TargetW = self.menu_ts:GetTarget(self.W.range - 150)
+	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
@@ -408,7 +408,7 @@ function Ezreal:LogicW()
 end
 
 function Ezreal:LogicE()
-	local TargetE = self.menu_ts:GetTarget(1300)
+	local TargetE = GetTargetSelector(1300, 0)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		if self.EAntiMelee then

@@ -12,25 +12,25 @@ function Baseult:__init()
     ["Ashe"] = {
       Delay = 0.25,
       MissileSpeed = 1600,
-      Damage = function(target) return GetDamage("R", target, 1) - 150 end
+      Damage = function(target) return GetDamage("R", target, 1) end
     },
 
     ["Draven"] = {
       Delay = 0.4,
       MissileSpeed = 2000,
-      Damage = function(target) return GetDamage("R", target, 1) - 150 end
+      Damage = function(target) return GetDamage("R", target, 1) end
     },
 
     ["Ezreal"] = {
       Delay = 1,
       MissileSpeed = 2000,
-      Damage = function(target) return GetDamage("R", target, 1) - 150 end
+      Damage = function(target) return GetDamage("R", target, 1) end
     },
 
     ["Jinx"] = {
       Delay = 0.6,
       MissileSpeed = 1700,
-      Damage = function(target) return GetDamage("R", target, 1) - 150 end
+      Damage = function(target) return GetDamage("R", target, 1) end
     }
   }
   
@@ -107,6 +107,9 @@ function Baseult:OnDraw()
   --FilledRectD3DX(self.x.getValue() + 1, self.y.getValue() + 1, 298, 14, Lua_ARGB(100,0,0,0))
   --DrawBorderBoxD3DX(self.x.getValue(), self.y.getValue(), 300, 15, 1, Lua_ARGB(100,255,255,0))
   --DrawTextD3DX(self.x.getValue() + 300, self.y.getValue() - 15, "szText", Lua_ARGB(255,255,0,0), 1)
+  if self.enemySpawnPos ~= nil then
+    DrawCircleGame(self.enemySpawnPos.x , self.enemySpawnPos.y, self.enemySpawnPos.z, 300, Lua_ARGB(255,0,0,255))
+  end
 end
 
 function Baseult:OnTick()
@@ -114,6 +117,9 @@ function Baseult:OnTick()
   if target ~= 0 then
     --targeta = GetAIHero(target)    
     --__PrintTextGame(tostring(GetDamage("R", targeta)).."--"..tostring(self:Collision(targeta)))
+    --if targeta.HP < GetDamage("R", targeta) then
+      --__PrintTextGame("CAN KILL by R")
+    --end
     --self:Collision(targeta)
     --local targetPos = Vector(GetPosX(target), GetPosY(target), GetPosZ(target))
     --local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)

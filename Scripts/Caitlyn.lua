@@ -458,7 +458,7 @@ end
 
 function Caitlyn:LogicE()
 	if self.autoE then
-		local TargetE = self.menu_ts:GetTarget(self.E.range - 200)
+		local TargetE = self.menu_ts:GetTarget(self.E.range - 300)
 		if IsValidTarget(TargetE, self.E.range) then
 			target = GetAIHero(TargetE)
 			local positionT = Vector(myHero) - (Vector(target) - Vector(myHero))
@@ -510,7 +510,7 @@ function Caitlyn:LogicR()
 		if hero ~= nil then
 			target = GetAIHero(hero)
 			if IsValidTarget(target.Addr, self.RRange) and self:ValidUlt(target) then
-				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 300 and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 and CountEnemyChampAroundObject(target.Addr, 400) == 0 then
+				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 300 and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 and CountEnemyChampAroundObject(target.Addr, 600) == 0 then
 					cast = true
 					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.R.delay, self.R.width, self.RRange, self.R.speed, myHero, false)
 					CastSpellTarget(target.Addr, _R)

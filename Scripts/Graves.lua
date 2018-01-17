@@ -24,7 +24,7 @@ function Graves:__init()
     self.R2 = Spell(_R, 1800)
     self.Q:SetSkillShot(0.25, 2100, 100, true)
     self.W:SetSkillShot(0.25, 1500, 300, true)
-    self.E:SetSkillShot()
+    self.E:SetTargetted()
     self.R:SetSkillShot(0.25, 2100, 100, true)
     self.R2:SetSkillShot(0.25, 2100, 100, true)
 
@@ -216,7 +216,7 @@ function Graves:LaneClear()
 	if CanCast(_Q) and (GetType(GetTargetOrb()) == 3) and self.jungQ then
 		if (GetObjName(GetTargetOrb()) ~= "PlantSatchel" and GetObjName(GetTargetOrb()) ~= "PlantHealth" and GetObjName(GetTargetOrb()) ~= "PlantVision") then
 			target = GetUnit(GetTargetOrb())
-	    	local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+	    	local CastPosition, HitChance, Position = self:vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		end
 	end

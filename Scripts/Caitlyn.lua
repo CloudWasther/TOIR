@@ -102,6 +102,7 @@ function Caitlyn:MenuValueDefault()
 	self.wendDas = self:MenuBool("W End Dash", true)
 
 	self.autoE = self:MenuBool("Auto E", true)
+	self.aio = self:MenuBool("Try E - W - Q combo", true)
 	self.Ehitchance = self:MenuBool("Auto E dash and immobile target", true)
 	self.harrasEQ = self:MenuBool("TRY E + Q", true)
 	self.EQks = self:MenuBool("Ks E + Q + AA", true)
@@ -148,8 +149,9 @@ function Caitlyn:OnDrawMenu()
 		end
 
 		if Menu_Begin("Setting E") then
-			self.autoE = Menu_Bool("Auto E", self.autoE, self.menu)
+			self.autoE = Menu_Bool("Auto E", self.autoE, self.menu)			
 			self.Ehitchance = Menu_Bool("Auto E dash and immobile target", self.Ehitchance, self.menu)
+			self.aio = Menu_Bool("Try E - W - Q combo", self.aio, self.menu)
 			self.harrasEQ = Menu_Bool("TRY E + Q", self.harrasEQ, self.menu)
 			self.EQks = Menu_Bool("Ks E + Q + AA", self.EQks, self.menu)
 			self.useE = Menu_KeyBinding("Dash E HotKey Smartcast", self.useE, self.menu)
@@ -458,9 +460,10 @@ end
 
 function Caitlyn:LogicE()
 	if self.autoE then
-		local TargetE = GetTargetSelector(self.E.range - 300, 0)
+		local TargetE = GetTargetSelector(self.E.range - 500, 0)
 		if IsValidTarget(TargetE, self.E.range) then
 			target = GetAIHero(TargetE)
+			myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 			local positionT = Vector(myHero) - (Vector(target) - Vector(myHero))
 			--local targetPos = Vector(target.x, target.y, target.z)
 			--pos = myHero::Extended(targetPos, 400)
@@ -473,6 +476,11 @@ function Caitlyn:LogicE()
 					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 				elseif GetKeyPress(self.Combo) > 0 and self.harrasEQ and myHero.MP > 230 and Collision == 0 then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+					if self.aio and CanCast(_W) and CanCast(_Q) then
+		      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+						DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
+						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+					end
 				end
 			end
 			if myHero.MP > 170 then
@@ -482,15 +490,30 @@ function Caitlyn:LogicE()
 						local CollisionDash = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.E.width, self.E.range, 65)
 						if CollisionDash == 0 then
 							CastSpellToPos(DashPosition.x, DashPosition.z, _E)
+							if self.aio and CanCast(_W) and CanCast(_Q) then
+				      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+								DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
+								DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+							end
 						end
 					end					
 				end
 				if myHero.HP < myHero.MaxHP * 0.3 then
 					if GetDistance(target.Addr) < 500 and Collision == 0 then
 						CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+						if self.aio and CanCast(_W) and CanCast(_Q) then
+			      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+							DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
+							DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+						end
 					end
 					if CountEnemyChampAroundObject(myHero.Addr, 250) > 0 and Collision == 0 then
 						CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+						if self.aio and CanCast(_W) and CanCast(_Q) then
+			      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+							DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
+							DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+						end
 					end
 				end
 			end
@@ -510,7 +533,7 @@ function Caitlyn:LogicR()
 		if hero ~= nil then
 			target = GetAIHero(hero)
 			if IsValidTarget(target.Addr, self.RRange) and self:ValidUlt(target) then
-				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 300 and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 and CountEnemyChampAroundObject(target.Addr, 600) == 0 then
+				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 1000 and CountEnemyChampAroundObject(myHero.Addr, 1000) == 0 and CountEnemyChampAroundObject(target.Addr, 700) == 0 then
 					cast = true
 					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.R.delay, self.R.width, self.RRange, self.R.speed, myHero, false)
 					CastSpellTarget(target.Addr, _R)
@@ -518,42 +541,6 @@ function Caitlyn:LogicR()
 			end
 		end
 	end
-
-	--[[bool cast = false;
-
-            if (Player.UnderTurret(true) && Config.Item("Rturrent", true).GetValue<bool>())
-                return;
-
-
-            foreach (var target in HeroManager.Enemies.Where(target => target.IsValidTarget(R.Range) && Player.Distance(target.Position) > Config.Item("Rrange", true).GetValue<Slider>().Value && target.CountEnemiesInRange(Config.Item("Rcol", true).GetValue<Slider>().Value) == 1 && target.CountAlliesInRange(500) == 0 && OktwCommon.ValidUlt(target)))
-            {
-                if (OktwCommon.GetKsDamage(target, R) > target.Health)
-                {
-                    cast = true;
-                    PredictionOutput output = R.GetPrediction(target);
-                    Vector2 direction = output.CastPosition.To2D() - Player.Position.To2D();
-                    direction.Normalize();
-                    List<AIHeroClient> enemies = HeroManager.Enemies.Where(x => x.IsValidTarget()).ToList();
-                    foreach (var enemy in enemies)
-                    {
-                        if (enemy.BaseSkinName == target.BaseSkinName || !cast)
-                            continue;
-                        PredictionOutput prediction = R.GetPrediction(enemy);
-                        Vector3 predictedPosition = prediction.CastPosition;
-                        Vector3 v = output.CastPosition - Player.ServerPosition;
-                        Vector3 w = predictedPosition - Player.ServerPosition;
-                        double c1 = Vector3.Dot(w, v);
-                        double c2 = Vector3.Dot(v, v);
-                        double b = c1 / c2;
-                        Vector3 pb = Player.ServerPosition + ((float)b * v);
-                        float length = Vector3.Distance(predictedPosition, pb);
-                        if (length < (Config.Item("Rcol", true).GetValue<Slider>().Value + enemy.BoundingRadius) && Player.Distance(predictedPosition) < Player.Distance(target.ServerPosition))
-                            cast = false;
-                    }
-                    if (cast)
-                        R.CastOnUnit(target);
-                }
-            }]]
 end
 
 function Caitlyn:ValidUlt(unit)
@@ -573,7 +560,7 @@ function Caitlyn:AutoQEW()
 	    if DashPosition ~= nil then
 	    	if GetDistance(DashPosition) <= self.W.range and self.wendDas then
 	    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
-	    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
+	    		DelayAction(function() CastSpellToPos(DashPosition.x, DashPosition.z, _Q) end, 0.5)  		
 	    	end
 		end
 	end
@@ -675,6 +662,7 @@ function Caitlyn:OnProcessSpell(unit, spell)
     end
 
     if unit.IsMe then
+    	--__PrintTextGame(spell.Name)
     	if spell.Name == "CaitlynEntrapment" and self.forceW and myHero.MP > 110 then
     		myHeroDestPos = Vector(GetMousePos().x, GetMousePos().y, GetMousePos().z)
     		if GetDistance(myHeroDestPos) < self.W.range then

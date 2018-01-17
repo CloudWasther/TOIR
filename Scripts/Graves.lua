@@ -44,6 +44,7 @@ function Graves:MenuValueDefault()
 	self.Auto_Q_End_Dash = self:MenuBool("Auto Q End Dash", true)
 	self.Auto_Q_If_Wall = self:MenuBool("Auto Q If Wall", true)
 	self.Auto_Q_Kill_Steal = self:MenuBool("Auto Q Kill Steal", true)
+	self.jungQ = self:MenuBool("Jungle Q", true)
 
 	self.Use_Combo_W = self:MenuBool("Use Combo W", false)
 	self.Use_W_Anti_GapClose = self:MenuBool("Use W Anti GapClose", true)
@@ -89,6 +90,7 @@ function Graves:OnDrawMenu()
 			self.Auto_Q_End_Dash = Menu_Bool("Auto Q End Dash", self.Auto_Q_End_Dash, self.menu)
 			self.Auto_Q_If_Wall = Menu_Bool("Auto Q If Wall", self.Auto_Q_If_Wall, self.menu)
 			self.Auto_Q_Kill_Steal = Menu_Bool("Auto Q Kill Steal", self.Auto_Q_Kill_Steal, self.menu)
+			self.jungQ = Menu_Bool("Jungle Q", self.jungQ, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting W") then
@@ -195,6 +197,10 @@ function Graves:OnTick()
 
 	self:AntiGapCloser()
 
+	if GetKeyPress(self.Lane_Clear) > 0 then
+		self:LaneClear()
+	end
+
 	if GetKeyPress(self.Combo) > 0 then	
 		self:LogicQ()
 		self:LogicW()
@@ -206,7 +212,15 @@ function Graves:OnTick()
 	end
 end
 
-
+function Graves:LaneClear()
+	if CanCast(_Q) and (GetType(GetTargetOrb()) == 3) and self.jungQ then
+		if (GetObjName(GetTargetOrb()) ~= "PlantSatchel" and GetObjName(GetTargetOrb()) ~= "PlantHealth" and GetObjName(GetTargetOrb()) ~= "PlantVision") then
+			target = GetUnit(GetTargetOrb())
+	    	local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		end
+	end
+end
 
 function Graves:JungleTbl()
     GetAllUnitAroundAnObject(myHero.Addr, 2000)

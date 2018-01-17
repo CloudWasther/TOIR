@@ -221,7 +221,7 @@ function Ezreal:OnAfterAttack(unit, target)
 		for i,hero in pairs(GetAllyHeroes()) do
 			if hero ~= nil then
 				ally = GetAIHero(hero)
-				if not ally.IsMe and GetDistance(ally.Addr) < 600 then
+				if not ally.IsMe and not ally.IsDead and GetDistance(ally.Addr) < 600 then
 					CastSpellToPos(ally.x, ally.z, _W)
 				end
 			end
@@ -468,7 +468,7 @@ function Ezreal:LogicQ()
 	    		if IsValidTarget(target.Addr, self.Q.range - 150) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and myHero.MP > self.HarassManaQ and self:CanHarras() then
 	    			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 			    	local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-					if Collision == 0 then
+					if Collision == 0 and HitChance >= 2 then
 					    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 					end
 	    		end

@@ -27,39 +27,53 @@ function Blitzcrank:__init()
     self.E:SetActive()
     self.R:SetActive()
 
-	Callback.Add("Tick", function(...) self:OnTick(...) end)
-    Callback.Add("Draw", function(...) self:OnDraw(...) end)
-    Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-
-     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
-
-    self:MenuValueDefault()
-
+    self.ts_prio = {}
     self.grab = 0
 	self.grabS = 0
 	self.grabW = 0
 	self.posEndDash = Vector(0, 0, 0)
 	self.DurationEx = 0
-	self.lastCast = 0
+	self.lastCast = 0	
 
 	Blitzcrank:aa()
+
+	Callback.Add("Tick", function(...) self:OnTick(...) end)
+    Callback.Add("Draw", function(...) self:OnDraw(...) end)
+    Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
+    Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
+    Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
+    Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
+
+    self:MenuValueDefault()
 end
 
 function Blitzcrank:MenuValueDefault()
 	self.menu = "Blitzcrank_Magic"
 
 	self.menu_Combo_Q = self:MenuBool("Use Q", true)
+
+	self.maxGrab = self:MenuSliderInt("Max range grab", self.Q.range - 150)
+	self.minGrab = self:MenuSliderInt("Min range grab", 250)
 	self.menu_Combo_QendDash = self:MenuBool("Auto Q End Dash", true)
 	self.menu_Combo_Qinterrup = self:MenuBool("Use Q Interrup", true)
 	self.menu_Combo_Qks = self:MenuBool("Use Q Kill Steal", true)
+	self.qCC = self:MenuBool("Auto Q cc", true)
+	self.qTur = self:MenuBool("Auto Q under turret", true)
+	self.Qspell = self:MenuBool("Q on special spell detection", true)
+	for i, enemy in pairs(GetEnemyHeroes()) do
+        table.insert(self.ts_prio, { Enemy = GetAIHero(enemy), Menu = self:MenuBool(GetAIHero(enemy).CharName, true)})
+    end
 
-	self.menu_Combo_W = self:MenuBool("Auto Use W Combo", true)
+	self.menu_Combo_W = self:MenuBool("Auto Use W Combo", false)
 	self.menu_Combo_Wslow = self:MenuBool("Use W If Slow", true)
 
 	self.menu_Combo_E = self:MenuBool("Enable E", true)
 	self.menu_Combo_Einterrup = self:MenuBool("Use E Interrup", true)
 
 	self.menu_Combo_R = self:MenuBool("Enable R", true)
+	self.rCount = self:MenuSliderInt("Auto R if enemies in range", 3)
+	self.afterAA = self:MenuBool("Auto R after AA", true)
+	self.afterGrab = self:MenuBool("Auto R after grab", true)
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)
 
 
@@ -79,9 +93,18 @@ function Blitzcrank:OnDrawMenu()
 	if Menu_Begin(self.menu) then
 		if Menu_Begin("Setting Q") then
 			self.menu_Combo_Q = Menu_Bool("Use Q", self.menu_Combo_Q, self.menu)
+			self.minGrab = Menu_SliderInt("Min range grab", self.minGrab, 125, self.Q.range - 150, self.menu)
+			self.maxGrab = Menu_SliderInt("Max range grab", self.maxGrab, 125, self.Q.range - 150, self.menu)
+			self.Qspell = Menu_Bool("Q on special spell detection", self.Qspell, self.menu)
 			self.menu_Combo_QendDash = Menu_Bool("Auto Q End Dash", self.menu_Combo_QendDash, self.menu)
 			self.menu_Combo_Qinterrup = Menu_Bool("Use Q Interrup", self.menu_Combo_Qinterrup, self.menu)
 			self.menu_Combo_Qks = Menu_Bool("Use Q Kill Steal", self.menu_Combo_Qks, self.menu)
+			self.qCC = Menu_Bool("Auto Q cc", self.qCC, self.menu)
+			self.qTur = Menu_Bool("Auto Q under turret", self.qTur, self.menu)
+			Menu_Text("Auto Q to target :")
+			for i, enemy in pairs(GetEnemyHeroes()) do
+            	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
+        	end
 			Menu_End()
 		end
 		if Menu_Begin("Setting W") then
@@ -96,6 +119,9 @@ function Blitzcrank:OnDrawMenu()
 		end
 		if Menu_Begin("Setting R") then
 			self.menu_Combo_R = Menu_Bool("Enable R", self.menu_Combo_R, self.menu)
+			self.afterAA = Menu_Bool("Auto R after AA", self.afterAA, self.menu)
+			self.afterGrab = Menu_Bool("Auto R after grab", self.afterGrab, self.menu)
+			self.rCount = Menu_SliderInt("Auto R if enemies in range", self.rCount, 1, 5, self.menu)
 			self.menu_Combo_Rks = Menu_Bool("Use R Kill Steal", self.menu_Combo_Rks, self.menu)
 			Menu_End()
 		end
@@ -145,9 +171,15 @@ function Blitzcrank:OnTick()
 	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
 
-	if GetKeyPress(self.Combo) > 0 then
-		self:ComboMode()
-	end
+			if CanCast(_Q) then
+                self:LogicQ();
+            end
+            if CanCast(_R) then
+                self:LogicR();
+            end
+            if CanCast(_W) then
+                self:LogicW()
+            end
 
 	if self.menu_Combo_QendDash then
 		self:autoQtoEndDash()
@@ -168,6 +200,26 @@ function Blitzcrank:OnTick()
 	end
 end
 
+function Blitzcrank:OnAfterAttack(unit, target)
+	if unit.IsMe then
+		if CanCast(_E) and self.afterAA then			
+    		if target ~= nil and target.Type == 0 then
+    			CastSpellTarget(myHero.Addr, _R)
+    		end
+		end
+	end
+end
+
+function Blitzcrank:OnBeforeAttack(target)
+	--if unit.IsMe then
+		if CanCast(_E) and self.menu_Combo_E then			
+	    	--local orbT = GetTargetOrb()
+    		if target ~= nil and target.Type == 0 then
+    			CastSpellTarget(myHero.Addr, _E)
+    		end
+		end
+	--end
+end
 
 function Blitzcrank:OnDraw()
 
@@ -193,19 +245,8 @@ function Blitzcrank:OnDraw()
 		end
 	end
 
-	--[[if self.posEndDash ~= 0 and self.lastCast + 2 * self.DurationEx + 0.1 > GetTimeGame() and self.lastCast + self.DurationEx < GetTimeGame() then
-		DrawCircleGame(self.posEndDash.x , self.posEndDash.y, self.posEndDash.z, 200, Lua_ARGB(255,255,0,0))
-	end]]
-	--[[if self.menu_Draw_CountQ then
-		local percent = 0
-	    if self.grab > 0 then
-			percent = (self.grabS / self.grab) * 100
-			DrawTextD3DX(100, 100, " grab: "..tostring(self.grab).." grab successful: " ..tostring(self.grabS).. " grab successful % : " ..tostring(percent).. "%", Lua_ARGB(255, 0, 255, 10))
-		end
-	end]]
-
 	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
-	if IsValidTarget(TargetQ) and CanCast(_Q) and (GetDistance(TargetQ) <= self.Q.range) then
+	if IsValidTarget(TargetQ, self.Q.range - 150) and CanCast(_Q) and (GetDistance(TargetQ) <= self.Q.range) then
 		Target = GetAIHero(TargetQ)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		local targetPos = Vector(Target.x, Target.y, Target.z)
@@ -216,7 +257,7 @@ function Blitzcrank:OnDraw()
 	end
 
 	local TargetDashing, CanHitDashing, DashPosition
-	if CanCast(_Q) and IsValidTarget(TargetQ) then
+	if CanCast(_Q) and IsValidTarget(TargetQ, self.Q.range - 150) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
   	end
@@ -231,6 +272,14 @@ function Blitzcrank:OnProcessSpell(unit, spell)
 	if spell and unit.IsMe and spell.Name == "RocketGrab" then
 		self.grab = self.grab + 1
 	end
+
+	if spell and unit.IsEnemy and IsValidTarget(unit.Addr, self.Q.range) and self.Qspell and self.Q:IsReady() then
+		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(unit, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		local Collision = CountObjectCollision(0, unit.Addr, myHero.x, myHero.z, unit.x, unit.z, self.Q.width, self.Q.range, 65)
+  		if Collision == 0 and self.Spells[spellName] ~= nil then
+	    	CastSpellToPos(unit.x, unit.z, _Q)
+	    end
+    end
 	--__PrintDebug(spell.Name)
 	if spell and unit.IsEnemy then
         if self.listSpellInterrup[spell.Name] ~= nil then
@@ -252,7 +301,7 @@ end
 function Blitzcrank:autoQtoEndDash()
 	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	local TargetDashing, CanHitDashing, DashPosition
-	if CanCast(_Q) and IsValidTarget(TargetQ) then
+	if CanCast(_Q) and IsValidTarget(TargetQ, self.Q.range - 150) then
     	Target = GetAIHero(TargetQ)
 	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
 	    --local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
@@ -264,6 +313,135 @@ function Blitzcrank:autoQtoEndDash()
 	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    end
 	end
+
+	--GetAllBuffNameActive(myHero.Addr)
+		--for i,v in pairs(pBuffName) do
+		--__PrintDebug(tostring(v))				      
+	--end
+
+	if GetBuffByName(myHero.Addr, "slow") ~= 0 and CanCast(_W) and self.menu_Combo_Wslow then
+		CastSpellTarget(myHero.Addr, _W)
+	end
+end
+
+function Blitzcrank:LogicQ()
+	local TargetQ = GetTargetSelector(self.maxGrab, 0)
+	if CanCast(_Q) and TargetQ ~= 0 then
+		target = GetAIHero(TargetQ)
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+
+		if TargetQ ~= nil then
+			if (GetDistance(TargetQ) < self.maxGrab and GetDistance(TargetQ) > self.minGrab)  or self:IsImmobileTarget(TargetQ) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
+				if CastPosition and HitChance >= 2 and self.menu_Combo_Q and not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) and GetKeyPress(self.Combo) > 0 then
+		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		    	end
+		    end
+		end
+	end
+
+	for i, enemy in pairs(GetEnemyHeroes()) do
+	    if self.ts_prio[i].Menu then
+	    	target = GetAIHero(enemy)
+	    	if IsValidTarget(target.Addr, self.maxGrab) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then
+	    		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+			    local Collision = CountObjectCollision(1, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
+				if Collision == 0 and HitChance >= 2 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				end
+	    	end
+	    	if IsValidTarget(target.Addr, self.maxGrab) and not self:CanMove(target) and self.qCC then
+	    		local Collision = CountObjectCollision(1, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
+				if Collision == 0 then
+					CastSpellToPos(target.x, target.z, _Q)
+				end
+	    	end
+	    	if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
+	    		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+	    		local Collision = CountObjectCollision(1, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
+				if Collision == 0 and HitChance >= 2 and self:IsUnderAllyTurret(Vector(target)) then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				end
+	    	end
+	    end 
+	end
+end
+
+function Blitzcrank:LogicR()
+	for i, heros in ipairs(GetEnemyHeroes()) do
+		if heros ~= nil then
+			local hero = GetAIHero(heros)
+			if IsValidTarget(hero.Addr, self.R.range - 150) and CanCast(_R) then
+				if self.afterGrab and IsValidTarget(hero.Addr, 400) and hero.HasBuff("rocketgrab2") then
+					CastSpellTarget(myHero.Addr, _R)
+				end
+			end
+		end
+	end
+	if CountEnemyChampAroundObject(myHero.Addr, self.R.range - 150) > self.rCount then
+		CastSpellTarget(myHero.Addr, _R)
+	end
+end
+
+function Blitzcrank:LogicW()
+	local TargetQ = GetTargetSelector(self.maxGrab, 0)
+	if self.menu_Combo_W and GetKeyPress(self.Combo) > 0 then
+		if CanCast(_W) and GetManaPoint(myHero.Addr) > 275 then
+			if GetDistance(TargetQ) <= 1200 and GetDistance(TargetQ) > 500 then
+				CastSpellTarget(myHero.Addr, _W)
+			end
+		end
+	end
+end
+
+function Blitzcrank:CanHarras()
+	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+	if not self:IsUnderTurretEnemy(myHeroPos) then
+		return true
+	end
+	return false
+end
+
+function Blitzcrank:CanMove(unit)
+	if (unit.MoveSpeed < 50 or CountBuffByType(unit.Addr, 5) == 1 or CountBuffByType(unit.Addr, 21) == 1 or CountBuffByType(unit.Addr, 11) == 1 or CountBuffByType(unit.Addr, 29) == 1 or
+		unit.HasBuff("recall") or CountBuffByType(unit.Addr, 30) == 1 or CountBuffByType(unit.Addr, 22) == 1 or CountBuffByType(unit.Addr, 8) == 1 or CountBuffByType(unit.Addr, 24) == 1
+		or CountBuffByType(unit.Addr, 20) == 1 or CountBuffByType(unit.Addr, 18) == 1) then
+		return false
+	end
+	return true
+end
+
+local function GetDistanceSqr(p1, p2)
+    p2 = GetOrigin(p2) or GetOrigin(myHero)
+    return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
+end
+
+function Blitzcrank:IsUnderAllyTurret(pos)
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+  for k,v in pairs(pUnit) do
+    if not IsDead(v) and IsTurret(v) and IsAlly(v) and GetTargetableToTeam(v) == 4 then
+      local turretPos = Vector(GetPosX(v), GetPosY(v), GetPosZ(v))
+      if GetDistanceSqr(turretPos,pos) < 915 ^ 2 then
+        return true
+      end
+    end
+  end
+    return false
+end
+
+function Blitzcrank:IsUnderTurretEnemy(pos)			--Will Only work near myHero
+	GetAllUnitAroundAnObject(myHero.Addr, 2000)
+	local objects = pUnit
+	for k,v in pairs(objects) do
+		if IsTurret(v) and not IsDead(v) and IsEnemy(v) and GetTargetableToTeam(v) == 4 then
+			local turretPos = Vector(GetPosX(v), GetPosY(v), GetPosZ(v))
+			if GetDistanceSqr(turretPos,pos) < 915*915 then
+				return true
+			end
+		end
+	end
+	return false
 end
 
 function Blitzcrank:KillSteal()
@@ -280,57 +458,6 @@ function Blitzcrank:KillSteal()
 				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 				end
-			end
-		end
-	end
-end
-
-function Blitzcrank:ComboMode()
-	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
-	if CanCast(_Q) and TargetQ ~= 0 then
-		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
-
-		if TargetQ ~= nil then
-			if (GetDistance(TargetQ) < self.Q.range - 100 and GetDistance(TargetQ) > 300  or self:IsImmobileTarget(TargetQ)) then
-				if CastPosition and HitChance >= 2 and self.menu_Combo_Q and not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
-		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		    	end
-		    end
-		end
-	end
-
-	if self.menu_Combo_W then
-		if CanCast(_W) and GetManaPoint(myHero.Addr) > 275 then
-			if GetDistance(TargetQ) <= 1200 and GetDistance(TargetQ) > 500 then
-				CastSpellTarget(myHero.Addr, _W)
-			end
-		end
-	end
-
-	if self.menu_Combo_Wslow then
-		if CanCast(_W) and CountBuffByType(unit, 10) == 1 then
-			if GetDistance(TargetQ) <= self.Q.range then
-				CastSpellTarget(myHero.Addr, _W)
-			end
-		end
-	end
-	local TargetE = GetTargetSelector(self.E.range, 1)
-	if self.menu_Combo_E then
-		if CanCast(_E) and IsValidTarget(TargetE, self.E.range) then
-			if GetDistance(TargetE) <= self.E.range then
-				CastSpellTarget(TargetE, _E)
-			end
-		end
-	end
-
-	local TargetR = GetTargetSelector(self.R.range - 150, 0)
-	if self.menu_Combo_R then
-		if CanCast(_R) and IsValidTarget(TargetR, self.R.range - 100) then
-			if GetDistance(TargetR) <= self.R.range then
-				CastSpellTarget(TargetR, _R)
 			end
 		end
 	end
@@ -359,6 +486,35 @@ function Blitzcrank:aa()
 		["GalioIdolOfDurand"] = true,
 		["MissFortuneBulletTime"] = true,
 		["XerathLocusPulse"] = true,
+	}
+
+	self.Spells =
+	{
+    ["katarinar"] 					= {},
+    ["drain"] 						= {},
+    ["consume"] 					= {},
+    ["absolutezero"] 				= {},
+    ["staticfield"] 				= {},
+    ["reapthewhirlwind"] 			= {},
+    ["jinxw"] 						= {},
+    ["jinxr"] 						= {},
+    ["shenstandunited"] 			= {},
+    ["threshe"] 					= {},
+    ["threshrpenta"] 				= {},
+    ["threshq"] 					= {},
+    ["meditate"] 					= {},
+    ["caitlynpiltoverpeacemaker"] 	= {},
+    ["volibearqattack"] 			= {},
+    ["cassiopeiapetrifyinggaze"] 	= {},
+    ["ezrealtrueshotbarrage"] 		= {},
+    ["galioidolofdurand"] 			= {},
+    ["luxmalicecannon"] 			= {},
+    ["missfortunebullettime"] 		= {},
+    ["infiniteduress"]				= {},
+    ["alzaharnethergrasp"] 			= {},
+    ["lucianq"] 					= {},
+    ["velkozr"] 					= {},
+    ["rocketgrabmissile"] 			= {},
 	}
 
 	self.listEndDash =

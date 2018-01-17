@@ -433,7 +433,7 @@ function Thresh:ComboMode()
 end
 
 function Thresh:CastQ(target)
-    if CanCast(_Q) and IsValidTarget(target - 150) then
+    if CanCast(_Q) and IsValidTarget(target, self.Q.range - 150) then
     	Target = GetAIHero(target)
 	    local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 	    if CastPosition and HitChance >= 2 and GetDistance(CastPosition) <= self.Q.range then

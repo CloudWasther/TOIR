@@ -679,7 +679,7 @@ function Caitlyn:AntiGapCloser()
 	for i, heros in pairs(GetEnemyHeroes()) do
     	if heros ~= nil then
       		local hero = GetAIHero(heros)
-      		if hero.IsDash then
+      		--if hero.IsDash then
         		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
         		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
         		if DashPosition ~= nil then
@@ -706,7 +706,7 @@ function Caitlyn:AntiGapCloser()
           				end
           			end
         		end
-      		end
+      		--end
     	end
 	end
 end

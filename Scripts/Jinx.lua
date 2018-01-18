@@ -157,7 +157,7 @@ function Jinx:OnDrawMenu()
 		if Menu_Begin("Setting R") then
 			self.menu_Combo_R = Menu_Bool("Auto R", self.menu_Combo_R, self.menu)
 			self.menu_Combo_Rks = Menu_Bool("Use R Kill Steal", self.menu_Combo_Rks, self.menu)
-			self.Rturrent = Menu_Bool("UDon't R under turret", self.Rturrent, self.menu)
+			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)
 			self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
 			self.MinRangeR = Menu_SliderInt("Min R range", self.MinRangeR, 0, 3000, self.menu)
 			Menu_End()
@@ -283,7 +283,7 @@ function Jinx:AntiGapCloser()
 	for i, heros in pairs(GetEnemyHeroes()) do
     	if heros ~= nil then
       		local hero = GetAIHero(heros)
-      		if hero.IsDash then
+      		--if hero.IsDash then
         		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, self.E.speed, myHero, false)
         		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
         		if DashPosition ~= nil then
@@ -291,7 +291,7 @@ function Jinx:AntiGapCloser()
           				CastSpellToPos(DashPosition.x,DashPosition.z, _E)
           			end
         		end
-      		end
+      		--end
     	end
 	end
 end

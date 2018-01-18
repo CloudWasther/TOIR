@@ -574,7 +574,7 @@ function Ezreal:LogicE()
 		 		if CanCast(_W) and myHero.MP > 170 then
 		 			dmgCombo = dmgCombo + GetDamage("W", target)
 		 		end
-		 		if dmgCombo > target.HP and self:ValidUlt(target.Addr) then
+		 		if dmgCombo > target.HP and self:ValidUlt(target) then
 		 			CastSpellToPos(dashPosition.x, dashPosition.z, _E)
 			        self.OverKill = GetTimeGame()
 		 		end
@@ -610,7 +610,7 @@ function Ezreal:LogicR()
 end
 
 function Ezreal:ValidUlt(unit)
-	if CountBuffByType(unit, 16) == 1 or CountBuffByType(unit, 15) == 1 or CountBuffByType(unit, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit, 4) == 1 then
+	if CountBuffByType(unit.Addr, 16) == 1 or CountBuffByType(unit.Addr, 15) == 1 or CountBuffByType(unit.Addr, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit.Addr, 4) == 1 then
 		return false
 	end
 	return true

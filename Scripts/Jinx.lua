@@ -1,5 +1,4 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbNew.lua")
 
 Jinx = class()
 
@@ -487,7 +486,7 @@ function Jinx:LogicE()
 end
 
 function Jinx:ValidUlt(unit)
-	if CountBuffByType(unit, 16) == 1 or CountBuffByType(unit, 15) == 1 or CountBuffByType(unit, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit, 4) == 1 then
+	if CountBuffByType(unit.Addr, 16) == 1 or CountBuffByType(unit.Addr, 15) == 1 or CountBuffByType(unit.Addr, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit.Addr, 4) == 1 then
 		return false
 	end
 	return true

@@ -336,11 +336,7 @@ function Tristana:CanHarras()
 end
 
 function Tristana:ValidUlt(unit)
-<<<<<<< HEAD
 	if CountBuffByType(unit.Addr, 16) == 1 or CountBuffByType(unit.Addr, 15) == 1 or CountBuffByType(unit.Addr, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit.Addr, 4) == 1 then
-=======
-	if CountBuffByType(unit, 16) == 1 or CountBuffByType(unit, 15) == 1 or CountBuffByType(unit, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit, 4) == 1 then
->>>>>>> 9e3b4b5c6e0385c37b6b97f631ce0b2d2e46999f
 		return false
 	end
 	return true

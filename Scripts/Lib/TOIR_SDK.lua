@@ -4726,14 +4726,10 @@ function HPrediction:Variables()
   
   self.buffer = .02
   self.Draw = false
-  --self.PredictionDamage = {}
-  --self.ProjectileSpeed = {["SRU_OrderMinionRanged"] = 650, ["SRU_ChaosMinionRanged"] = 650, ["SRU_OrderMinionSiege"] = 1200, ["SRU_ChaosMinionSiege"] = 1200, ["SRUAP_Turret_Chaos1"] = 1200, ["SRUAP_Turret_Chaos2"] = 1200, ["SRUAP_Turret_Order1"] = 1200, ["SRUAP_Turret_Order2"] = 1200}
-  
-  self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
-  self.JungleMobs = minionManager(MINION_JUNGLE, 2000, myHero, MINION_SORT_MAXHEALTH_DEC)
-  self.OtherMinions = minionManager(MINION_OTHER, 2000, myHero, MINION_SORT_HEALTH_ASC)
-  self.AllyMinions = minionManager(MINION_ALLY, 2000, myHero, MINION_SORT_HEALTH_ASC)
-  
+
+  --self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
+  --self.JungleMobs = minionManager(MINION_JUNGLE, 2000, myHero, MINION_SORT_MAXHEALTH_DEC)
+
 end
 
 ---------------------------------------------------------------------------------
@@ -4845,12 +4841,36 @@ end
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
 
+function HPrediction:EnemyMinionsTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, obj in pairs(pUnit) do
+        if obj ~= 0  then
+            local minions = GetUnit(obj)
+            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
+                table.insert(result, minions)
+            end
+        end
+    end
+    return result
+end
+
+function HPrediction:JungleTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+            table.insert(result, minions)
+        end
+    end
+
+    return result
+end
+
 function HPrediction:OnTick()
 
-  self.EnemyMinions:update()
-  self.JungleMobs:update()
-  self.AllyMinions:update()
-  self.OtherMinions:update()
+  --self.EnemyMinions:update()
+  --self.JungleMobs:update()
   
   --[[if self.HPMenu_Ignore.getValue() then
 
@@ -5513,7 +5533,7 @@ end
 
 function HPrediction:MinionCollisionStatus(HPskillshot, unit, from, to, draw)
 
-  for i, minion in ipairs(self.EnemyMinions.objects) do
+  for i, minion in ipairs(self:EnemyMinionsTbl()) do
   
     if self:EachCollision(HPskillshot, unit, from, to, minion) then
     
@@ -5526,7 +5546,7 @@ function HPrediction:MinionCollisionStatus(HPskillshot, unit, from, to, draw)
     
   end
   
-  for i, junglemob in ipairs(self.JungleMobs.objects) do
+  for i, junglemob in ipairs(self:JungleTbl()) do
   
     if self:EachCollision(HPskillshot, unit, from, to, junglemob) then
     
@@ -5883,118 +5903,6 @@ function HPrediction:IsInvincible(enemy, time)
   
   return false
 end
-
----------------------------------------------------------------------------------
----------------------------------------------------------------------------------
-
---[[function HPrediction:OnAnimation(unit, animation)
-
-  if unit == nil then
-    return
-  end
-
-  if self.HPMenu_Ignore.getValue() and unit.TeamId == myHero.TeamId and string.find(string.lower(tostring(animation)), "atta") then
-    table.insert(self.ActiveAttacks, {Attacker = unit, pos = Vector(unit), Target = tar, animationTime = math.huge, damage = unit.TotalDmg, hittime=time, starttime = self:GetTime() - GetLatency()/2000, windUpTime = 0.393, projectilespeed = math.huge})
-    
-    if unit.spell.target.networkID < 100 and self.PredictionDamage[unit.spell.target.networkID] == nil then
-      self.PredictionDamage[unit.spell.target.networkID] = {}
-    end
-
-    if self.PredictionDamage[unit.spell.target.networkID] then
-
-      if unit.type ~= myHero.type and self.ProjectileSpeed[unit.charName] then
-
-        local ctime = GetGameTimer()+unit.spell.windUpTime+GetDistance(unit.spell.target, unit)/self.ProjectileSpeed[unit.charName]
-
-        self.PredictionDamage[unit.spell.target.networkID][ctime] = self:GetAADmg(unit.spell.target, unit)
-      else
-
-        local ctime = GetGameTimer()+unit.spell.windUpTime
-
-        self.PredictionDamage[unit.spell.target.networkID][ctime] = self:GetAADmg(unit.spell.target, unit)
-      end
-
-    end
-
-  end
-
-end
-
----------------------------------------------------------------------------------
-
-function HPrediction:OnProcessAttack(unit, spell)
-
-  if unit == nil then
-    return
-  end
-
-  if self.Menu.Ignore and unit.team == myHero.team and unit.type == myHero.type and spell.target and spell.name:find("BasicAttack") and self.ProjectileSpeed[unit.charName] then
-
-    if spell.target.networkID < 100 and self.PredictionDamage[spell.target.networkID] == nil then
-      self.PredictionDamage[spell.target.networkID] = {}
-    end
-
-    if self.PredictionDamage[spell.target.networkID] then
-
-      local ctime = GetGameTimer()+GetDistance(spell.target, unit)/self.ProjectileSpeed[unit.charName]
-
-      self.PredictionDamage[spell.target.networkID][ctime] = self:GetAADmg(spell.target, unit)
-    end
-
-  end
-
-end
-
----------------------------------------------------------------------------------
-
-function HPrediction:PredictHealth(unit, time)
-
-  local health = unit.health
-
-  if self.PredictionDamage[unit.networkID] then
-
-    local Delete = true
-
-    for ctime, damage in pairs(self.PredictionDamage[unit.networkID]) do
-
-      if GetGameTimer()+GetLatency()/2000 < ctime-GetLatency()/2000 then
-        Delete = false
-        break
-      end
-
-    end
-
-    if Delete then
-      self.PredictionDamage[unit.networkID] = nil
-    else
-
-      for ctime, damage in pairs(self.PredictionDamage[unit.networkID]) do
-      
-        if GetGameTimer()+GetLatency()/2000 >= ctime-GetLatency()/2000 then
-          self.PredictionDamage[unit.networkID][ctime] = nil
-        elseif GetGameTimer()+GetLatency()/2000+time > ctime+0.09-GetLatency()/2000 then --Temp 0.075
-          health = health-damage
-        end
-
-      end
-
-    end
-
-  end
-
-  return health
-end
-
----------------------------------------------------------------------------------
-
-function HPrediction:GetAADmg(enemy, ally)
-
-  local Armor = math.max(0, enemy.armor*ally.armorPenPercent-ally.armorPen)
-  local ArmorPercent = Armor/(100+Armor)
-  local TrueDmg = ally.totalDamage*(1-ArmorPercent)
-
-  return TrueDmg
-end]]
 
 ---------------------------------------------------------------------------------
 

@@ -1,6 +1,4 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
---IncludeFile("Lib\\OrbNew.lua")
---IncludeFile("Lib\\AntiGapCloser.lua")
 
 Blitzcrank = class()
 
@@ -12,11 +10,8 @@ end
 
 function Blitzcrank:__init()
 	-- VPrediction
-	vpred = VPrediction(true)
-
-	--TS
-    --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
-
+	vpred = VPrediction()
+	HPred = HPrediction()
 
 	self.Q = Spell(_Q, 1075)
     self.W = Spell(_W, math.huge)
@@ -54,6 +49,7 @@ function Blitzcrank:MenuValueDefault()
 
 	self.maxGrab = self:MenuSliderInt("Max range grab", self.Q.range - 150)
 	self.minGrab = self:MenuSliderInt("Min range grab", 250)
+	self.hitchane = self:MenuSliderFloat("Q HitChane", 2)
 	self.menu_Combo_QendDash = self:MenuBool("Auto Q End Dash", true)
 	self.menu_Combo_Qinterrup = self:MenuBool("Use Q Interrup", true)
 	self.menu_Combo_Qks = self:MenuBool("Use Q Kill Steal", true)
@@ -101,6 +97,7 @@ function Blitzcrank:OnDrawMenu()
 			self.menu_Combo_Qks = Menu_Bool("Use Q Kill Steal", self.menu_Combo_Qks, self.menu)
 			self.qCC = Menu_Bool("Auto Q cc", self.qCC, self.menu)
 			self.qTur = Menu_Bool("Auto Q under turret", self.qTur, self.menu)
+			self.hitchane = Menu_SliderFloat("Q HitChane", self.hitchane, 1, 3, self.menu)
 			Menu_Text("Auto Q to target :")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
@@ -171,15 +168,19 @@ function Blitzcrank:OnTick()
 	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
 
-			if CanCast(_Q) then
-                self:LogicQ();
-            end
-            if CanCast(_R) then
-                self:LogicR();
-            end
-            if CanCast(_W) then
-                self:LogicW()
-            end
+	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
+
+	if CanCast(_Q) then
+        self:LogicQ();
+    end
+
+    if CanCast(_R) then
+        self:LogicR();
+    end
+
+    if CanCast(_W) then
+        self:LogicW()
+    end
 
 	if self.menu_Combo_QendDash then
 		self:autoQtoEndDash()
@@ -223,6 +224,16 @@ end
 
 function Blitzcrank:OnDraw()
 
+	for i, heros in ipairs(GetEnemyHeroes()) do
+		if heros ~= nil then
+			local hero = GetAIHero(heros)
+			if IsValidTarget(hero.Addr, self.Q.range - 150) then
+				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
+				DrawCircleGame(QPos.x , QPos.y, QPos.z, 150, Lua_ARGB(255,255,0,0))
+			end
+		end
+	end
+
 	if self.Draw_When_Already then
 		if self.Draw_Q_Range and self.Q:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
@@ -263,7 +274,6 @@ function Blitzcrank:OnDraw()
   	end
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range - 150 then
-	    CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 	    DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
 	end
 end
@@ -274,9 +284,8 @@ function Blitzcrank:OnProcessSpell(unit, spell)
 	end
 
 	if spell and unit.IsEnemy and IsValidTarget(unit.Addr, self.Q.range) and self.Qspell and self.Q:IsReady() then
-		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(unit, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		local Collision = CountObjectCollision(0, unit.Addr, myHero.x, myHero.z, unit.x, unit.z, self.Q.width, self.Q.range, 65)
-  		if Collision == 0 and self.Spells[spellName] ~= nil then
+		--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, unit, myHero)
+  		if self.Spells[spellName] ~= nil then
 	    	CastSpellToPos(unit.x, unit.z, _Q)
 	    end
     end
@@ -299,25 +308,24 @@ function Blitzcrank:OnProcessSpell(unit, spell)
 end
 
 function Blitzcrank:autoQtoEndDash()
-	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
-	local TargetDashing, CanHitDashing, DashPosition
-	if CanCast(_Q) and IsValidTarget(TargetQ, self.Q.range - 150) then
-    	Target = GetAIHero(TargetQ)
-	    TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(Target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
-	    --local Collision = vpred:CheckMinionCollision(Target, DashPosition, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true, true)
-  	end
-
-  	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range then
-  		local Collision = CountObjectCollision(0, Target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
-  		if Collision == 0 then
-	    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
-	    end
+	for i, enemy in pairs(GetEnemyHeroes()) do
+		if enemy ~= nil then
+		    target = GetAIHero(enemy)
+		    local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+		    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)	    	
+		    if IsValidTarget(target.Addr, self.maxGrab) then
+		    	if QHitChance >= 3 or not self:CanMove(target) then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
+				end
+		    end
+		    if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range then
+		  		local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
+		  		if Collision == 0 then
+			    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
+			    end
+			end
+		end
 	end
-
-	--GetAllBuffNameActive(myHero.Addr)
-		--for i,v in pairs(pBuffName) do
-		--__PrintDebug(tostring(v))				      
-	--end
 
 	if GetBuffByName(myHero.Addr, "slow") ~= 0 and CanCast(_W) and self.menu_Combo_Wslow then
 		CastSpellTarget(myHero.Addr, _W)
@@ -327,44 +335,47 @@ end
 function Blitzcrank:LogicQ()
 	local TargetQ = GetTargetSelector(self.maxGrab, 0)
 	if CanCast(_Q) and TargetQ ~= 0 then
+		--__PrintTextGame(tostring(TargetQ))
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		--local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+		--local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+		if QHitChance >= 3 and (myHero.HP / myHero.MaxHP > 0.5 or CountAllyChampAroundObject(myHero.Addr, 600) >= 1) then
+			CastSpellToPos(QPos.x, QPos.z, _Q)
+		end
 
-		if TargetQ ~= nil then
-			if (GetDistance(TargetQ) < self.maxGrab and GetDistance(TargetQ) > self.minGrab)  or self:IsImmobileTarget(TargetQ) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
-				if CastPosition and HitChance >= 2 and self.menu_Combo_Q and not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) and GetKeyPress(self.Combo) > 0 then
-		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		    	end
+		if (GetDistance(target.Addr) < self.maxGrab and GetDistance(target.Addr) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
+			if QHitChance >= self.hitchane and self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then
+		        CastSpellToPos(QPos.x, QPos.z, _Q)
 		    end
 		end
 	end
 
 	for i, enemy in pairs(GetEnemyHeroes()) do
-	    if self.ts_prio[i].Menu then
-	    	target = GetAIHero(enemy)
-	    	if IsValidTarget(target.Addr, self.maxGrab) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then
-	    		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-			    local Collision = CountObjectCollision(1, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-				if Collision == 0 and HitChance >= 2 then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		if enemy ~= nil then
+			target = GetAIHero(enemy)
+			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+		    if self.ts_prio[i].Menu then	    			    	
+		    	if IsValidTarget(target.Addr, self.maxGrab) then
+		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then				    
+						if QHitChance >= self.hitchane then
+							CastSpellToPos(QPos.x, QPos.z, _Q)
+						end
+					end
+		    	end
+		    end
+		    if IsValidTarget(target.Addr, self.maxGrab) then
+		    	if (QHitChance >= 3 or not self:CanMove(target)) and self.qCC then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
-	    	end
-	    	if IsValidTarget(target.Addr, self.maxGrab) and not self:CanMove(target) and self.qCC then
-	    		local Collision = CountObjectCollision(1, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
-				if Collision == 0 then
-					CastSpellToPos(target.x, target.z, _Q)
+		    end
+		    if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
+				if QHitChance >= self.hitchane - 0.3 and self:IsUnderAllyTurret(Vector(target)) then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
-	    	end
-	    	if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
-	    		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-	    		local Collision = CountObjectCollision(1, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-				if Collision == 0 and HitChance >= 2 and self:IsUnderAllyTurret(Vector(target)) then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				end
-	    	end
-	    end 
+		    end
+		end	   
 	end
 end
 
@@ -453,10 +464,9 @@ function Blitzcrank:KillSteal()
 			end
 
 			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-				local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
-				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
+				if QHitChance >= self.hitchane then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
 			end
 		end

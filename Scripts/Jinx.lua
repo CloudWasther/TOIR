@@ -260,9 +260,9 @@ function Jinx:OnBeforeAttack(target)
     		CastSpellTarget(myHero.Addr, _Q)
     	end
     end
-    if target ~= nil and target.Type == 3 and GetKeyPress(self.Lane_Clear) > 0 then
+    if target ~= nil and target.Type == 1 and GetKeyPress(self.Lane_Clear) > 0 then
     	local realDistance = self:GetRealDistance(target)
-    	if realDistance < self:GetRealPowPowRange(target) or myHero.MP / myHero.MaxMP < self.Qmana then
+    	if realDistance < self:GetRealPowPowRange(target) or myHero.MP / myHero.MaxMP * 100 < self.Qmana then
     		CastSpellTarget(myHero.Addr, _Q)
     		return;
     	else

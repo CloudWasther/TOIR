@@ -70,6 +70,7 @@ function Tristana:MenuValueDefault()
 	self.qlc = self:MenuBool("Use Q Lane Clear", true)
 
 	self.Wks = self:MenuBool("W KS logic (W+E+R calculation)", true)
+	self.Wtur = self:MenuBool("dont W if under turrent", true)
 	self.W_Mode = self:MenuComboBox("W GapClose Mode :", 2)
 	self.smartW = self:MenuKeyBinding("SmartCast W key", 84)
 
@@ -107,6 +108,7 @@ function Tristana:OnDrawMenu()
 
 		if Menu_Begin("W Setting") then
 			self.Wks = Menu_Bool("W KS logic (W+E+R calculation)", self.Wks, self.menu)	
+			self.Wtur = Menu_Bool("dont W if under turrent", self.Wtur, self.menu)	
 			self.W_Mode = Menu_ComboBox("W GapClose Mode :", self.W_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)
 			self.smartW = Menu_KeyBinding("SmartCast W key", self.smartW, self.menu)	
 			Menu_End()
@@ -258,6 +260,9 @@ function Tristana:LogicW()
 				target = GetAIHero(hero)				
 				if self:ValidUlt(target) and CountEnemyChampAroundObject(target.Addr, 800) < 2 and CountAllyChampAroundObject(target.Addr, 400) == 0 then
 					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+					if self:IsUnderTurretEnemy(CastPosition) and self.Wtur then
+						return
+					end
 					local playerAaDmg = GetAADamageHitEnemy(target.Addr)
 					local dmgCombo = playerAaDmg + GetDamage("W", target) + self:GetEDmg(target)
 					if dmgCombo > target.HP then
@@ -329,7 +334,7 @@ end
 
 function Tristana:CanHarras()
 	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-	if not self:IsUnderTurretEnemy(myHeroPos) and self:CanMoveOrb(50) then
+	if not self:IsUnderTurretEnemy(myHeroPos) then
 		return true
 	end
 	return false

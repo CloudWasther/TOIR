@@ -13,7 +13,7 @@ function Blitzcrank:__init()
 	vpred = VPrediction()
 	HPred = HPrediction()
 
-	self.Q = Spell(_Q, 1075)
+	self.Q = Spell(_Q, 1000)
     self.W = Spell(_W, math.huge)
     self.E = Spell(_E, GetTrueAttackRange())
     self.R = Spell(_R, 680)
@@ -345,8 +345,9 @@ function Blitzcrank:LogicQ()
 			CastSpellToPos(QPos.x, QPos.z, _Q)
 		end
 
-		if (GetDistance(target.Addr) < self.maxGrab and GetDistance(target.Addr) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
+		if (GetDistance(QPos) < self.maxGrab and GetDistance(QPos) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
 			if QHitChance >= self.hitchane and self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then
+				--__PrintTextGame("string szText")
 		        CastSpellToPos(QPos.x, QPos.z, _Q)
 		    end
 		end

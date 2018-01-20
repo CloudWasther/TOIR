@@ -11,7 +11,7 @@ end
 function Ezreal:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-
+	HPred = HPrediction()
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -54,6 +54,7 @@ function Ezreal:MenuValueDefault()
 	self.stack = self:MenuBool("Stack Tear if full mana", true)
 	self.jungQ = self:MenuBool("Jungle Q", true)
 	self.FQ = self:MenuBool("Farm Q out range last hit", true)
+	self.qHC = self:MenuSliderFloat("Q HitChane", 2)
 	
 	for i, enemy in pairs(GetEnemyHeroes()) do
         table.insert(self.ts_prio, { Enemy = GetAIHero(enemy), Menu = self:MenuBool(GetAIHero(enemy).CharName, true)})
@@ -64,6 +65,7 @@ function Ezreal:MenuValueDefault()
 	self.wPush = self:MenuBool("W ally (push tower)", true)
 	self.harassW = self:MenuBool("Harass W", true)
 	self.HarassManaW = self:MenuSliderInt("Harass W Mana", 30)
+	self.wHC = self:MenuSliderFloat("W HitChane", 1.5)
 
 	self.smartEW = self:MenuKeyBinding("SmartCast E + W key", 84)
 	self.EKsCombo = self:MenuBool("E ks combo", true)
@@ -78,14 +80,6 @@ function Ezreal:MenuValueDefault()
 	self.Rturrent = self:MenuBool("Don't R under turret", true)
 	self.MaxRangeR = self:MenuSliderInt("Max R range", 3000)
 	self.MinRangeR = self:MenuSliderInt("Min R range", 900)
-
-	self.Use_Smite_Kill_Steal = self:MenuBool("Use Smite Kill Steal", true)
-	self.Use_Smite_in_Combo = self:MenuBool("Use Smite in Combo", true)
-	self.Use_Smite_Small_Jungle = self:MenuBool("Use Smite Small Jungle", true)
-	self.Use_Smite_Blue = self:MenuBool("Use Smite Blue", true)
-	self.Use_Smite_Red = self:MenuBool("Use Smite Red", true)
-	self.Use_Smite_Dragon = self:MenuBool("Use Smite Dragon", true)
-	self.Use_Smite_Baron = self:MenuBool("Use Smite Baron", true)
 
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
@@ -103,6 +97,7 @@ function Ezreal:OnDrawMenu()
 			self.stack = Menu_Bool("Stack Tear if full mana", self.stack, self.menu)
 			self.jungQ = Menu_Bool("Jungle Q", self.jungQ, self.menu)
 			self.FQ = Menu_Bool("Farm Q out range last hit", self.FQ, self.menu)
+			self.qHC = Menu_SliderFloat("Q HitChane", self.qHC, 1, 3, self.menu)
 			Menu_Text("Harass Enemy")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
@@ -116,6 +111,7 @@ function Ezreal:OnDrawMenu()
 			self.wPush = Menu_Bool("W ally (push tower)", self.wPush, self.menu)
 			self.harassW = Menu_Bool("Harass W", self.harassW, self.menu)
 			self.HarassManaW = Menu_SliderInt("Harass W Mana", self.HarassManaW, 0, 100, self.menu)
+			self.wHC = Menu_SliderFloat("W HitChane", self.wHC, 1, 3, self.menu)
 			Menu_End()
 		end
 
@@ -136,19 +132,6 @@ function Ezreal:OnDrawMenu()
 			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)
 			self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
 			self.MinRangeR = Menu_SliderInt("Min R range", self.MinRangeR, 0, 3000, self.menu)
-			Menu_End()
-		end
-
-		if Menu_Begin("Setting Smite") then
-			Menu_Text("Smite In Combo")
-			self.Use_Smite_Kill_Steal = Menu_Bool("Use Smite Kill Steal", self.Use_Smite_Kill_Steal, self.menu)
-			self.Use_Smite_in_Combo = Menu_Bool("Use Smite in Combo", self.Use_Smite_in_Combo, self.menu)
-			Menu_Text("Smite In Jungle")
-			self.Use_Smite_Small_Jungle = Menu_Bool("Use Smite Small Jungle", self.Use_Smite_Small_Jungle, self.menu)
-			self.Use_Smite_Blue = Menu_Bool("Use Smite Blue", self.Use_Smite_Blue, self.menu)
-			self.Use_Smite_Red = Menu_Bool("Use Smite Red", self.Use_Smite_Red, self.menu)
-			self.Use_Smite_Dragon = Menu_Bool("Use Smite Dragon", self.Use_Smite_Dragon, self.menu)
-			self.Use_Smite_Baron = Menu_Bool("Use Smite Baron", self.Use_Smite_Baron, self.menu)
 			Menu_End()
 		end
 
@@ -205,11 +188,11 @@ function Ezreal:OnUpdateBuff(source, unit, buff, stacks)
 			
 			local dashPos = self:CastDash(true);
 			if dashPos ~= Vector(0, 0, 0) then
-				__PrintTextGame("111111111111111")
+				--__PrintTextGame("111111111111111")
 				DelayAction(function() CastSpellToPos(dashPos.x,dashPos.z, _E) end, 0.3)
 				
 			else
-				__PrintTextGame("2222222222222")
+				--__PrintTextGame("2222222222222")
 				DelayAction(function() CastSpellToPos(dashPos.x,dashPos.z, _E) end, 0.3)
 			end
 		end
@@ -238,7 +221,11 @@ function Ezreal:OnTick()
 	if myHero.IsDead then return end
 	SetLuaCombo(true)
 
-	self:LogicSmiteJungle()
+	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
+	self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, width = self.W.width})
+	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, width = self.R.width})
+
+	--self:LogicSmiteJungle()
 
 	if CanCast(_E) then
 		--if self:LagFree(0) then
@@ -289,86 +276,6 @@ function Ezreal:JungleTbl()
     end
 
     return result
-end
-
-function Ezreal:GetIndexSmite()
-	if GetSpellIndexByName("SummonerSmite") > -1 then
-		return GetSpellIndexByName("SummonerSmite")
-	elseif GetSpellIndexByName("S5_SummonerSmiteDuel") > -1 then
-		return GetSpellIndexByName("S5_SummonerSmiteDuel")
-	elseif GetSpellIndexByName("S5_SummonerSmitePlayerGanker") > -1 then
-		return GetSpellIndexByName("S5_SummonerSmitePlayerGanker")
-	end
-	return -1
-end
-
-function Ezreal:GetSmiteDamage(target)
-	if self:GetIndexSmite() > -1 then
-		if GetType(target) == 0 then
-			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmitePlayerGanker" then
-				return 20 + 8*myHero.Level;
-			end
-			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmiteDuel" then
-				return 54 + 6*myHero.Level;
-			end
-
-		end
-		local DamageSpellSmiteTable = {390, 410, 430, 450, 480, 510, 540, 570, 600, 640, 680, 720, 760, 800, 850, 900, 950, 1000}
-		return DamageSpellSmiteTable[myHero.Level]
-	end
-	return 0
-end
-
-function Ezreal:LogicSmiteJungle()
-	for i, minions in ipairs(self:JungleTbl()) do
-        if minions ~= 0 then
-            local jungle = GetUnit(minions)
-            if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
-                (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.Use_Smite_Red then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Blue" and self.Use_Smite_Blue then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_RiftHerald" and self.Use_Smite_Baron then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Baron" and self.Use_Smite_Baron then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and self.Use_Smite_Small_Jungle then
-                	if jungle.CharName == "SRU_Razorbeak" or jungle.CharName == "SRU_Murkwolf" or jungle.CharName == "SRU_Gromp" or jungle.CharName == "SRU_Krug" then
-                    	CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                	end
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.Use_Smite_Dragon then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-            end
-        end
-    end
-
-    local Target = GetTargetSelector(GetTrueAttackRange(), 1)
-	if Target ~= 0 then
-		if (GetDistance(Target) < GetTrueAttackRange() and GetDistance(Target) > 300  or (self:IsImmobileTarget(Target))) then
-			if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo and GetKeyPress(self.Combo) > 0 then
-				CastSpellTarget(Target, self:GetIndexSmite())
-			end
-		end
-	end
-
-	local TargetSmite = GetTargetSelector(650, 1)
-	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.Use_Smite_Kill_Steal then
-		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
-			CastSpellTarget(TargetSmite, self:GetIndexSmite())
-		end
-	end
 end
 
 function Ezreal:LaneClear()
@@ -429,30 +336,27 @@ function Ezreal:LogicQ()
     		local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 			if CanCast(_Q) and TargetQ ~= 0 then
 				target = GetAIHero(TargetQ)
-    			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-    			local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-		    	if Collision == 0 and HitChance >= 2 then
-		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+    			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+    			--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
+		    	if QHitChance >= self.qHC then
+		        	CastSpellToPos(QPos.x, QPos.z, _Q)
 		        end
     		end
     	end
 
     	for i, heros in ipairs(GetEnemyHeroes()) do
-    		table.sort(GetEnemyHeroes(), function(a, b)            
-                return GetHealthPoint(a) < GetHealthPoint(b)
-            end)
 			if heros ~= nil then
 				local target = GetAIHero(heros)
 				local wDmg = GetDamage("W", target)
 				local qDmg = GetDamage("Q", target)
 				if (qDmg + wDmg > target.HP) and IsValidTarget(target.Addr, self.Q.range - 150) then
-					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-	    			local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-			    	if Collision == 0 and HitChance >= 2 then
-			        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-			        	self.OverKill = GetTimeGame()
-			        	return
-			        end
+					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+	    			--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
+			    	if QHitChance >= self.qHC then
+			        	CastSpellToPos(QPos.x, QPos.z, _Q)
+			        end			        
 				end
 				if not self:CanMove(target) and IsValidTarget(target.Addr, self.Q.range - 150) then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
@@ -460,17 +364,25 @@ function Ezreal:LogicQ()
 			        	CastSpellToPos(target.x, target.z, _Q)
 			        end
 				end
+
+				if IsValidTarget(target.Addr, self.Q.range - 150) then
+					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					if QHitChance >= 3 then
+			        	CastSpellToPos(QPos.x, QPos.z, _Q)
+			        end 
+				end				
 			end
 		end
 		for i, enemy in pairs(GetEnemyHeroes()) do
 	    	if self.ts_prio[i].Menu then
 	    		target = GetAIHero(enemy)
-	    		if IsValidTarget(target.Addr, self.Q.range - 150) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and myHero.MP > self.HarassManaQ and self:CanHarras() then
-	    			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-			    	local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
-					if Collision == 0 and HitChance >= 2 then
-					    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-					end
+	    		if IsValidTarget(target.Addr, self.Q.range - 150) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and myHero.MP / myHero.MaxMP * 100 > self.HarassManaQ and self:CanHarras() then
+	    			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+			    	--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.Q.width, self.Q.range, 65)
+					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					if QHitChance >= self.qHC then
+			        	CastSpellToPos(QPos.x, QPos.z, _Q)
+			        end 
 	    		end
 	    	end 
 	    end
@@ -512,19 +424,20 @@ function Ezreal:LogicW()
 	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		if GetKeyPress(self.Combo) > 0 and myHero.MP > 240 and HitChance >= 2 then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+		local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+		if GetKeyPress(self.Combo) > 0 and myHero.MP > 240 and WHitChance >= self.wHC then
+			CastSpellToPos(WPos.x, WPos.z, _W)
 		elseif GetKeyPress(self.Harass) > 0 and self.harassW and myHero.MP > myHero.MaxMP * 0.8 and self:CanHarras() then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			CastSpellToPos(WPos.x, WPos.z, _W)
 		else
 			local wDmg = GetDamage("W", target)
 			local qDmg = GetDamage("Q", target)
-			if wDmg > target.HP then
-				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			if wDmg > target.HP and WHitChance >= self.wHC then
+				CastSpellToPos(WPos.x, WPos.z, _W)
 				self.OverKill = GetTimeGame()
-			elseif (wDmg + qDmg > target.HP and CanCast(_Q)) then
-				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			elseif (wDmg + qDmg > target.HP and CanCast(_Q)) and WHitChance >= self.wHC then
+				CastSpellToPos(WPos.x, WPos.z, _W)
 			end
 		end
 	end
@@ -536,6 +449,13 @@ function Ezreal:LogicW()
 				if IsValidTarget(target, self.W.range - 150) and not self:CanMove(target) then
 					CastSpellToPos(target.x, target.z, _W)
 				end
+
+				if IsValidTarget(target.Addr, self.W.range - 150) then
+					local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+					if WHitChance >= 3 then
+			        	CastSpellToPos(WPos.x, WPos.z, _W)
+			        end 
+				end	
 			end
 		end
 	end
@@ -592,13 +512,16 @@ function Ezreal:LogicR()
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if hero ~= nil then
 				target = GetAIHero(hero)
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero, false)
+				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero, false)			
 				if IsValidTarget(target.Addr, self.MaxRangeR) and self:ValidUlt(target) then
+					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
 					if self.Rcc and IsValidTarget(target.Addr, self.Q.range + self.E.range) and target.HP < myHero.MaxHP and not self:CanMove(target) then
 						CastSpellToPos(target.x,target.z, _R)
 					end
-					if GetDamage("R", target) > target.HP and CountEnemyChampAroundObject(target.Addr, 500) == 0 and GetDistance(target.Addr) > self.MinRangeR then
-						CastSpellToPos(CastPosition.x,CastPosition.z, _R)
+					if GetDamage("R", target) > target.HP and CountEnemyChampAroundObject(target.Addr, 500) == 0 and GetDistance(RPos) > self.MinRangeR then
+						if RHitChance > 2 then
+							CastSpellToPos(RPos.x,RPos.z, _R)
+						end
 					end 
 					--if GetKeyPress(self.Combo) > 0 and CountEnemyChampAroundObject(target.Addr, 1200) == 0 and self.Raoe then
 						--CastSpellToPos(CastPosition.x,CastPosition.z, _R)

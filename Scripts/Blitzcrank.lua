@@ -28,7 +28,7 @@ function Blitzcrank:__init()
 	self.grabW = 0
 	self.posEndDash = Vector(0, 0, 0)
 	self.DurationEx = 0
-	self.lastCast = 0	
+	self.lastCast = 0
 
 	Blitzcrank:aa()
 
@@ -241,7 +241,7 @@ end
 
 function Blitzcrank:OnAfterAttack(unit, target)
 	if unit.IsMe then
-		if CanCast(_E) and self.afterAA then			
+		if CanCast(_E) and self.afterAA then
     		if target ~= nil and target.Type == 0 then
     			CastSpellTarget(myHero.Addr, _R)
     		end
@@ -251,7 +251,7 @@ end
 
 function Blitzcrank:OnBeforeAttack(target)
 	--if unit.IsMe then
-		if CanCast(_E) and self.menu_Combo_E then			
+		if CanCast(_E) and self.menu_Combo_E then
 	    	--local orbT = GetTargetOrb()
     		if target ~= nil and target.Type == 0 then
     			CastSpellTarget(myHero.Addr, _E)
@@ -267,7 +267,7 @@ function Blitzcrank:OnDraw()
 			local hero = GetAIHero(heros)
 			if IsValidTarget(hero.Addr, self.Q.range - 150) then
 				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
-				DrawCircleGame(QPos.x , QPos.y, QPos.z, 150, Lua_ARGB(255,255,0,0))				
+				DrawCircleGame(QPos.x , QPos.y, QPos.z, 150, Lua_ARGB(255,255,0,0))
 			end
 		end
 	end]]
@@ -356,7 +356,7 @@ function Blitzcrank:autoQtoEndDash()
 		if enemy ~= nil then
 		    target = GetAIHero(enemy)
 		    local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)	    	
+		    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
 		    if IsValidTarget(target.Addr, self.maxGrab) then
 		    	if QHitChance >= 3 or not self:CanMove(target) then
 					CastSpellToPos(QPos.x, QPos.z, _Q)
@@ -392,7 +392,7 @@ function Blitzcrank:LogicQ()
 		if (GetDistance(QPos) < self.maxGrab and GetDistance(QPos) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
 			if QHitChance >= self.hitchane and self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then
 				--__PrintTextGame("string szText")
-				__PrintTextGame(tostring(QHitChance))
+				--__PrintTextGame(tostring(QHitChance))
 		        CastSpellToPos(QPos.x, QPos.z, _Q)
 		    end
 		end
@@ -402,9 +402,9 @@ function Blitzcrank:LogicQ()
 		if enemy ~= nil then
 			target = GetAIHero(enemy)
 			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		    if self.ts_prio[i].Menu then	    			    	
+		    if self.ts_prio[i].Menu then
 		    	if IsValidTarget(target.Addr, self.maxGrab) then
-		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then				    
+		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then
 						if QHitChance >= self.hitchane then
 							CastSpellToPos(QPos.x, QPos.z, _Q)
 						end
@@ -421,7 +421,7 @@ function Blitzcrank:LogicQ()
 					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
 		    end
-		end	   
+		end
 	end
 end
 

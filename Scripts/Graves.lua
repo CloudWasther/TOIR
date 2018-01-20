@@ -11,6 +11,7 @@ end
 function Graves:__init()
 	-- VPrediction
 	self.vpred = VPrediction(true)
+	HPred = HPrediction()
 
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
@@ -28,6 +29,8 @@ function Graves:__init()
     self.R:SetSkillShot(0.25, 2100, 100, true)
     self.R2:SetSkillShot(0.25, 2100, 100, true)
 
+    self.OverKill = 0
+
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
@@ -40,32 +43,25 @@ end
 
 function Graves:MenuValueDefault()
 	self.menu = "Graves_Magic"
-	self.Use_Combo_Q = self:MenuBool("Use Combo Q", true)
-	self.Auto_Q_End_Dash = self:MenuBool("Auto Q End Dash", true)
+	self.autoQ = self:MenuBool("Auto Q", true)
 	self.Auto_Q_If_Wall = self:MenuBool("Auto Q If Wall", true)
-	self.Auto_Q_Kill_Steal = self:MenuBool("Auto Q Kill Steal", true)
+	self.QWlogic = self:MenuBool("Use Q and W only if don't have ammo", true)
+	--self.Qharras = self:MenuBool("Harass Q", true)
 	self.jungQ = self:MenuBool("Jungle Q", true)
+	self.qHC = self:MenuSliderFloat("Q HitChane", 1)
 
-	self.Use_Combo_W = self:MenuBool("Use Combo W", false)
-	self.Use_W_Anti_GapClose = self:MenuBool("Use W Anti GapClose", true)
-	self.Use_W_End_Dash = self:MenuBool("Use W End Dash", true)
-	self.Auto_W_Kill_Steal = self:MenuBool("Auto W Kill Steal", true)
+	self.autoW = self:MenuBool("Auto W", false)
+	self.AGCW = self:MenuBool("AntiGapcloser W", true)
+
 
 	self.Enable_E = self:MenuBool("Enable E", true)
 	self.Enable_E_Reload_JungFarm = self:MenuBool("Enable E Reload JungFarm", true)
 	self.E_Mode = self:MenuComboBox("E Mode", 2)
 
-	self.Enable_R = self:MenuBool("Enable R", true)
-	self.Auto_R_if_Hit = self:MenuSliderInt("Auto R if Hit", 2)
-	self.Use_R_Kill_Steal = self:MenuBool("Use R Kill Steal", true)
-
-	self.Use_Smite_Kill_Steal = self:MenuBool("Use Smite Kill Steal", true)
-	self.Use_Smite_in_Combo = self:MenuBool("Use Smite in Combo", true)
-	self.Use_Smite_Small_Jungle = self:MenuBool("Use Smite Small Jungle", true)
-	self.Use_Smite_Blue = self:MenuBool("Use Smite Blue", true)
-	self.Use_Smite_Red = self:MenuBool("Use Smite Red", true)
-	self.Use_Smite_Dragon = self:MenuBool("Use Smite Dragon", true)
-	self.Use_Smite_Baron = self:MenuBool("Use Smite Baron", true)
+	self.autoR = self:MenuBool("Auto R", true)
+	--self.Auto_R_if_Hit = self:MenuSliderInt("Auto R if Hit", 2)
+	self.fastR = self:MenuBool("Fast R ks Combo", true)
+	self.overkillR = self:MenuBool("Overkill protection", true)
 
 	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
 	self.Draw_Q_Range = self:MenuBool("Draw Q Range", true)
@@ -86,18 +82,17 @@ end
 function Graves:OnDrawMenu()
 	if Menu_Begin(self.menu) then
 		if Menu_Begin("Setting Q") then
-			self.Use_Combo_Q = Menu_Bool("Use Combo Q", self.Use_Combo_Q, self.menu)
-			self.Auto_Q_End_Dash = Menu_Bool("Auto Q End Dash", self.Auto_Q_End_Dash, self.menu)
+			self.autoQ = Menu_Bool("Auto Q", self.autoQ, self.menu)
 			self.Auto_Q_If_Wall = Menu_Bool("Auto Q If Wall", self.Auto_Q_If_Wall, self.menu)
-			self.Auto_Q_Kill_Steal = Menu_Bool("Auto Q Kill Steal", self.Auto_Q_Kill_Steal, self.menu)
+			self.QWlogic = Menu_Bool("Use Q and W only if don't have ammo", self.QWlogic, self.menu)
+			--self.Qharras = Menu_Bool("Harass Q", self.Qharras, self.menu)
 			self.jungQ = Menu_Bool("Jungle Q", self.jungQ, self.menu)
+			self.qHC = Menu_SliderFloat("Q HitChane", self.qHC, 0, 3, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting W") then
-			self.Use_Combo_W = Menu_Bool("Use Combo W", self.Use_Combo_W, self.menu)
-			self.Use_W_Anti_GapClose = Menu_Bool("Use W Anti GapClose", self.Use_W_Anti_GapClose, self.menu)
-			self.Use_W_End_Dash = Menu_Bool("Use W End Dash", self.Use_W_End_Dash, self.menu)
-			self.Auto_W_Kill_Steal = Menu_Bool("Auto W Kill Steal", self.Auto_W_Kill_Steal, self.menu)
+			self.autoW = Menu_Bool("Auto W", self.autoW, self.menu)
+			self.AGCW = Menu_Bool("AntiGapcloser W", self.AGCW, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting E") then
@@ -107,21 +102,10 @@ function Graves:OnDrawMenu()
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
-			self.Enable_R = Menu_Bool("Enable R", self.Enable_R, self.menu)
-			self.Auto_R_if_Hit = Menu_SliderInt("Auto R if Hit", self.Auto_R_if_Hit, 1, 5, self.menu)
-			self.Use_R_Kill_Steal = Menu_Bool("Use R Kill Steal", self.Use_R_Kill_Steal, self.menu)
-			Menu_End()
-		end
-		if Menu_Begin("Setting Smite") then
-			Menu_Text("Smite In Combo")
-			self.Use_Smite_Kill_Steal = Menu_Bool("Use Smite Kill Steal", self.Use_Smite_Kill_Steal, self.menu)
-			self.Use_Smite_in_Combo = Menu_Bool("Use Smite in Combo", self.Use_Smite_in_Combo, self.menu)
-			Menu_Text("Smite In Jungle")
-			self.Use_Smite_Small_Jungle = Menu_Bool("Use Smite Small Jungle", self.Use_Smite_Small_Jungle, self.menu)
-			self.Use_Smite_Blue = Menu_Bool("Use Smite Blue", self.Use_Smite_Blue, self.menu)
-			self.Use_Smite_Red = Menu_Bool("Use Smite Red", self.Use_Smite_Red, self.menu)
-			self.Use_Smite_Dragon = Menu_Bool("Use Smite Dragon", self.Use_Smite_Dragon, self.menu)
-			self.Use_Smite_Baron = Menu_Bool("Use Smite Baron", self.Use_Smite_Baron, self.menu)
+			self.autoR = Menu_Bool("Auto R", self.autoR, self.menu)
+			--self.Auto_R_if_Hit = Menu_SliderInt("Auto R if Hit", self.Auto_R_if_Hit, 1, 5, self.menu)
+			self.fastR = Menu_Bool("Fast R ks Combo", self.fastR, self.menu)
+			self.overkillR = Menu_Bool("Overkill protection", self.overkillR, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Draw Spell") then
@@ -189,11 +173,11 @@ function Graves:OnTick()
 	if IsDead(myHero.Addr) then return end
 	SetLuaCombo(true)
 
-	self:AutoQW()
+	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
+	self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
+	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
 
-	self:KillSteal()
-
-	self:LogicSmiteJungle()
+	--self:AutoQW()
 
 	self:AntiGapCloser()
 
@@ -201,10 +185,16 @@ function Graves:OnTick()
 		self:LaneClear()
 	end
 
-	if GetKeyPress(self.Combo) > 0 then	
-		self:LogicQ()
-		self:LogicW()
-		self:LogicR()
+	if self.QWlogic or not myHero.HasBuff("gravesbasicattackammo1") then
+		if CanCast(_Q) and self.autoQ then
+			self:LogicQ();
+		end
+		if CanCast(_W) and self.autoW then
+			self:LogicW();
+		end
+	end
+	if CanCast(_R) and self.autoR then
+		self:LogicR();
 	end
 
 	if self.Enalble_Mod_Skin then
@@ -220,82 +210,6 @@ function Graves:LaneClear()
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		end
 	end
-end
-
-function Graves:JungleTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, minions in pairs(pUnit) do
-        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
-            table.insert(result, minions)
-        end
-    end
-
-    return result
-end
-
-function Graves:GetIndexSmite()
-	if GetSpellIndexByName("SummonerSmite") > -1 then
-		return GetSpellIndexByName("SummonerSmite")
-	elseif GetSpellIndexByName("S5_SummonerSmiteDuel") > -1 then
-		return GetSpellIndexByName("S5_SummonerSmiteDuel")
-	elseif GetSpellIndexByName("S5_SummonerSmitePlayerGanker") > -1 then
-		return GetSpellIndexByName("S5_SummonerSmitePlayerGanker")
-	end
-	return -1
-end
-
-function Graves:GetSmiteDamage(target)
-	if self:GetIndexSmite() > -1 then
-		if GetType(target) == 0 then
-			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmitePlayerGanker" then
-				return 20 + 8*myHero.Level;
-			end
-			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmiteDuel" then
-				return 54 + 6*myHero.Level;
-			end
-
-		end
-		local DamageSpellSmiteTable = {390, 410, 430, 450, 480, 510, 540, 570, 600, 640, 680, 720, 760, 800, 850, 900, 950, 1000}
-		return DamageSpellSmiteTable[myHero.Level]
-	end
-	return 0
-end
-
-function Graves:LogicSmiteJungle()
-	for i, minions in ipairs(self:JungleTbl()) do
-        if minions ~= 0 then
-            local jungle = GetUnit(minions)
-            if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
-                (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.Use_Smite_Red then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Blue" and self.Use_Smite_Blue then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_RiftHerald" and self.Use_Smite_Baron then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Baron" and self.Use_Smite_Baron then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and self.Use_Smite_Small_Jungle then
-                	if jungle.CharName == "SRU_Razorbeak" or jungle.CharName == "SRU_Murkwolf" or jungle.CharName == "SRU_Gromp" or jungle.CharName == "SRU_Krug" then
-                    	CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                	end
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.Use_Smite_Dragon then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-            end
-        end
-    end
 end
 
 function Graves:LogicE()
@@ -321,60 +235,119 @@ end
 
 function Graves:LogicQ()
 	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
-	if CanCast(_Q) and TargetQ ~= 0 then
+	if TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-
-		if TargetQ ~= nil then
-			if (GetDistance(TargetQ) < self.Q.range - 150 and GetDistance(TargetQ) > 300  or (self:IsImmobileTarget(TargetQ))) then
-				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
-					CastSpellTarget(TargetQ, self:GetIndexSmite())
+		
+		if IsValidTarget(target.Addr, self.Q.range - 150) then
+			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			local step = GetDistance(QPos) / 20
+			for i = 1, 20, 1 do 
+				local p = Vector(myHero):Extended(QPos, step * i)
+				if IsWall(p.x, p.y, p.z) then
+					return
 				end
-				if CastPosition and HitChance >= 2 and self.Use_Combo_Q then
-		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		    	end
-		    end
+			end
+
+			if GetKeyPress(self.Combo) > 0 and myHero.MP > 160 and QHitChance >= self.qHC then
+				CastSpellToPos(QPos.x, QPos.z, _Q)
+			--elseif GetKeyPress(self.Harass) > 0 and self.Qharras and myHero.MP > 330 and QHitChance >= self.qHC then
+				--CastSpellToPos(QPos.x, QPos.z, _Q)
+			else
+				local qDmg = GetDamage("Q", target)
+				local rDmg = GetDamage("R", target)
+				if qDmg > target.HP and QHitChance > 1 then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
+					self.OverKill = GetTimeGame()
+				elseif qDmg + rDmg > target.HP and CanCast(_R) and myHero.MP > 160 and QHitChance > 1 then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
+					if self.fastR and rDmg > target.HP then
+						CastSpellToPos(QPos.x, QPos.z, _R)
+					end
+				end
+			end
+		end
+	end
+	if myHero.MP > 230 then
+		for i,hero in pairs(GetEnemyHeroes()) do
+			if hero ~= nil then
+				target = GetAIHero(hero)				
+				if IsValidTarget(target, self.Q.range - 200) and not self:CanMove(target)then
+					CastSpellToPos(target.x, target.z, _Q)
+				end
+				if IsValidTarget(target, self.Q.range - 200) then
+					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					local QPred = Vector(myHero):Extended(QPos, self.Q.range - 150)
+					if GetDistance(QPos) < self.Q.range - 150 and QHitChance >= 3 then
+						CastSpellToPos(QPos.x, QPos.z, _Q)
+					end
+					if IsWall(QPred.x, QPred.y, QPred.z) and self.Auto_Q_If_Wall then
+						CastSpellToPos(QPos.x, QPos.z, _Q)
+					end
+				end
+			end
 		end
 	end
 end
 
 function Graves:LogicW()
 	local TargetW = GetTargetSelector(self.W.range - 150, 0)
-	if CanCast(_W) and TargetW ~= 0 then
-		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
-		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-
-		if TargetW ~= nil then
-			if (GetDistance(TargetW) < self.W.range - 150 and GetDistance(TargetW) > 300  or self:IsImmobileTarget(TargetW)) then
-				if self:GetIndexSmite() > -1 and self.Use_Smite_in_Combo then
-					CastSpellTarget(TargetW, self:GetIndexSmite())
+	if TargetW ~= 0 then
+		target = GetAIHero(TargetW)		
+		if IsValidTarget(target.Addr, self.W.range - 150) then
+			local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+			local wDmg = GetDamage("W", target)
+			if wDmg > target.HP and WHitChance > 1 then
+				CastSpellToPos(WPos.x, WPos.z, _W)
+			elseif wDmg + GetDamage("Q", target) > target.HP and myHero.MP >  230 and WHitChance > 1 then
+				CastSpellToPos(WPos.x, WPos.z, _W)
+			elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 230 and WHitChance > 1 then
+				if GetDistance(WPos) > GetTrueAttackRange() or CountEnemyChampAroundObject(target.Addr, 300) > 0 or self:CountEnemiesInRange(Vector(target), 250) > 1 or target.HP / target.MaxHP < 0.5 then
+					CastSpellToPos(WPos.x, WPos.z, _W)
 				end
-
-				if CastPosition and HitChance >= 2 and self.Use_Combo_W then
-		        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
-		    	end
-		    end
+			end
 		end
-
-		if DashPosition ~= nil then
-			if GetDistance(DashPosition) <= 300 and self.Use_W_Anti_GapClose then
-	    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
-	    	end
+	end
+	if myHero.MP > 270 then
+		for i,hero in pairs(GetEnemyHeroes()) do
+			if hero ~= nil then
+				target = GetAIHero(hero)				
+				if IsValidTarget(target, self.W.range - 150) and not self:CanMove(target)then
+					CastSpellToPos(target.x, target.z, _W)
+				end
+				if IsValidTarget(target, self.W.range - 150) then
+					local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+					if GetDistance(WPos) < self.W.range - 150 and WHitChance >= 3 then
+						CastSpellToPos(WPos.x, WPos.z, _W)
+					end
+				end
+			end
 		end
 	end
 end
 
 function Graves:LogicR()
-	local TargetR = GetTargetSelector(self.R.range, 1)
-	if CanCast(_R) and TargetR ~= 0 then
-		target = GetAIHero(TargetR)
-		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
-		--__PrintTextGame(tostring(self:CountEnemyInLine(target)).."--"..tostring(self:MenuSliderInt("Auto R if Hit")))
-		if HitChance >= 2 and self:CountEnemyInLine(target) > self.Auto_R_if_Hit then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+	for i,hero in pairs(GetEnemyHeroes()) do
+		if hero ~= nil then
+			target = GetAIHero(hero)
+			if IsValidTarget(target, self.R.range - 150) and self:ValidUlt(target) then
+				local rDmg = GetDamage("R", target)
+				if rDmg > target.HP then
+					if self.overkillR and target.HP < myHero.HP then
+						if GetDistance(Vector(target)) < GetTrueAttackRange() or CountAllyChampAroundObject(target.Addr, 400) > 0 then
+							local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+							local rDmg2 = rDmg * 0.8
+							if RHitChance > 1 then 
+								CastSpellToPos(RPos.x, RPos.z, _R)
+							end
+							if rDmg2 > target.HP then
+								if RHitChance < 0 then
+									CastSpellToPos(RPos.x, RPos.z, _R)
+								end
+							end
+						end
+					end
+				end
+			end
 		end
 	end
 end
@@ -416,42 +389,21 @@ function Graves:AutoQW()
 	end
 end
 
-function Graves:KillSteal()
-	local TargetR = GetTargetSelector(self.R.range, 1)
-	if TargetR ~= nil and IsValidTarget(TargetR, self.R.range) and CanCast(_R) and self.Use_R_Kill_Steal then
-		targetR = GetAIHero(TargetR)
 
-		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetR, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
-		if GetDistance(TargetR) < self.R.range and GetDamage("R", targetR) > GetHealthPoint(TargetR) then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _R)
-		end
+function Graves:CanMove(unit)
+	if (unit.MoveSpeed < 50 or CountBuffByType(unit.Addr, 5) == 1 or CountBuffByType(unit.Addr, 21) == 1 or CountBuffByType(unit.Addr, 11) == 1 or CountBuffByType(unit.Addr, 29) == 1 or
+		unit.HasBuff("recall") or CountBuffByType(unit.Addr, 30) == 1 or CountBuffByType(unit.Addr, 22) == 1 or CountBuffByType(unit.Addr, 8) == 1 or CountBuffByType(unit.Addr, 24) == 1
+		or CountBuffByType(unit.Addr, 20) == 1 or CountBuffByType(unit.Addr, 18) == 1) then
+		return false
 	end
+	return true
+end
 
-	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
-	if TargetQ ~= nil and IsValidTarget(TargetQ, self.Q.range) and CanCast(_Q) and self.Auto_Q_Kill_Steal then
-		targetQ = GetAIHero(TargetQ)
-
-		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetQ, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		if GetDistance(TargetQ) < self.Q.range and GetDamage("Q", targetQ) > GetHealthPoint(TargetQ) then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		end
+function Graves:ValidUlt(unit)
+	if CountBuffByType(unit.Addr, 16) == 1 or CountBuffByType(unit.Addr, 15) == 1 or CountBuffByType(unit.Addr, 17) == 1 or unit.HasBuff("kindredrnodeathbuff") or CountBuffByType(unit.Addr, 4) == 1 then
+		return false
 	end
-
-	local TargetW = GetTargetSelector(self.W.range - 150, 0)
-	if TargetW ~= nil and IsValidTarget(TargetW, self.W.range) and CanCast(_W) and self.Auto_W_Kill_Steal then
-		targetW = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(targetW, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		if GetDistance(TargetW) < self.W.range and GetDamage("W", targetW) > GetHealthPoint(TargetW) then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
-		end
-	end
-
-	local TargetSmite = GetTargetSelector(650, 1)
-	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.Use_Smite_Kill_Steal then
-		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
-			CastSpellTarget(TargetSmite, self:GetIndexSmite())
-		end
-	end
+	return true
 end
 
 local function GetDistanceSqr(p1, p2)
@@ -744,6 +696,9 @@ function Graves:AntiGapCloser()
 	    				if self:IsGoodPosition(bestpoint) then   
                         	CastSpellToPos(bestpoint.x,bestpoint.z, _E)     				
           				end
+          			end
+          			if GetDistance(DashPosition) < 400 and CanCast(_W) and self.AGCW then
+          				CastSpellToPos(DashPosition.x, DashPosition.z, _W) 
           			end
         		end
       		--end

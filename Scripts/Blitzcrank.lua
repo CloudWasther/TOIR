@@ -32,7 +32,8 @@ function Blitzcrank:__init()
 
 	Blitzcrank:aa()
 
-	Callback.Add("Tick", function(...) self:OnTick(...) end)
+	Callback.Add("Update", function(...) self:OnUpdate(...) end)
+	--Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
@@ -47,7 +48,7 @@ function Blitzcrank:MenuValueDefault()
 
 	self.menu_Combo_Q = self:MenuBool("Use Q", true)
 
-	self.maxGrab = self:MenuSliderInt("Max range grab", self.Q.range - 150)
+	self.maxGrab = self:MenuSliderInt("Max range grab", self.Q.range)
 	self.minGrab = self:MenuSliderInt("Min range grab", 250)
 	self.hitchane = self:MenuSliderFloat("Q HitChane", 2)
 	self.menu_Combo_QendDash = self:MenuBool("Auto Q End Dash", true)
@@ -89,8 +90,8 @@ function Blitzcrank:OnDrawMenu()
 	if Menu_Begin(self.menu) then
 		if Menu_Begin("Setting Q") then
 			self.menu_Combo_Q = Menu_Bool("Use Q", self.menu_Combo_Q, self.menu)
-			self.minGrab = Menu_SliderInt("Min range grab", self.minGrab, 125, self.Q.range - 150, self.menu)
-			self.maxGrab = Menu_SliderInt("Max range grab", self.maxGrab, 125, self.Q.range - 150, self.menu)
+			self.minGrab = Menu_SliderInt("Min range grab", self.minGrab, 125, self.Q.range, self.menu)
+			self.maxGrab = Menu_SliderInt("Max range grab", self.maxGrab, 125, self.Q.range, self.menu)
 			self.Qspell = Menu_Bool("Q on special spell detection", self.Qspell, self.menu)
 			self.menu_Combo_QendDash = Menu_Bool("Auto Q End Dash", self.menu_Combo_QendDash, self.menu)
 			self.menu_Combo_Qinterrup = Menu_Bool("Use Q Interrup", self.menu_Combo_Qinterrup, self.menu)
@@ -201,6 +202,43 @@ function Blitzcrank:OnTick()
 	end
 end
 
+function Blitzcrank:OnUpdate()
+	if IsDead(myHero.Addr) then return end
+	SetLuaCombo(true)
+
+	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
+
+	if CanCast(_Q) then
+        self:LogicQ();
+    end
+
+    if CanCast(_R) then
+        self:LogicR();
+    end
+
+    if CanCast(_W) then
+        self:LogicW()
+    end
+
+	if self.menu_Combo_QendDash then
+		self:autoQtoEndDash()
+	end
+
+	self:KillSteal()
+
+	if not self.Q:IsReady() and GetTimeGame() - self.grabW > 2 then
+		local targetQ = GetTargetSelector(self.Q.range, 0) --orbwalk:getTarget(self.Q.range)
+		if GetBuffByName(targetQ, "rocketgrab2") ~= 0 and IsValidTarget(targetQ, self.Q.range) then
+			self.grabS = self.grabS + 1
+			self.grabW = GetTimeGame()
+		end
+	end
+
+	if self.Enalble_Mod_Skin then
+		ModSkin(self.Set_Skin)
+	end
+end
+
 function Blitzcrank:OnAfterAttack(unit, target)
 	if unit.IsMe then
 		if CanCast(_E) and self.afterAA then			
@@ -224,15 +262,15 @@ end
 
 function Blitzcrank:OnDraw()
 
-	for i, heros in ipairs(GetEnemyHeroes()) do
+	--[[for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
 			if IsValidTarget(hero.Addr, self.Q.range - 150) then
 				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
-				DrawCircleGame(QPos.x , QPos.y, QPos.z, 150, Lua_ARGB(255,255,0,0))
+				DrawCircleGame(QPos.x , QPos.y, QPos.z, 150, Lua_ARGB(255,255,0,0))				
 			end
 		end
-	end
+	end]]
 
 	if self.Draw_When_Already then
 		if self.Draw_Q_Range and self.Q:IsReady() then
@@ -275,6 +313,12 @@ function Blitzcrank:OnDraw()
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range - 150 then
 	    DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
+	end
+
+	local percent = 0
+    if (self.grab > 0) and self.menu_Draw_CountQ then
+		percent = (self.grabS / self.grab) * 100
+		DrawTextD3DX(100, 100, " grab: "..tostring(self.grab).." grab successful: " ..tostring(self.grabS).. " grab successful % : " ..tostring(percent).. "%", Lua_ARGB(255, 0, 255, 10))
 	end
 end
 
@@ -348,6 +392,7 @@ function Blitzcrank:LogicQ()
 		if (GetDistance(QPos) < self.maxGrab and GetDistance(QPos) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
 			if QHitChance >= self.hitchane and self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then
 				--__PrintTextGame("string szText")
+				__PrintTextGame(tostring(QHitChance))
 		        CastSpellToPos(QPos.x, QPos.z, _Q)
 		    end
 		end
@@ -372,7 +417,7 @@ function Blitzcrank:LogicQ()
 				end
 		    end
 		    if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
-				if QHitChance >= self.hitchane - 0.3 and self:IsUnderAllyTurret(Vector(target)) then
+				if QHitChance >= self.hitchane and self:IsUnderAllyTurret(Vector(target)) then
 					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
 		    end

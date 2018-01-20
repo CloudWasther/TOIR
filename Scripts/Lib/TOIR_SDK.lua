@@ -935,6 +935,32 @@ function GetAllHeroes()
 
         return result
 end
+
+function EnemyMinionsTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, obj in pairs(pUnit) do
+        if obj ~= 0  then
+            local minions = GetUnit(obj)
+            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and GetType(minions.Addr) == 1 then
+                table.insert(result, minions)
+            end
+        end
+    end
+    return result
+end
+
+function JungleTbl()
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+            table.insert(result, minions)
+        end
+    end
+
+    return result
+end
 --[[
 function GetPathIndex(unit)
         local result = 1--unit.GetPath(1)
@@ -3219,10 +3245,10 @@ function VPrediction:__init()
         self.WaypointsTime = 10
 
 
-        self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
-        self.JungleMinions = minionManager(MINION_JUNGLE, 2000, myHero, MINION_SORT_HEALTH_ASC)
-        self.OtherMinions = minionManager(MINION_OTHER, 2000, myHero, MINION_SORT_HEALTH_ASC)
-        self.AllyMinions = minionManager(MINION_ALLY, 2000, myHero, MINION_SORT_HEALTH_ASC)
+        --self.EnemyMinions = minionManager(MINION_ENEMY, 2000, myHero, MINION_SORT_HEALTH_ASC)
+        --self.JungleMinions = minionManager(MINION_JUNGLE, 2000, myHero, MINION_SORT_HEALTH_ASC)
+        --self.OtherMinions = minionManager(MINION_OTHER, 2000, myHero, MINION_SORT_HEALTH_ASC)
+        --self.AllyMinions = minionManager(MINION_ALLY, 2000, myHero, MINION_SORT_HEALTH_ASC)
 
         self.TargetsVisible = {}
         self.TargetsWaypoints = {}
@@ -3366,7 +3392,7 @@ function VPrediction:MenuValueDefault()
     self.VPMenu_Buffer = self:MenuSliderInt("Collision Buffer", 20)
     self.VPMenu_Minions = self:MenuBool("Normal Minions", true)
     self.VPMenu_Mobs = self:MenuBool("Jungle Minions", true)
-    self.VPMenu_Others = self:MenuBool("Others", true)
+    --self.VPMenu_Others = self:MenuBool("Others", true)
     self.ChampionCollision = self:MenuBool("Enemy Collision", true)
     self.VPMenu_UnitPos = self:MenuBool("Check Collision at Unit Pos", true)
     self.VPMenu_CastPos = self:MenuBool("Check Collision at Cast Pos", true)
@@ -3383,7 +3409,7 @@ function VPrediction:OnDrawMenu()
             self.VPMenu_Buffer = Menu_SliderInt("Collision Buffer", self.VPMenu_Buffer, 0, 100, self.menu)
             self.VPMenu_Minions = Menu_Bool("Normal Minions", self.VPMenu_Minions, self.menu)
             self.VPMenu_Mobs = Menu_Bool("Jungle Minions", self.VPMenu_Mobs, self.menu)
-            self.VPMenu_Others = Menu_Bool("Others", self.VPMenu_Others, self.menu)
+            --self.VPMenu_Others = Menu_Bool("Others", self.VPMenu_Others, self.menu)
             self.ChampionCollision = Menu_Bool("Enemy Collision", self.ChampionCollision, self.menu)
             self.VPMenu_UnitPos = Menu_Bool("Check Collision at Unit Pos", self.VPMenu_UnitPos, self.menu)
             self.VPMenu_CastPos = Menu_Bool("Check Collision at Cast Pos", self.VPMenu_CastPos, self.menu)
@@ -3924,30 +3950,23 @@ function VPrediction:GetBestCastPosition(unit, delay, radius, range, speed, from
     radius = radius - GetBoundingRadius(unit.Addr) + 4
 
     if collision and HitChance > 0 then
-        self.EnemyMinions.range = range + 500 * (delay + range/speed)
-        self.JungleMinions.range = self.EnemyMinions.range
-        self.OtherMinions.range = self.EnemyMinions.range
-        self.EnemyMinions:update()
-        self.JungleMinions:update()
-        self.OtherMinions:update()
-        self.AllyMinions:update()
+        --self.EnemyMinions.range = range + 500 * (delay + range/speed)
+        --self.JungleMinions.range = self.EnemyMinions.range
+        --self.OtherMinions.range = self.EnemyMinions.range
+        --self.EnemyMinions:update()
+        --self.JungleMinions:update()
+        --self.OtherMinions:update()
+        --self.AllyMinions:update()
 
-        if self.VPMenu_Collision then
-            if self.VPMenu_CastPos and self:CheckMinionCollision(unit, CastPosition, delay, radius, range, speed, from, false, false) then
-                HitChance = -1
-            elseif self.VPMenu_PredictPos and self:CheckMinionCollision(unit, Position, delay, radius, range, speed, from, false, false) then
-                HitChance = -1
-            end
-            if self.VPMenu_UnitPos and self:CheckMinionCollision(unit, unit, delay, radius, range, speed, from, false, false) then
-                HitChance = -1
-            end
-        else
-            if self:CheckMinionCollision(unit, CastPosition, delay, radius, range, speed, from, false, false) then
-                HitChance = -1
-            end
-            if self:CheckMinionCollision(unit, unit, delay, radius, range, speed, from, false, false) then
-                HitChance = -1
-            end
+
+        if self.VPMenu_CastPos and self:CheckMinionCollision(unit, CastPosition, delay, radius, range, speed, from, false, false) then
+            HitChance = -1
+        elseif self.VPMenu_PredictPos and self:CheckMinionCollision(unit, Position, delay, radius, range, speed, from, false, false) then
+            HitChance = -1
+        end
+
+        if self.VPMenu_UnitPos and self:CheckMinionCollision(unit, unit, delay, radius, range, speed, from, false, false) then
+            HitChance = -1
         end
     end
     return CastPosition, HitChance, Position
@@ -4127,21 +4146,47 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
     Position = Vector(Position)
     from = from and Vector(from) or myHero
     --local draw = true
-    if updatemanagers then
+    --[[if updatemanagers then
         self.EnemyMinions.range = range + 500 * (delay + range / speed)
         self.JungleMinions.range = self.EnemyMinions.range
         self.OtherMinions.range = self.EnemyMinions.range
         self.EnemyMinions:update()
         self.JungleMinions:update()
         self.OtherMinions:update()
-    self.AllyMinions:update()
-    end
-
+        self.AllyMinions:update()
+    end]]
     local result = false
-    if self.VPMenu_Collision then
-        if self.VPMenu_Minions then
-            for i, minion in ipairs(self.EnemyMinions.objects) do
-                if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
+
+        GetAllUnitAroundAnObject(myHero.Addr, 2000)
+        for i, obj in ipairs(pUnit) do      
+            if obj ~= 0  then
+                local minion = GetUnit(obj)
+                if minion.IsEnemy and minion.IsValid and minion.IsVisible and not minion.IsDead then
+                    --__PrintTextGame(tostring(GetObjName(minion.Addr)))
+                    if minion.Type == 1 and self.VPMenu_Minions then
+                        if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
+                            if not draw then
+                                return true
+                            else
+                                result = true
+                            end
+                        end               
+                    end
+                    if self.VPMenu_Mobs and minion.Type == 3 and (GetObjName(minion.Addr) ~= "PlantSatchel" and GetObjName(minion.Addr) ~= "PlantHealth" and GetObjName(minion.Addr) ~= "PlantVision") then
+                        if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
+                            if not draw then
+                                return true
+                            else
+                                result = true
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        if self.ChampionCollision then
+            for i, enemy in ipairs(GetEnemyHeroes()) do
+                if self:CheckCol(unit, enemy, Position, delay, radius, range, speed, from, draw) then
                     if not draw then
                         return true
                     else
@@ -4151,95 +4196,6 @@ function VPrediction:CheckMinionCollision(unit, Position, delay, radius, range, 
             end
         end
 
-        if self.VPMenu_Mobs then
-            for i, minion in ipairs(self.JungleMinions.objects) do
-                if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
-                    if not draw then
-                        return true
-                    else
-                        result = true
-                    end
-                end
-            end
-        end
-
-        if self.VPMenu_Others then
-            for i, minion in ipairs(self.OtherMinions.objects) do
-                if minion.TeamId ~= myHero.TeamId and self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
-                    if not draw then
-                        return true
-                    else
-                        result = true
-                    end
-                end
-            end
-        end
-    --else
-        --[[if (1 + 1) == 2 then --lol
-            for i, minion in ipairs(self.EnemyMinions.objects) do
-                if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
-                    if not draw then
-                        return true
-                    else
-                        result = true
-                    end
-                end
-            end
-        end
-
-        if (1 + 1) == 2 then --lol
-            for i, minion in ipairs(self.JungleMinions.objects) do
-                if self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
-                    if not draw then
-                        return true
-                    else
-                        result = true
-                    end
-                end
-            end
-        end
-
-        if (1 + 1) == 2 then --lol
-            for i, minion in ipairs(self.OtherMinions.objects) do
-                if minion.TeamId ~= myHero.TeamId and self:CheckCol(unit, minion, Position, delay, radius, range, speed, from, draw) then
-                    if not draw then
-                        return true
-                    else
-                        result = true
-                    end
-                end
-            end
-        end]]
-    end
-
-    --[[if self.ChampionCollision then
-        for i, enemy in ipairs(GetEnemyHeroes()) do
-            if self:CheckCol(unit, enemy, Position, delay, radius, range, speed, from, draw) then
-                if not draw then
-                    return true
-                else
-                    result = true
-                end
-            end
-        end
-    end]]
-
-    --[[if draw then
-        local Direction = Vector(Position - from):Perpendicular():Normalized()
-        local Color = result and Lua_ARGB(175, 255, 0, 0) or Lua_ARGB(175, 0, 255, 0)
-        local P1r = Vector(from) + radius * Vector(Direction)
-        local P1l = Vector(from) - radius * Vector(Direction)
-        local P2r = Vector(from) + radius * Direction - Vector(Direction):Perpendicular() * GetDistance(from, Position)
-        local P2l = Vector(from) - radius * Direction - Vector(Direction):Perpendicular() * GetDistance(from, Position)
-
-        self:DLine(P1r, P1l, Color)
-        self:DLine(P1r, P2r, Color)
-        self:DLine(P1l, P2l, Color)
-        self:DLine(P2r, P2l, Color)
-        --if not result and IsKeyDown(string.byte("T")) then
-            --CastSpell(_Q, Position.x, Position.z)
-        --end
-    end]]
 
     return result
 end
@@ -4840,32 +4796,6 @@ end
 
 ---------------------------------------------------------------------------------
 ---------------------------------------------------------------------------------
-
-function HPrediction:EnemyMinionsTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, obj in pairs(pUnit) do
-        if obj ~= 0  then
-            local minions = GetUnit(obj)
-            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
-                table.insert(result, minions)
-            end
-        end
-    end
-    return result
-end
-
-function HPrediction:JungleTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, minions in pairs(pUnit) do
-        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
-            table.insert(result, minions)
-        end
-    end
-
-    return result
-end
 
 function HPrediction:OnTick()
 
@@ -5532,35 +5462,35 @@ end
 ---------------------------------------------------------------------------------
 
 function HPrediction:MinionCollisionStatus(HPskillshot, unit, from, to, draw)
+    GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    for i, obj in ipairs(pUnit) do      
+        if obj ~= 0  then
+            local minion = GetUnit(obj)
+            if minion.IsEnemy and minion.IsValid and minion.IsVisible and not minion.IsDead then
+                --__PrintTextGame(tostring(GetObjName(minion.Addr)))
+                if minion.Type == 1 then
+                    
+                    if self:EachCollision(HPskillshot, unit, from, to, minion) then        
+                        if draw then
+                            self.Draw = true
+                        end          
+                        return true
+                    end
+                end
+                if minion.Type == 3 and (GetObjName(minion.Addr) ~= "PlantSatchel" and GetObjName(minion.Addr) ~= "PlantHealth" and GetObjName(minion.Addr) ~= "PlantVision") then
+                    if self:EachCollision(HPskillshot, unit, from, to, minion) then      
+                        if draw then
+                            self.Draw = true
+                        end       
+                        return true
+                    end
+                end
+            end
+        end
+    end
 
-  for i, minion in ipairs(self:EnemyMinionsTbl()) do
-  
-    if self:EachCollision(HPskillshot, unit, from, to, minion) then
-    
-      if draw then
-        self.Draw = true
-      end
-      
-      return true
-    end
-    
-  end
-  
-  for i, junglemob in ipairs(self:JungleTbl()) do
-  
-    if self:EachCollision(HPskillshot, unit, from, to, junglemob) then
-    
-      if draw then
-        self.Draw = true
-      end
-      
-      return true
-    end
-    
-  end
-  
-  self.Draw = false
-  return false
+    self.Draw = false    
+    return false
 end
 
 ---------------------------------------------------------------------------------
@@ -5601,7 +5531,7 @@ function HPrediction:EachCollision(HPskillshot, unit, from, to, object)
     speed = math.huge
   end
   
-  local objectAddRange = object.CollisionRadius+self.HPMenu_Buffer
+  local objectAddRange = object.CollisionRadius + self.HPMenu_Buffer
   local objectSpeed = object.MoveSpeed
   local to = Vector(to)
   

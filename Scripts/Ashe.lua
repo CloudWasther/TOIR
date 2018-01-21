@@ -12,7 +12,7 @@ function Ashe:__init()
 	--orbwalk = Orbwalking()
 	-- VPrediction
 	vpred = VPrediction(true)
-
+	HPred = HPrediction()
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -216,6 +216,9 @@ function Ashe:OnTick()
 	if myHero.IsDead then return end
 	SetLuaCombo(true)
 
+	self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, collisionH = false, collisionM = true, width = self.W.width})
+	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
+
 	self:AutoEW()
 
 	self:AntiGapCloser()
@@ -247,14 +250,15 @@ function Ashe:LogicW()
 	end
 	if t ~= nil then
 		if IsValidTarget(t, self.W.range - 100) then
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(t, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-			local Collision = CountObjectCollision(0, t.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.W.width, self.W.range, 65)
+			--function VPrediction:GetConeAOECastPosition(unit, delay, angle, range, speed, from)
+			local mainCastPosition, mainHitChance = vpred:GetConeAOECastPosition(target, self.W.delay, 45, self.W.range, self.W.speed, myHero)
+			--local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, t, myHero)
 			if GetKeyPress(self.Combo) > 0 and myHero.MP > 150 then
-				if Collision == 0 and HitChance >= 2 then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+				if mainHitChance >=2 then --WHitChance > 1 then
+					CastSpellToPos(mainCastPosition.x, mainCastPosition.z, _W)
 				end			
 			elseif self.ksW and GetDamage("W", t) > t.HP then
-				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+				CastSpellToPos(mainCastPosition.x, mainCastPosition.z, _W)
 			end
 		end
 	end
@@ -266,13 +270,18 @@ function Ashe:LogicW()
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.W.width, self.W.range, 65)
 					CastSpellToPos(target.x, target.z, _W)
 				end
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-				local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.W.width, self.W.range, 65)
+				local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+				local mainCastPosition, mainHitChance = vpred:GetConeAOECastPosition(target, self.W.delay, 45, self.W.range, self.W.speed, myHero)
+				if WHitChance >= 3 then
+	                CastSpellToPos(WPos.x, WPos.z, _W)
+	            end
+				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+				--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.W.width, self.W.range, 65)
 				if self.harassW and myHero.MP > 250 and self:CanHarras() and IsValidTarget(target, self.W.range - 200) then
 					for i = #self.ts_prio, 1, -1 do
 					    if self.ts_prio[i].Menu then
-					    	if IsValidTarget(target.Addr, self.W.range) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and Collision == 0 and HitChance >= 2 then
-					    		CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+					    	if IsValidTarget(target.Addr, self.W.range) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and mainHitChance >= 2 then
+					    		CastSpellToPos(mainCastPosition.x, mainCastPosition.z, _W)
 					    	end
 					   	end
 					end
@@ -314,17 +323,18 @@ function Ashe:LogicR()
 				target = GetAIHero(hero)
 				if self:ValidUlt(target) then
 					local rDmg = GetDamage("R", target)
-					local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
-					local Collision = CountObjectCollision(2, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.R.width, self.R.range, 65)
-					if GetKeyPress(self.Combo) > 0 and CountEnemyChampAroundObject(target.Addr, 250) > 2 and self.autoRaoe and IsValidTarget(target.Addr, 1500) and HitChance >= 2 then
-						CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+					--local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+					--local Collision = CountObjectCollision(2, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.R.width, self.R.range, 65)
+					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+					if GetKeyPress(self.Combo) > 0 and CountEnemyChampAroundObject(target.Addr, 250) > 2 and self.autoRaoe and IsValidTarget(target.Addr, 1500) and RHitChance >= 2 then
+						CastSpellToPos(RPos.x, RPos.z, _R)
 					end
 					if GetKeyPress(self.Combo) > 0 and IsValidTarget(target.Addr, self.W.range - 100) and self.Rkscombo and GetAADamageHitEnemy(target.Addr) * 5 + rDmg + GetDamage("W", target) > target.HP and
-						HitChance >= 2 and Collision == 0 and GetBuffByName(target.Addr, "slow") > 0 then
-						CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+						RHitChance >= 2 and GetBuffByName(target.Addr, "slow") > 0 then
+						CastSpellToPos(RPos.x, RPos.z, _R)
 					end
-					if rDmg > target.HP and CountAllyChampAroundObject(target.Addr, 600) >= 0 and GetDistance(Vector(target)) > 1000 and HitChance >= 2 and Collision == 0 then
-						CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+					if rDmg > target.HP and CountAllyChampAroundObject(target.Addr, 600) >= 0 and GetDistance(Vector(target)) > 1000 and RHitChance >= 2 then
+						CastSpellToPos(RPos.x, RPos.z, _R)
 					end
 				end
 			end

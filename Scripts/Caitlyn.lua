@@ -13,7 +13,7 @@ end
 function Caitlyn:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-
+	HPred = HPrediction()
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -24,7 +24,7 @@ function Caitlyn:__init()
     self.R = Spell(_R, 2300) -- catlyn
 
     self.Q:SetSkillShot(0.65, 2200, 60, true) -- catlyn
-    self.W:SetSkillShot(1.5, math.huge, 20, true) -- catlyn
+    self.W:SetSkillShot(1.5, 2000, 20, true) -- catlyn
     self.E:SetSkillShot(0.30, 2000, 70, true) -- catlyn
     self.R:SetSkillShot(0.7, 1500, 200, true) -- catlyn
 
@@ -250,10 +250,10 @@ function Caitlyn:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravit
 	if unit.IsMe then
 		local myLastPath = endPos
 	end
-	local TargetE = GetTargetSelector(self.W.range - 150, 0)
-	if CanCast(_E) and TargetE ~= 0 then
-		target = GetAIHero(TargetE)
-		if unit.NetworkId == unit.NetworkId then
+	local TargetW = GetTargetSelector(self.W.range - 150, 0)
+	if CanCast(_W) and TargetW ~= 0 then
+		target = GetAIHero(TargetW)
+		if unit.NetworkId == target.NetworkId then
 			local targetLastPath = endPos
 		end
 	end
@@ -272,6 +272,11 @@ end
 function Caitlyn:OnTick()
 	if myHero.IsDead then return end
 	SetLuaCombo(true)
+
+	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
+	self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
+	self.HPred_E_M = HPSkillshot({type = "DelayLine", delay = self.E.delay, range = self.E.range, speed = self.E.speed, collisionH = false, collisionM = true, width = self.E.width})
+	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
 
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if IsValidTarget(hero, 1000) then
@@ -376,36 +381,46 @@ function Caitlyn:LogicQ()
 	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if IsValidTarget(TargetQ, self.Q.range - 150) then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 and HitChance > 2 then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 250 and CountEnemyChampAroundObject(myHero.Addr, self:bonusRange() + 100 + GetBoundingRadius(target.Addr)) == 0 and not self.autoQ then
-			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 and QHitChance > 2 then
+			CastSpellToPos(QPos.x, QPos.z, _Q)
+		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 250 and CountEnemyChampAroundObject(myHero.Addr, self:bonusRange() + 100 + GetBoundingRadius(target.Addr)) == 0 and not self.autoQ and QHitChance > 2 then
+			CastSpellToPos(QPos.x, QPos.z, _Q)
 		end
 
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if IsValidTarget(hero, self.Q.range - 150) then
 				target = GetAIHero(hero)
 				if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range - 150 and self.autoQcc then
-					CastSpellToPos(target.x, target.z, _Q)
+					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
 			end
 		end
 
-		if GetKeyPress(self.Combo) > 0 and myHero.MP > 150 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
-			for i,hero in pairs(GetEnemyHeroes()) do
-				if IsValidTarget(hero, self.Q.range - 150) then
-					target = GetAIHero(hero)
-					if (not self:CanMove(target) or target.HasBuff("caitlynyordletrapinternal")) and GetDistance(target.Addr) < self.Q.range - 150 then
-						CastSpellToPos(target.x, target.z, _Q)
-					end
+		if CountEnemyChampAroundObject(myHero.Addr, self:bonusRange()) == 0 and self:CanHarras() then
+			if GetBuffByName(target.Addr, "slow") ~= 0 and self.Qslow then
+				CastSpellToPos(QPos.x, QPos.z, _Q)
+			end				
+		end		
+	end
+
+
+	for i,hero in pairs(GetEnemyHeroes()) do
+		if IsValidTarget(hero, self.Q.range - 150) then
+			target = GetAIHero(hero)
+			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			local qDmg = GetDamage("Q", target)
+			if GetKeyPress(self.Combo) > 0 and myHero.MP > 150 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then							
+				if target.HasBuff("caitlynyordletrapinternal") and GetDistance(target.Addr) < self.Q.range - 150 then
+					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
 			end
-
-			if CountEnemyChampAroundObject(myHero.Addr, self:bonusRange()) == 0 and self:CanHarras() then
-				if GetBuffByName(target.Addr, "slow") ~= 0 and self.Qslow then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				end				
+			if QHitChance >= 3 then
+				CastSpellToPos(QPos.x, QPos.z, _Q)
+			end
+			if qDmg > target.HP and QHitChance >= 2 then
+				CastSpellToPos(QPos.x, QPos.z, _Q)
 			end
 		end
 	end
@@ -413,25 +428,41 @@ end
 
 function Caitlyn:CanHarras()
 	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-	if not self:IsUnderTurretEnemy(myHeroPos) and self:CanMoveOrb(50) then
+	if not self:IsUnderTurretEnemy(myHeroPos) then
 		return true
 	end
 	return false
 end
 
 function Caitlyn:LogicW()
+	--[[local TargetW = GetTargetSelector(self.W.range - 200, 0)
+	if IsValidTarget(TargetW, self.W.range - 200) then
+		target = GetAIHero(TargetW)
+		local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+		--__PrintTextGame(tostring(GetKeyPress(self.Combo) > 0).."--"..tostring(WHitChance).."--"..tostring(CountEnemyChampAroundObject(myHero.Addr, 400)).."--"..tostring(target.Name))
+		if GetKeyPress(self.Combo) > 0 and myHero.MP > 200 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
+			CastSpellToPos(WPos.x, WPos.z, _W)
+		end
+	end]]
+
+
 	for i,hero in pairs(GetEnemyHeroes()) do
-		if IsValidTarget(hero, self.W.range + 50) then
+		if IsValidTarget(hero, self.W.range - 100) then
 			target = GetAIHero(hero)
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+			local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
 			--__PrintTextGame(tostring(target.HasBuff("caitlynyordletrapinternal")))
 			if not self:CanMove(target) and self.autoW and not target.HasBuff("caitlynyordletrapinternal") then
-				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
-				return
+				CastSpellToPos(target.x, target.z, _W)
+				--return
 			end
 
+			if WHitChance >= 3 then
+				CastSpellToPos(WPos.x, WPos.z, _W)
+			end
+			--__PrintTextGame(tostring(self.IsMovingInSameDirection))
 			if self.IsMovingInSameDirection then
-				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+				CastSpellToPos(WPos.x, WPos.z, _W)
 			end
 		end
 	end
@@ -440,8 +471,6 @@ function Caitlyn:LogicW()
 			CastSpellToPos(self.GetTrapPos.x, self.GetTrapPos.z, _W)
 		end
 	end
-
-	
 
 	if (GetTimeGame() * 10) % 2 < 0.03 and self.bushW2 then
 		local AmmoW = {3, 3, 4, 4, 5}
@@ -460,59 +489,71 @@ end
 
 function Caitlyn:LogicE()
 	if self.autoE then
-		local TargetE = GetTargetSelector(self.E.range - 500, 0)
-		if IsValidTarget(TargetE, self.E.range) then
+		local TargetE = GetTargetSelector(self.E.range - 300, 0)
+		if IsValidTarget(TargetE, self.E.range - 300) then
 			target = GetAIHero(TargetE)
 			myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 			local positionT = Vector(myHero) - (Vector(target) - Vector(myHero))
 			--local targetPos = Vector(target.x, target.y, target.z)
 			--pos = myHero::Extended(targetPos, 400)
+			local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+			local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
 			if self:CountEnemiesInRange(positionT, 700) < 2 then
 				local eDmg = GetDamage("E", target)
 				local qDmg = GetDamage("Q", target)
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
-				local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.E.width, self.E.range, 65)
-				if self.EQks and qDmg + eDmg + GetAADamageHitEnemy(target.Addr) > target.HP and myHero.MP > 130 and Collision == 0 then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
-				elseif GetKeyPress(self.Combo) > 0 and self.harrasEQ and myHero.MP > 230 and Collision == 0 then
-					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
-					if self.aio and CanCast(_W) and CanCast(_Q) then
-		      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
+				--local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+				--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.E.width, self.E.range, 65)
+				if self.EQks and qDmg + eDmg + GetAADamageHitEnemy(target.Addr) > target.HP and myHero.MP > 130 and EHitChance > 2 then
+					CastSpellToPos(EPos.x, EPos.z, _E)
+				elseif GetKeyPress(self.Combo) > 0 and self.harrasEQ and myHero.MP > 230 and EHitChance > 2 then
+					CastSpellToPos(EPos.x, EPos.z, _E)
+					if self.aio and CanCast(_W) and CanCast(_Q) and EHitChance > 2 then
+		      			cast = myHeroPos:Extended(EPos, GetDistance(myHeroPos, EPos) - 50)				
 						DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
-						DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+						DelayAction(function() CastSpellToPos(EPos.x, EPos.z, _Q) end, 0.2) 		
 					end
 				end
 			end
 			if myHero.MP > 170 then
-				if self.Ehitchance then
-					local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
+				if self.Ehitchance then					
 					if DashPosition ~= nil then 
+						--local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
 						local CollisionDash = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.E.width, self.E.range, 65)
 						if CollisionDash == 0 then
 							CastSpellToPos(DashPosition.x, DashPosition.z, _E)
 							if self.aio and CanCast(_W) and CanCast(_Q) then
-				      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+				      			cast = myHeroPos:Extended(EPos, GetDistance(myHeroPos, EPos) - 50)				
 								DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
-								DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+								DelayAction(function() CastSpellToPos(EPos.x, EPos.z, _Q) end, 0.2) 		
 							end
+						end
+						if EHitChance >= 3 then
+							CastSpellToPos(DashPosition.x, DashPosition.z, _E)
+						    cast = myHeroPos:Extended(EPos, GetDistance(myHeroPos, EPos) - 50)				
+							DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.2) 
+							DelayAction(function() CastSpellToPos(EPos.x, EPos.z, _Q) end, 0.2)
 						end
 					end					
 				end
+
 				if myHero.HP < myHero.MaxHP * 0.3 then
-					if GetDistance(target.Addr) < 500 and Collision == 0 then
-						CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+					if GetDistance(target.Addr) < 500 and EHitChance > 2 then
+						--local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+						CastSpellToPos(EPos.x, EPos.z, _E)
 						if self.aio and CanCast(_W) and CanCast(_Q) then
-			      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+			      			cast = myHeroPos:Extended(EPos, GetDistance(myHeroPos, EPos) - 50)				
 							DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
-							DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+							DelayAction(function() CastSpellToPos(EPos.x, EPos.z, _Q) end, 0.2) 		
 						end
 					end
-					if CountEnemyChampAroundObject(myHero.Addr, 250) > 0 and Collision == 0 then
-						CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+					if CountEnemyChampAroundObject(myHero.Addr, 250) > 0 and EHitChance > 2 then
+						--local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+						CastSpellToPos(EPos.x, EPos.z, _E)
 						if self.aio and CanCast(_W) and CanCast(_Q) then
-			      			cast = myHeroPos:Extended(CastPosition, GetDistance(myHeroPos, CastPosition) - 50)				
+			      			cast = myHeroPos:Extended(EPos, GetDistance(myHeroPos, EPos) - 50)				
 							DelayAction(function() CastSpellToPos(cast.x, cast.z, _W) end, 0.0) 
-							DelayAction(function() CastSpellToPos(CastPosition.x, CastPosition.z, _Q) end, 0.5) 		
+							DelayAction(function() CastSpellToPos(EPos.x, EPos.z, _Q) end, 0.2) 		
 						end
 					end
 				end
@@ -534,9 +575,11 @@ function Caitlyn:LogicR()
 			target = GetAIHero(hero)
 			if IsValidTarget(target.Addr, self.RRange) and self:ValidUlt(target) then
 				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 1000 and CountEnemyChampAroundObject(myHero.Addr, 1000) == 0 and CountEnemyChampAroundObject(target.Addr, 700) == 0 then
-					cast = true
+					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+					if RHitChance > -1 then
 					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.R.delay, self.R.width, self.RRange, self.R.speed, myHero, false)
-					CastSpellTarget(target.Addr, _R)
+						CastSpellTarget(target.Addr, _R)
+					end
 				end
 			end
 		end

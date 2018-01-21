@@ -368,18 +368,19 @@ end
 function Jinx:LogicQ()
 	--__PrintTextGame(tostring((self:FishBoneActive())))
 	if GetKeyPress(self.Lane_Clear) > 0 and not self:FishBoneActive() and self.menu_Combo_farmQout and myHero.MP > 200 then --and GetTargetOrb == nil then
-		--__PrintTextGame("11111111111")
-		for i, minions in ipairs(self:EnemyMinionsTbl()) do
-			if minions ~= nil then
-				local minion = GetUnit(minions)
-				if IsValidTarget(minion.Addr, self.bonusRange() + 30) and GetDistance(minion.Addr) > GetTrueAttackRange() and self:GetRealPowPowRange(minion) < self:GetRealDistance(minion) and self.bonusRange() < self:GetRealDistance(minion) then
-					--__PrintTextGame("222222")
-					local hpPred = GetHealthPred(minion.Addr, 0.4, 0.07)
-					if hpPred < GetAADamageHitEnemy(minion.Addr) * 1.1 and hpPred > 5 then
-						--__PrintTextGame(tostring(hpPred))
-						--Orbwalker.ForceTarget(minion);
-                        CastSpellTarget(myHero.Addr, _Q)
-                        return;
+		GetAllUnitAroundAnObject(myHero.Addr, 2000)
+	    for i, obj in pairs(pUnit) do
+	        if obj ~= 0  then
+	            local minion = GetUnit(obj)
+	            if IsEnemy(minion.Addr) and not IsDead(minion.Addr) and not IsInFog(minion.Addr) and (GetType(minion.Addr) == 1) then
+	            	if IsValidTarget(minion.Addr, self.bonusRange() + 30) and GetDistance(minion.Addr) > GetTrueAttackRange() and self:GetRealPowPowRange(minion) < self:GetRealDistance(minion) and self.bonusRange() < self:GetRealDistance(minion) then
+						local hpPred = GetHealthPred(minion.Addr, 0.4, 0.07)
+						if hpPred < GetAADamageHitEnemy(minion.Addr) * 1.1 and hpPred > 5 then
+							--__PrintTextGame(tostring(hpPred))
+							--Orbwalker.ForceTarget(minion);
+	                        CastSpellTarget(myHero.Addr, _Q)
+	                        return;
+						end
 					end
 				end
 			end
@@ -407,20 +408,6 @@ function Jinx:LogicQ()
 	--elseif	self:FishBoneActive() and GetKeyPress(self.Lane_Clear) > 0 then
 		--CastSpellTarget(myHero.Addr, _Q)
 	end
-end
-
-function Jinx:EnemyMinionsTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, obj in pairs(pUnit) do
-        if obj ~= 0  then
-            local minions = GetUnit(obj)
-            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
-                table.insert(result, minions.Addr)
-            end
-        end
-    end
-    return result
 end
 
 function Jinx:LogicW()

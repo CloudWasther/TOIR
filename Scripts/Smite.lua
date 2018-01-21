@@ -33,7 +33,7 @@ end
 
 function Smite:OnDrawMenu()
 	if Menu_Begin(self.menu) then
-		
+
 		if Menu_Begin("Setting Smite") then
 			Menu_Text("Smite In Combo")
 			self.Use_Smite_Kill_Steal = Menu_Bool("Use Smite Kill Steal", self.Use_Smite_Kill_Steal, self.menu)
@@ -113,10 +113,12 @@ function Smite:GetSmiteDamage(target)
 end
 
 function Smite:LogicSmiteJungle()
-	for i, minions in ipairs(self:JungleTbl()) do
-        if minions ~= 0 then
-            local jungle = GetUnit(minions)
-            if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
+	GetAllUnitAroundAnObject(myHero.Addr, 2000)
+    local result = {}
+    for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+        	jungle = GetUnit(minions)
+        	if jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
                 (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
 
                 if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.Use_Smite_Red then
@@ -161,16 +163,4 @@ function Smite:OnBeforeAttack(target)
 			CastSpellTarget(target.Addr, self:GetIndexSmite())
 		end
     end
-end
-
-function Smite:JungleTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, minions in pairs(pUnit) do
-        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
-            table.insert(result, minions)
-        end
-    end
-
-    return result
 end

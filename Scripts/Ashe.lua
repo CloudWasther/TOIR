@@ -251,10 +251,10 @@ function Ashe:LogicW()
 	if t ~= nil then
 		if IsValidTarget(t, self.W.range - 100) then
 			--function VPrediction:GetConeAOECastPosition(unit, delay, angle, range, speed, from)
-			local mainCastPosition, mainHitChance = vpred:GetConeAOECastPosition(target, self.W.delay, 45, self.W.range, self.W.speed, myHero)
+			local mainCastPosition, mainHitChance = vpred:GetConeAOECastPosition(t, self.W.delay, 45, self.W.range, self.W.speed, myHero)
 			--local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, t, myHero)
 			if GetKeyPress(self.Combo) > 0 and myHero.MP > 150 then
-				if mainHitChance >=2 then --WHitChance > 1 then
+				if mainHitChance >= 0 then --WHitChance > 1 then
 					CastSpellToPos(mainCastPosition.x, mainCastPosition.z, _W)
 				end			
 			elseif self.ksW and GetDamage("W", t) > t.HP then

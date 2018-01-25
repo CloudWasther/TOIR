@@ -13,11 +13,11 @@ function Blitzcrank:__init()
 	vpred = VPrediction()
 	HPred = HPrediction()
 
-	self.Q = Spell(_Q, 1000)
+	self.Q = Spell(_Q, 1050)
     self.W = Spell(_W, math.huge)
     self.E = Spell(_E, GetTrueAttackRange())
-    self.R = Spell(_R, 680)
-    self.Q:SetSkillShot(0.25, 2000, 75, true)
+    self.R = Spell(_R, 600)
+    self.Q:SetSkillShot(0.25, 1800, 140, true)
     self.W:SetActive()
     self.E:SetActive()
     self.R:SetActive()
@@ -50,7 +50,8 @@ function Blitzcrank:MenuValueDefault()
 
 	self.maxGrab = self:MenuSliderInt("Max range grab", self.Q.range)
 	self.minGrab = self:MenuSliderInt("Min range grab", 250)
-	self.hitchane = self:MenuSliderFloat("Q HitChane", 2)
+	self.qHC = self:MenuComboBox("Q HitChance", 1)
+	self.PredicMode = self:MenuComboBox("Prediction Mode", 0)
 	self.menu_Combo_QendDash = self:MenuBool("Auto Q End Dash", true)
 	self.menu_Combo_Qinterrup = self:MenuBool("Use Q Interrup", true)
 	self.menu_Combo_Qks = self:MenuBool("Use Q Kill Steal", true)
@@ -74,13 +75,13 @@ function Blitzcrank:MenuValueDefault()
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)
 
 
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.Draw_Q_Range = self:MenuBool("Draw Q Range", true)
-	self.Draw_E_Range = self:MenuBool("Draw E Range", true)
-	self.Draw_R_Range = self:MenuBool("Draw R Range", true)
-	self.menu_Draw_CountQ = self:MenuBool("Draw Q Counter", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.Draw_Q_Range = self:MenuBool("Draw Q Range", false)
+	self.Draw_E_Range = self:MenuBool("Draw E Range", false)
+	self.Draw_R_Range = self:MenuBool("Draw R Range", false)
+	self.menu_Draw_CountQ = self:MenuBool("Draw Q Counter", false)
 
-	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", true)
+	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 20)
 
 	self.Combo = self:MenuKeyBinding("Combo", 32)
@@ -98,7 +99,8 @@ function Blitzcrank:OnDrawMenu()
 			self.menu_Combo_Qks = Menu_Bool("Use Q Kill Steal", self.menu_Combo_Qks, self.menu)
 			self.qCC = Menu_Bool("Auto Q cc", self.qCC, self.menu)
 			self.qTur = Menu_Bool("Auto Q under turret", self.qTur, self.menu)
-			self.hitchane = Menu_SliderFloat("Q HitChane", self.hitchane, 1, 3, self.menu)
+			self.PredicMode = Menu_ComboBox("Prediction Mode", self.PredicMode, "VPrediction\0HPrediction\0CorePrediction (not yet)\0\0", self.menu)
+			self.qHC = Menu_ComboBox("Q HitChance", self.qHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_Text("Auto Q to target :")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
@@ -301,7 +303,7 @@ function Blitzcrank:OnDraw()
 		local targetPos = Vector(Target.x, Target.y, Target.z)
 	   	local IsCollision = vpred:CheckMinionCollision(Target, targetPos, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHeroPos, nil, true)
 	   	if not IsCollision then
-			DrawLineGame(myHero.x, myHero.y, myHero.z, targetPos.x, targetPos.y, targetPos.z, 3)
+			--DrawLineGame(myHero.x, myHero.y, myHero.z, targetPos.x, targetPos.y, targetPos.z, 3)
 		end
 	end
 
@@ -312,7 +314,7 @@ function Blitzcrank:OnDraw()
   	end
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range - 150 then
-	    DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
+	    --DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
 	end
 
 	local percent = 0
@@ -379,46 +381,71 @@ end
 function Blitzcrank:LogicQ()
 	local TargetQ = GetTargetSelector(self.maxGrab, 0)
 	if CanCast(_Q) and TargetQ ~= 0 then
-		--__PrintTextGame(tostring(TargetQ))
 		target = GetAIHero(TargetQ)
-		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		--local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		--local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
 		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		--if QHitChance >= 3 and (myHero.HP / myHero.MaxHP > 0.5 or CountAllyChampAroundObject(myHero.Addr, 600) >= 1) then
-			--CastSpellToPos(QPos.x, QPos.z, _Q)
-		--end
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
 
 		if (GetDistance(QPos) < self.maxGrab and GetDistance(QPos) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
-			if QHitChance >= self.hitchane and self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then
-				--__PrintTextGame("string szText")
-				--__PrintTextGame(tostring(QHitChance))
-		        CastSpellToPos(QPos.x, QPos.z, _Q)
+			if self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then			
+				if HitChance >= self.qHC then
+		    		if self.PredicMode == 0 then
+		        		CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		        	end
+		        end
+		        if QHitChance >= self.qHC then
+		        	if self.PredicMode == 1 then
+		        		CastSpellToPos(QPos.x, QPos.z, _Q)
+		        	end
+		        end
 		    end
-		end
+		end		
+	end
+
+	for i = 1, #self.ts_prio do
+	    if self.ts_prio[i].Menu then
+	    	if IsValidTarget(self.ts_prio[i].Enemy.Addr, self.maxGrab) and myHero.MP / myHero.MaxMP > 0.5 and self:CanHarras() then
+	    		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, self.ts_prio[i].Enemy, myHero)
+				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(self.ts_prio[i].Enemy, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+				if HitChance >= self.qHC then
+				    if self.PredicMode == 0 then
+				        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				    end
+				end
+				if QHitChance >= self.qHC then
+				    if self.PredicMode == 1 then
+				        CastSpellToPos(QPos.x, QPos.z, _Q)
+				    end
+				end 
+	    	end
+	    end 
 	end
 
 	for i, enemy in pairs(GetEnemyHeroes()) do
 		if enemy ~= nil then
-			target = GetAIHero(enemy)
-			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		    if self.ts_prio[i].Menu then	    			    	
-		    	if IsValidTarget(target.Addr, self.maxGrab) then
-		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then				    
-						if QHitChance >= self.hitchane then
-							CastSpellToPos(QPos.x, QPos.z, _Q)
-						end
-					end
-		    	end
-		    end
+			target = GetAIHero(enemy)	    
 		    if IsValidTarget(target.Addr, self.maxGrab) then
 		    	if not self:CanMove(target) and self.qCC then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
+				    if Collision == 0 then
+				        CastSpellToPos(target.x, target.z, _Q)
+				    end
 				end
 		    end
+
 		    if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
-				if QHitChance >= self.hitchane and self:IsUnderAllyTurret(Vector(target)) then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+				if self:IsUnderAllyTurret(Vector(target)) then
+					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+					if HitChance >= self.qHC then
+					    if self.PredicMode == 0 then
+					        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+					    end
+					end
+					if QHitChance >= self.qHC then
+					    if self.PredicMode == 1 then
+					        CastSpellToPos(QPos.x, QPos.z, _Q)
+					    end
+					end 
 				end
 		    end
 		end	   
@@ -511,7 +538,7 @@ function Blitzcrank:KillSteal()
 
 			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
 				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
-				if QHitChance >= self.hitchane then
+				if QHitChance >= 2 then
 					CastSpellToPos(QPos.x, QPos.z, _Q)
 				end
 			end

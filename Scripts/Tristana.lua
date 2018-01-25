@@ -221,17 +221,21 @@ end
 
 
 function Tristana:OnTick()
-	if myHero.IsDead then return end
+	if myHero.IsDead or IsTyping() or IsDodging() then return end
 	SetLuaCombo(true)
-	--self:CatchAxe()
-	--local stack = GetBuff(GetBuffByName(myHero.Addr, "TristanaSpinningAttack"))
-	--__PrintTextGame(tostring(self:QCount()))
 
-	--[[GetAllBuffNameActive(myHero.Addr)
-		for i,v in pairs(pBuffName) do
-		__PrintDebug(tostring(v))				      
-	end]]
-	self:AntiGapCloser()
+	if self.focusE then
+		for i,hero in pairs(GetEnemyHeroes()) do
+			if IsValidTarget(hero, GetTrueAttackRange()) then
+				target = GetAIHero(hero)
+				if target.HasBuff("tristanaechargesound") then
+					SetForcedTarget(target.Addr)
+				end
+			end
+		end
+	end
+
+	--self:AntiGapCloser()
 
 	if CanCast(_W) and GetKeyPress(self.smartW) > 0 then
 		CastSpellToPos(GetMousePos().x, GetMousePos().z, _W)
@@ -251,6 +255,7 @@ function Tristana:OnTick()
 end
 
 function Tristana:OnUpdate()
+
 
 end
 function Tristana:LogicW()
@@ -658,5 +663,4 @@ function Tristana:IsGoodPosition(dashPos)
 
     return false
 end
-
 

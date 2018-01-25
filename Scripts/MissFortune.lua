@@ -3,9 +3,9 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 MissFortune = class()
 
 function OnLoad()
-	--if GetChampName(GetMyChamp()) == "MissFortune" then
+	if GetChampName(GetMyChamp()) == "MissFortune" then
 		MissFortune:__init()
-	--end
+	end
 end
 
 function MissFortune:__init()
@@ -81,6 +81,7 @@ self.NotAttackSpell =
 	self.ts_prio = {}
 	self.LastAttackId = 0;
 	self.RCastTime = 0;
+	self.mininonListCanQ = {}
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
 	--Callback.Add("Update", function(...) self:OnUpdate(...) end)	
@@ -305,6 +306,19 @@ local function CircleCircleIntersectionS(a1, a2, R1, R2)
         return S1, S2
 end
 
+local function max(t, fn)
+    if #t == 0 then return nil, nil end
+    local key, value = 1, t[1]
+    for i = 2, #t do
+        if fn(value, t[i]) then
+            key, value = i, t[i]
+        end
+    end
+    return key, value
+end
+
+
+
 function MissFortune:OnDraw()
 	--DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,0,0,255))
 	--DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q1.range, Lua_ARGB(255,0,0,255))
@@ -328,6 +342,57 @@ function MissFortune:OnDraw()
 						end
 		end]]
 
+		--[[local TargetQ1 = GetTargetSelector(self.Q1.range, 0)
+		if IsValidTarget(TargetQ1, self.Q1.range) and self.harassQ then
+			target1 = GetAIHero(TargetQ1)
+			local posExt = Vector(target1.x, target1.y, target1.z):Extended(Vector(myHero.x, myHero.y, myHero.z), -400)
+			local p1, p2 = CircleCircleIntersectionS(Vector(target1), Vector(posExt), 450, 225)		
+			if p1 and p2 then
+				GetAllUnitAroundAnObject(target1.Addr, 600)
+				for i, obj in pairs(pUnit) do
+			        if obj ~= 0  then
+			            local minion = GetUnit(obj)
+			            if IsEnemy(minion.Addr) and not IsDead(minion.Addr) and not IsInFog(minion.Addr) and (GetType(minion.Addr) == 1) then
+			            	if IsValidTarget(minion.Addr, self.Q.range) then
+			            		local posExt = Vector(minion):Extended(Vector(myHero), -400)
+			            		DrawCircleGame(target1.x , target1.y, target1.z, 450, Lua_ARGB(255,255,0,0))
+								DrawCircleGame(posExt.x , posExt.y, posExt.z, 225, Lua_ARGB(255,255,0,0))
+								if self:IsINSIDE_TAMGIAC(Vector(minion), Vector(target1), p1, p2) then
+									table.insert(self.mininonListCanQ, minion)
+									table.sort(self.mininonListCanQ, function(a, b)
+						            return GetDistance(a) < GetDistance(b)
+						        	end)
+								else
+									table.remove(self.mininonListCanQ, i)
+								end
+							end
+						end
+					end
+				end
+			end
+
+			for i, minion in ipairs(self.mininonListCanQ) do
+				if IsValidTarget(minion.Addr, self.Q.range) then
+					if self.killQ then
+			            if GetDamage("Q", minion) > minion.HP then
+							if self:IsINSIDE_TAMGIAC(Vector(minion), Vector(target1), p1, p2) then
+								DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,255,0))
+								DrawLineGame(p1.x, p1.y, p1.z, minion.x, minion.y, minion.z, 3)
+								DrawLineGame(p2.x, p2.y, p2.z, minion.x, minion.y, minion.z, 3)
+								CastSpellTarget(minion.Addr, _Q)
+											--return
+							end									
+						end
+						return
+					elseif self:IsINSIDE_TAMGIAC(Vector(minion), Vector(target1), p1, p2) then
+						DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,255,0))
+						DrawLineGame(p1.x, p1.y, p1.z, minion.x, minion.y, minion.z, 3)
+						DrawLineGame(p2.x, p2.y, p2.z, minion.x, minion.y, minion.z, 3)
+						CastSpellTarget(minion.Addr, _Q)
+					end
+				end
+			end
+		end]]
 		
 
 	if self.menu_Draw_Already then
@@ -369,7 +434,7 @@ function MissFortune:OnTick()
 			end
 		end
 	if CanCast(_Q) and self.autoQ then
-        self:LogicQ();
+        --self:LogicQ();
     end
 
     if CanCast(_E) and self.autoE then
@@ -414,7 +479,7 @@ function MissFortune:LogicQ()
 					end	   
 				end
 			end
-		elseif IsValidTarget(TargetQ1, self.Q1.range) and self.harassQ and GetDistance(TargetQ1) > self.Q.range + 50 then
+		elseif IsValidTarget(TargetQ1, self.Q1.range) and self.harassQ then --and GetDistance(TargetQ1) > self.Q.range + 50 then
 			target1 = GetAIHero(TargetQ1)
 			local posExt = Vector(target1.x, target1.y, target1.z):Extended(Vector(myHero.x, myHero.y, myHero.z), -400)
 			local p1, p2 = CircleCircleIntersectionS(Vector(target1), Vector(posExt), 450, 225)		
@@ -433,14 +498,14 @@ function MissFortune:LogicQ()
 			            		local posExt = Vector(minion):Extended(Vector(myHero), -400)
 			            		if self.killQ then
 			            			if GetDamage("Q", minion) > minion.HP then
-										if self:IsINSIDE_TAMGIAC(Vector(target1), Vector(minion), p1, p2) then
+										if self:IsINSIDE_TAMGIAC(Vector(minion), Vector(target1), p1, p2) then
 											CastSpellTarget(minion.Addr, _Q)
 											--return
 										end									
 									end
 									return
 								else
-									if self:IsINSIDE_TAMGIAC(Vector(target1), Vector(minion), p1, p2) then
+									if self:IsINSIDE_TAMGIAC(Vector(minion), Vector(target1), p1, p2) then
 										CastSpellTarget(minion.Addr, _Q)
 									end
 								end	
@@ -667,7 +732,6 @@ function MissFortune:CountAlliesInRange(pos, range)
     end
     return n
 end
-
 
 
 

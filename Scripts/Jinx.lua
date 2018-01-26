@@ -378,6 +378,7 @@ function Jinx:LogicQ()
 						if hpPred < GetAADamageHitEnemy(minion.Addr) * 1.1 and hpPred > 5 then
 							--__PrintTextGame(tostring(hpPred))
 							--Orbwalker.ForceTarget(minion);
+							SetForcedTarget(minion.Addr)
 	                        CastSpellTarget(myHero.Addr, _Q)
 	                        return;
 						end
@@ -538,7 +539,7 @@ function Jinx:AutoEW()
 				if DashPosition ~= nil then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
 			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash and Collision == 0 then
-			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+			    		CastSpellToPos(DashPosition.x, DashPosition.z, _E)
 			    	end
 				end
 

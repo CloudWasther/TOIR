@@ -348,7 +348,26 @@ function Ezreal:LogicQ()
 
     	for i, heros in ipairs(GetEnemyHeroes()) do
 			if heros ~= nil then
-				local target = GetAIHero(heros)				
+				local target = GetAIHero(heros)	
+				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+			    if self.ts_prio[i].Menu then	    			    	
+			    	if IsValidTarget(target.Addr, self.Q.range - 150) then
+			    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and myHero.MP / myHero.MaxMP * 100 > self.HarassManaQ and self:CanHarras() then				    						
+							if HitChance >= self.qHC then
+								if self.PredicMode == 0 then
+								    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+								end
+							end
+							if QHitChance >= self.qHC then
+								if self.PredicMode == 1 then
+								    CastSpellToPos(QPos.x, QPos.z, _Q)
+								end
+							end 
+						end
+			    	end
+			    end
+
 				local wDmg = GetDamage("W", target)
 				local qDmg = GetDamage("Q", target)
 				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
@@ -393,25 +412,6 @@ function Ezreal:LogicQ()
 				end				
 			end
 		end
-		--for i, enemy in pairs(GetEnemyHeroes()) do
-		for i = 1, #self.ts_prio do
-	    	if self.ts_prio[i].Menu then
-	    		if IsValidTarget(self.ts_prio[i].Enemy.Addr, self.Q.range - 150) and myHero.MP / myHero.MaxMP * 100 > self.HarassManaQ and self:CanHarras() then
-	    			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, self.ts_prio[i].Enemy, myHero)
-					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(self.ts_prio[i].Enemy, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
-					if HitChance >= self:HitChanceManager(self.qHC) then
-				    	if self.PredicMode == 0 then
-				        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				       	end
-				    end
-				    if QHitChance >= self:HitChanceManager(self.qHC) then
-				        if self.PredicMode == 1 then
-				        	CastSpellToPos(QPos.x, QPos.z, _Q)
-				        end
-				    end 
-	    		end
-	    	end 
-	    end
 
 		if myHero.MP > 30 and GetKeyPress(self.Lane_Clear) > 0 then
 			self:farmQ();

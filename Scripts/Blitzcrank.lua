@@ -401,28 +401,28 @@ function Blitzcrank:LogicQ()
 		end		
 	end
 
-	for i = 1, #self.ts_prio do
-	    if self.ts_prio[i].Menu then
-	    	if IsValidTarget(self.ts_prio[i].Enemy.Addr, self.maxGrab) and myHero.MP / myHero.MaxMP > 0.5 and self:CanHarras() then
-	    		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, self.ts_prio[i].Enemy, myHero)
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(self.ts_prio[i].Enemy, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
-				if HitChance >= self.qHC then
-				    if self.PredicMode == 0 then
-				        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				    end
-				end
-				if QHitChance >= self.qHC then
-				    if self.PredicMode == 1 then
-				        CastSpellToPos(QPos.x, QPos.z, _Q)
-				    end
-				end 
-	    	end
-	    end 
-	end
-
 	for i, enemy in pairs(GetEnemyHeroes()) do
 		if enemy ~= nil then
-			target = GetAIHero(enemy)	    
+			target = GetAIHero(enemy)	
+			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+		    if self.ts_prio[i].Menu then	    			    	
+		    	if IsValidTarget(target.Addr, self.maxGrab) then
+		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then				    						
+						if HitChance >= self.qHC then
+							if self.PredicMode == 0 then
+							    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+							end
+						end
+						if QHitChance >= self.qHC then
+							if self.PredicMode == 1 then
+							    CastSpellToPos(QPos.x, QPos.z, _Q)
+							end
+						end 
+					end
+		    	end
+		    end
+
 		    if IsValidTarget(target.Addr, self.maxGrab) then
 		    	if not self:CanMove(target) and self.qCC then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)

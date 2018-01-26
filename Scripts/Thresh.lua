@@ -67,7 +67,8 @@ function Thresh:MenuValueDefault()
 	self.menu_Combo_QendDash = self:MenuBool("Auto Q End Dash", true)
 	self.menu_Combo_Qinterrup = self:MenuBool("Use Q Interrup", true)
 	self.menu_Combo_Qks = self:MenuBool("Use Q Kill Steal", true)
-	self.hitchane = self:MenuSliderFloat("Q HitChane", 2)
+	self.qHC = self:MenuComboBox("Q HitChance", 2)
+	self.PredicMode = self:MenuComboBox("Prediction Mode", 1)
 	for i, enemy in pairs(GetEnemyHeroes()) do
         table.insert(self.ts_prio, { Enemy = GetAIHero(enemy), Menu = self:MenuBool(GetAIHero(enemy).CharName, true)})
     end
@@ -123,7 +124,8 @@ function Thresh:OnDrawMenu()
 			self.menu_Combo_QendDash = Menu_Bool("Auto Q End Dash", self.menu_Combo_QendDash, self.menu)
 			self.menu_Combo_Qinterrup = Menu_Bool("Use Q Interrup", self.menu_Combo_Qinterrup, self.menu)
 			self.menu_Combo_Qks = Menu_Bool("Use Q Kill Steal", self.menu_Combo_Qks, self.menu)
-			self.hitchane = Menu_SliderFloat("Q HitChane", self.hitchane, 1, 3, self.menu)
+			self.PredicMode = Menu_ComboBox("Prediction Mode", self.PredicMode, "VPrediction\0HPrediction\0CorePrediction (not yet)\0\0", self.menu)
+			self.qHC = Menu_ComboBox("Q HitChance", self.qHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_Text("Auto Q to target :")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
@@ -423,47 +425,75 @@ function Thresh:LogicQ()
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-
-		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
-		--local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		--local distance = VPGetLineCastPosition(target.Addr, self.Q.delay, self.Q.speed)
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
 		
-		--if TargetQ ~= nil then
-			if (GetDistance(QPos) < self.maxGrab and GetDistance(QPos) > self.minGrab)  or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
-				if QHitChance >= self.hitchane and self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 and not self:Qstat(target) and self.Marked == nil then
-		        	CastSpellToPos(QPos.x, QPos.z, _Q)
-		    	end
+		if (GetDistance(QPos) < self.maxGrab and GetDistance(target.Addr) > self.minGrab)  or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
+			if self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 and not self:Qstat(target) and self.Marked == nil then
+		        if HitChance >= self.qHC then
+		    		if self.PredicMode == 0 then
+		        		CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		        	end
+		        end
+		        if QHitChance >= self.qHC then
+		        	if self.PredicMode == 1 then
+		        		CastSpellToPos(QPos.x, QPos.z, _Q)
+		        	end
+		        end
 		    end
-		    if self.menu_Combo_Q2 and GetTimeGame() - self.lastQ > 1 and self:Qstat(target) then
+		end
+		if self.menu_Combo_Q2 and GetTimeGame() - self.lastQ > 1 and self:Qstat(target) then
 				CastSpellTarget(myHero.Addr, _Q)
-			end
-		--end
+		end
 	end
 
 	for i, enemy in pairs(GetEnemyHeroes()) do
 		if enemy ~= nil then
 			target = GetAIHero(enemy)
-			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, self.ts_prio[i].Enemy, myHero)
+			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(self.ts_prio[i].Enemy, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
 		    if self.ts_prio[i].Menu then	    			    	
 		    	if IsValidTarget(target.Addr, self.maxGrab) then
 		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then				    
-						if QHitChance >= self.hitchane + 0.3 and not self:Qstat(self.ts_prio[i].Enemy) and self.Marked == nil then
-							CastSpellToPos(QPos.x, QPos.z, _Q)
+						if not self:Qstat(self.ts_prio[i].Enemy) and self.Marked == nil then
+							if HitChance >= self.qHC then
+							    if self.PredicMode == 0 then
+							        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+							    end
+							end
+							if QHitChance >= self.qHC then
+							    if self.PredicMode == 1 then
+							        CastSpellToPos(QPos.x, QPos.z, _Q)
+							    end
+							end 
 						end
 					end
 		    	end
 		    end
+
 		    if IsValidTarget(target.Addr, self.maxGrab) then
-		    	if (QHitChance >= 3 or not self:CanMove(target)) and self.qCC and not self:Qstat(target) and self.Marked == nil then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+		    	if not self:CanMove(target) and self.qCC then
+					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
+				    if Collision == 0 and not self:Qstat(target) and self.Marked == nil then
+				        CastSpellToPos(target.x, target.z, _Q)
+				    end
 				end
 		    end
-		    if IsValidTarget(target.Addr, self.maxGrab) and self.qTur and not self:Qstat(target) and self.Marked == nil then
-				if QHitChance >= self.hitchane and self:IsUnderAllyTurret(Vector(target)) then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+
+		    if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
+				if self:IsUnderAllyTurret(Vector(target)) then
+					if HitChance >= self.qHC and not self:Qstat(target) and self.Marked == nil then
+					    if self.PredicMode == 0 then
+					        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+					    end
+					end
+					if QHitChance >= self.qHC and not self:Qstat(target) and self.Marked == nil then
+					    if self.PredicMode == 1 then
+					        CastSpellToPos(QPos.x, QPos.z, _Q)
+					    end
+					end 
 				end
 		    end
-		end	   
+		end
 	end
 end
 
@@ -554,14 +584,14 @@ function Thresh:LogicW()
 					if nearEnemys >= self.wCount then
 						CastSpellToPos(ally.x, ally.z, _W)
 					end
-					if self.Wdmg >= ally.HP then
+					if self.Wdmg >= ally.HP / ally.MaxHP * 100 then
 						CastSpellToPos(ally.x, ally.z, _W)
 					end
 				end
 			end
 		end
 	end  
-	if myHero.HP <= self.Wdmg then
+	if myHero.HP / myHero.HP * 100 <= self.Wdmg then
 		CastSpellToPos(myHero.x, myHero.z, _W)
 	end
 end
@@ -649,12 +679,12 @@ function Thresh:KillSteal()
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
 			local hero = GetAIHero(heros)
+			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 			if IsValidTarget(hero.Addr, self.R.range - 150) and CanCast(_R) and self.menu_Combo_Rks and GetDamage("R", hero) > GetHealthPoint(hero.Addr) then
 				CastSpellTarget(myHero.Addr, _R)
 			end
 
-			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(hero, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then				
 				local distance = VPGetLineCastPosition(hero.Addr, self.Q.delay, self.Q.speed)
 				if not GetCollision(target.Addr, self.Q.width, self.Q.range, distance, 1) then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
@@ -662,7 +692,8 @@ function Thresh:KillSteal()
 			end
 
 			if IsValidTarget(hero.Addr, self.E.range) and CanCast(_E) and self.menu_Combo_Eks and GetDamage("E", hero) > GetHealthPoint(hero.Addr) then
-				Pull(hero)
+				pos = Vector(myHero):Extended(CastPosition, - self.E.range)
+				CastSpellToPos(pos.x, pos.z, _E)
 			end
 		end
 	end
@@ -670,7 +701,7 @@ end
 
 function Thresh:Push(target)
 	--target = t --or GetTargetSelector(self.E.range, 0)
-	if(target ~= 0) then
+	if(target ~= nil) then
 		--hero = GetAIHero(target)
 		CastSpellToPos(target.x,target.z, _E)
 	end
@@ -678,7 +709,7 @@ end
 
 function Thresh:Pull(target)
 	--target = t --or GetTargetSelector(self.E.range, 0)
-	if(target ~= 0) then
+	if(target ~= nil) then
 		local targetPos = Vector(target)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		--pos = Vector(myHeroPos) + (Vector(myHeroPos) - Vector(targetPos)):Normalized()*400

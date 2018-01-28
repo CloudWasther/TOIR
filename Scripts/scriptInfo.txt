@@ -1,0 +1,15 @@
+CttbotAshe#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotAshe.lua
+CttbotBaseult#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotBaseult.lua
+CttbotBlitzcrank#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotBlitzcrank.lua
+CttbotCaitlyn#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotCaitlyn.lua
+CttbotCorki#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotCorki.lua
+CttbotDraven#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotDraven.lua
+CttbotEzreal#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotEzreal.lua
+CttbotGraves#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotGraves.lua
+CttbotJinx#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotJinx.lua
+CttbotLucian#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotLucian.lua
+CttbotMissFortune#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotMissFortune.lua
+CttbotSmite#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotSmite.lua
+CttbotThresh#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotThresh.lua
+CttbotTristana#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotTristana.lua
+CttbotTwitch#2CFE3547DA827C35EDF96FEA8CF23ED3#https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotTwitch.lua

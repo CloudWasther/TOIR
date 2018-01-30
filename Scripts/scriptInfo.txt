@@ -6,7 +6,7 @@ https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotCorki.lua#34B
 https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotDraven.lua#CBCEE8B94FBD7BB8F47D1BB4D2E0A866#Scripts
 https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotEzreal.lua#C21553EF499B4A5A00A2A68C4112BA93#Scripts
 https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotGraves.lua#14F5150DA579B3A4C200257409319E4F#Scripts
-https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotJinx.lua#D39129D6132EA196D37DE6456DD2CCBC#Scripts
+https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotJinx.lua#3F8777950B148D6ED7A298B00B7B36A0#Scripts
 https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotLucian.lua#961911DF5975501C47720B1C64FD1820#Scripts
 https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotMissFortune.lua#97F232C59C9F5D9E76B88DAE6E998503#Scripts
 https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/CttbotSmite.lua#5C3E46E7AEA6DA0FAEE8B64D3FF9ED31#Scripts

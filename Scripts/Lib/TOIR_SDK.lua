@@ -6055,3 +6055,202 @@ _G.HPrediction.Presets["Zed"] =
 {
   ["Q"] = HPSkillshot({type = "DelayLine", delay = 0.25, range = 925, speed = 1700, width = 90})
 }
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                                                                    ---------------------------------ANTI GAPCLOSER--------------------------------------
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+AntiGapcloser = class()
+
+function AntiGapcloser:__init(cb)
+
+    self.W = Spell(_W, 1000)
+    self.W:SetSkillShot(0.35, 1400, 250, true)
+
+    self.callbacks = {}
+    self.activespells = {}
+    self.spells = 
+    {
+        {Name = "Aatrox",       MenuName = "Q | Dark Flight",               SpellName = "AatroxQ"},
+        {Name = "Ahri",         MenuName = "R | Spirit Rush",               SpellName = "AhriTumble"},
+        {Name = "Akali",        MenuName = "R | Shadow Dance",              SpellName = "AkaliShadowDance"},
+        {Name = "MasterYi",     MenuName = "Q | Alpha Strike",              SpellName = "AlphaStrike"},
+        {Name = "Amumu",        MenuName = "Q | Bandage Toss",              SpellName = "BandageToss"},
+        {Name = "FiddleSticks", MenuName = "R | Crowstorm ",                SpellName = "Crowstorm"},
+        {Name = "Diana",        MenuName = "R | Lunar Rush",                SpellName = "DianaTeleport"},
+        {Name = "Elise",        MenuName = "E | Rappel",                    SpellName = "EliseSpiderEDescent"},
+        {Name = "Elise",        MenuName = "Q | Venomous Bite",             SpellName = "EliseSpiderQCast"},
+        {Name = "Fiora",        MenuName = "Q | Lunge",                     SpellName = "FioraQ"},
+        {Name = "Fizz",         MenuName = "E | Urchin Strike",             SpellName = "FizzPiercingStrike"},
+        {Name = "Garen",        MenuName = "Q | Decisive Strike",           SpellName = "GarenQ"},
+        {Name = "Gnar",         MenuName = "E | Crunch",                    SpellName = "GnarBigE"},
+        {Name = "Gnar",         MenuName = "E | Hop",                       SpellName = "GnarE"},
+        {Name = "Gragas",       MenuName = "E | Body Slam",                 SpellName = "GragasE"},
+        {Name = "Graves",       MenuName = "E | Quickdraw",                 SpellName = "GravesMove"},
+        {Name = "Alistar",      MenuName = "W | Headbutt",                  SpellName = "Headbutt"},
+        {Name = "Hecarim",      MenuName = "R | Onslaught of Shadows",      SpellName = "HecarimUlt"},
+        {Name = "Irelia",       MenuName = "Q | Bladesurge",                SpellName = "IreliaGatotsu"},
+        {Name = "JarvanIV",     MenuName = "R | Cataclysm",                 SpellName = "JarvanIVCataclysm", MenuValue},  
+        {Name = "JarvanIV",     MenuName = "Q | Dragon Strike",             SpellName = "JarvanIVDragonStrike", MenuValue},
+        {Name = "LeeSin",       MenuName = "Q | Resonating Strike",         SpellName = "BlindMonkQTwo", MenuValue},
+        {Name = "Jax",          MenuName = "Q | Leap Strike",               SpellName = "JaxLeapStrike"},
+        {Name = "Jayce",        MenuName = "W | To The Skies!",             SpellName = "JayceToTheSkies"},
+        {Name = "Katarina",     MenuName = "E | Shunpo",                    SpellName = "KatarinaE"},
+        {Name = "Kennen",       MenuName = "E | Lightning Rush",            SpellName = "KennenLightningRush"},
+        {Name = "Khazix",       MenuName = "E | Leap",                      SpellName = "KhazixE"},
+        {Name = "Leblanc",      MenuName = "W | Distortion",                SpellName = "LeblancSlide"},
+        {Name = "Leblanc",      MenuName = "R | Distortion",                SpellName = "LeblancSlideM"},
+        {Name = "Leona",        MenuName = "E | Zenith Blade",              SpellName = "LeonaZenithBlade"},
+        {Name = "Lissandra",    MenuName = "E | Glacial Path",              SpellName = "LissandraE"},
+        {Name = "Lucian",       MenuName = "E | Relentless Pursuit",        SpellName = "LucianE"},
+        {Name = "Maokai",       MenuName = "W | Twisted Advance",           SpellName = "MaokaiUnstableGrowth"},
+        {Name = "MonkeyKing",   MenuName = "E | Nimbus Strike",             SpellName = "MonkeyKingNimbus"},
+        {Name = "Nautilus",     MenuName = "Q | Dredge Line",               SpellName = "NautilusAnchorDrag"},
+        {Name = "Pantheon",     MenuName = "W | Aegis of Zeonia",           SpellName = "Pantheon_LeapBash"},
+        {Name = "Poppy",        MenuName = "E | Heroic Charge",             SpellName = "PoppyHeroicCharge"},
+        {Name = "Quinn",        MenuName = "E | Vault",                     SpellName = "QuinnE"},
+        {Name = "Renekton",     MenuName = "E | Slice",                     SpellName = "RenektonSliceAndDice"},
+        {Name = "Kassadin",     MenuName = "R | Riftwalk",                  SpellName = "RiftWalk"},
+        {Name = "Riven",        MenuName = "Q | Broken Wings",              SpellName = "RivenTriCleave"},
+        {Name = "Tristana",     MenuName = "W | Rocket Jump",               SpellName = "RocketJump"},
+        {Name = "Sejuani",      MenuName = "Q | Arctic Assault",            SpellName = "SejuaniArcticAssault"},
+        {Name = "Shen",         MenuName = "E | Shadow Dash",               SpellName = "ShenE"},
+        {Name = "Talon",        MenuName = "E | Cutthroat",                 SpellName = "TalonCutThroat"},
+        {Name = "Malphite",     MenuName = "R | Unstoppable Force",         SpellName = "UFSlash"},
+        {Name = "Udyr",         MenuName = "E | Bear Stance",               SpellName = "UdyrBearStance"}, 
+        {Name = "Corki",        MenuName = "W | Valkyrie",                  SpellName = "Valkyrie"},
+        {Name = "Vi",           MenuName = "Q | Vault Breaker",             SpellName = "ViQ"},
+        {Name = "Volibear",     MenuName = "Q | Rolling Thunder",           SpellName = "VolibearQ"},
+        {Name = "XinZhao",      MenuName = "E | Crescent Sweep",            SpellName = "XenZhaoSweep"},
+        {Name = "Yasuo",        MenuName = "E | Sweeping Blade",            SpellName = "YasuoDashWrapper"},    
+        {Name = "Khazix",       MenuName = "E | Leap",                      SpellName = "khazixelong"},
+        {Name = "RekSai",       MenuName = "E | Tunnel",                    SpellName = "reksaieburrowed"},
+        {Name = "Tryndamere",   MenuName = "E | Spinning Slash",            SpellName = "TryndamereE"}
+    }
+    self.endPosCheck = Vector(0,0,0)
+    self.added = false
+  
+    Callback.Add("Tick", function(...) self:OnTick(...) end)
+    Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
+    Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
+
+    self:MenuValueDefault()
+
+    if cb then
+        self:AddCallback(cb)
+    end
+end
+
+function AntiGapcloser:MenuValueDefault()
+    self.menu = "Anti-Gapcloser"
+    self.SpellAdded = false
+    self.DataGap = {}
+
+    for _, enemy in pairs(GetEnemyHeroes()) do
+        for i = 1, #self.spells do
+            if GetAIHero(enemy).CharName == self.spells[i].Name then
+                --table.insert(self.DataGap, { champname = self.spells[i].Name, menu = self:MenuBool(self.spells[i].Name.." | "..self.spells[i].MenuName, true), spellname = self.spells[i].SpellName, networkid = GetAIHero(enemy).NetworkId }) 
+                self.spells[i].MenuValue = self:MenuBool(self.spells[i].Name.." | "..self.spells[i].MenuName, true)
+            end
+        end
+    end
+end
+
+function AntiGapcloser:OnDrawMenu()
+    if Menu_Begin(self.menu) then
+        for _, enemy in pairs(GetEnemyHeroes()) do
+            for i = 1, #self.spells do
+                if GetAIHero(enemy).CharName == self.spells[i].Name then
+                    self.spells[i].MenuValue = Menu_Bool(self.spells[i].Name.." | "..self.spells[i].MenuName, self.spells[i].MenuValue, self.menu)
+                    self.SpellAdded = true
+                end
+            end
+        end
+        if not self.SpellAdded then
+            Menu_Text("No spell available to Anti GapCloser")
+        end
+        Menu_End()
+    end
+end
+
+function AntiGapcloser:MenuBool(stringKey, bool)
+    return ReadIniBoolean(self.menu, stringKey, bool)
+end
+
+local function GetDistanceSqr(p1, p2)
+    p2 = p2 or Vector(myHero)
+    return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
+end
+
+function AntiGapcloser:AddCallback(cb)
+    assert(cb and type(cb) == "function", "AntiGapcloser: callback is invalid!")
+    table.insert(self.callbacks, cb)
+end
+
+function AntiGapcloser:TriggerCallbacks(unit, spell)
+    for i, callback in ipairs(self.callbacks) do
+        callback(unit, spell)
+    end
+end
+
+function AntiGapcloser:OnProcessSpell(unit, spell)
+    if unit.IsEnemy and unit.Type == myHero.Type then
+        endSpellPos = {x=spell.DestPos_x, y=spell.DestPos_y, z=spell.DestPos_z}
+        startSpellPos =  {x=spell.SourcePos_x, y=spell.SourcePos_y, z=spell.SourcePos_z}
+        for i = 1, #self.spells do
+            if self.spells[i].MenuValue then
+                if spell.Name == self.spells[i].SpellName then
+                    if GetTargetById(spell.TargetId) == myHero.Addr then
+                        self.added = true        
+                    end 
+                    if GetChampName(GetTargetById(spell.TargetId)) == "NULL" then
+                        self.added = true
+                    end
+                end                 
+            end
+        end
+    end
+    if self.added then
+        local data = {unit = unit, spell = spell, startT = GetTimeGame(), endT = GetTimeGame() + 0.9, startPos = Vector(startSpellPos), endPos = Vector(endSpellPos)}
+        table.insert(self.activespells, data)
+        --self:TriggerCallbacks(data.unit, data)
+    end
+end
+
+function AntiGapcloser:AntiGapInfo()
+    for i = #self.activespells, 1, -1 do
+        if self.activespells[i].endT - GetTimeGame() > 0 then-- and 
+            for _,hero in pairs(GetEnemyHeroes()) do
+                if IsValidTarget(hero, 2000) then
+                    target = GetAIHero(hero)
+                    if self.activespells[i].unit.NetworkId == target.NetworkId then
+                        if GetDistanceSqr(Vector(myHero), Vector(target)) < 360000 then --and GetDistance(Vector(myHero), self.activespells[i].endPos) < 400 then
+                            return self.activespells[i].unit, self.activespells[i].endPos
+                        end
+                    end
+                end
+            end 
+        end
+    end
+    return nil , nil
+end
+
+function AntiGapcloser:OnTick()
+    for i = #self.activespells, 1, -1 do
+        if self.activespells[i].endT - GetTimeGame() > 0 then-- and 
+            for _,hero in pairs(GetEnemyHeroes()) do
+                if IsValidTarget(hero, 2000) then
+                    target = GetAIHero(hero)
+                    if self.activespells[i].unit.NetworkId == target.NetworkId then
+                        if GetDistanceSqr(Vector(myHero), Vector(target)) < 360000 then --and GetDistance(Vector(myHero), self.activespells[i].endPos) < 400 then
+                            self:TriggerCallbacks(self.activespells[i].unit, self.activespells[i])
+                        end
+                    end
+                end
+            end 
+        elseif GetTimeGame() > self.activespells[i].endT then
+            table.remove(self.activespells, i)
+            self.added = false
+        end
+    end
+end

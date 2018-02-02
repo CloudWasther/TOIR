@@ -65,7 +65,7 @@ function Lucian:MenuValueDefault()
 
 	self.menu_Combo_E = self:MenuBool("Enable E", true)
 	self.menu_Combo_EMode = self:MenuComboBox("E Mode", 2)
-	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 1)
 
 	self.menu_Combo_R = self:MenuBool("Enable R", true)
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)

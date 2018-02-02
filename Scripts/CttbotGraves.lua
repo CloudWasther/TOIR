@@ -54,7 +54,7 @@ function Graves:MenuValueDefault()
 
 	self.Enable_E = self:MenuBool("Enable E", true)
 	self.Enable_E_Reload_JungFarm = self:MenuBool("Enable E Reload JungFarm", true)
-	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 1)
 	self.E_Mode = self:MenuComboBox("E Mode", 2)
 
 	self.autoR = self:MenuBool("Auto R", true)

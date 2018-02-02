@@ -70,7 +70,7 @@ function Ezreal:MenuValueDefault()
 	self.EAntiMelee = self:MenuBool("E anti-melee", true)
 	self.autoEgrab = self:MenuBool("Auto E anti grab", true)
 	self.E_Mode = self:MenuComboBox("E Mode", 2)
-	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 1)
 
 	self.autoR = self:MenuBool("Auto R KS", true)
 	self.Rcc = self:MenuBool("R cc", true)

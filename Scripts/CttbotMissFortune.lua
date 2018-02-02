@@ -87,7 +87,7 @@ self.NotAttackSpell =
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
 	--Callback.Add("Update", function(...) self:OnUpdate(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
-    --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
+    Callback.Add("ProcessSpell", function(unit, spell) self:OnProcessSpell(unit, spell) end)
     --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
     --Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
     --Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
@@ -121,6 +121,7 @@ function MissFortune:MenuValueDefault()
 	self.AGC = self:MenuBool("AntiGapcloserE", true)
 
 	self.autoR = self:MenuBool("Auto R", true)
+	self.Rturrent = self:MenuBool("Don't R under turret", true)
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 5)
@@ -159,6 +160,7 @@ function MissFortune:OnDrawMenu()
 
 		if Menu_Begin("R Setting") then
 			self.autoR = Menu_Bool("Auto R", self.autoR, self.menu)	
+			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)	
 			Menu_End()
 		end
 
@@ -221,13 +223,8 @@ end
 
 
 function MissFortune:OnProcessSpell(unit, spell)
-	
-	if spell ~= nil and spell.TargetId ~= nil and unit ~= nil then
-		--__PrintTextGame("------------------"..tostring(self.FAKER[spell.Name]))
-		if self.FAKER[spell.Name] and GetTargetById(spell.TargetId) == myHero.Addr and self.autoE then
-			__PrintTextGame(tostring(self.FAKER[spell.Name]).."--"..tostring(myHero.Addr).."--"..tostring(spell.Name).."--"..tostring(self.FAKER[spell.Name].delay))
-			DelayAction(function() CastSpellTarget(myHero.Addr, _E) end, self.FAKER[spell.Name].delay) 
-		end
+	if unit.IsMe and spell.Name == "MissFortuneBulletTime" then
+		self.RCastTime = GetTimeGame()
 	end
 end
 
@@ -453,6 +450,9 @@ function MissFortune:OnTick()
         self:LogicE();
     end
 
+    if CanCast(_R) and self.autoR then
+        self:LogicR();
+    end
     --self:AntiGapCloser()
 		
 
@@ -571,38 +571,45 @@ function MissFortune:LogicE()
 end
 
 function MissFortune:LogicR()
-	local bestEnemy = nil
-	local pushDistance = 400 + (myHero.LevelSpell(_R) * 200)
-	for i,hero in pairs(GetEnemyHeroes()) do
-		if IsValidTarget(hero, self.R.range) then
-			enemy = GetAIHero(hero)
-			if self:ValidUlt(enemy) then
-				if bestEnemy == nil then
-					bestEnemy = enemy
-				elseif GetDistance(Vector(enemy)) < GetDistance(Vector(bestEnemy)) then
-					bestEnemy = enemy;
-				end
-
-				if GetDamage("R", enemy) + self:GetEDmg(enemy) > enemy.HP and GetDamage("E", enemy) < enemy.HP and self.autoR then
-					CastSpellTarget(enemy.Addr, _R)
-				end
-				local prepos = Vector(enemy)
-				local finalPosition = prepos:Extended(Vector(myHero),  -pushDistance)
-
-				if self.turrentR then
-					if not self:IsUnderTurretEnemy(finalPosition) and self:IsUnderAllyTurret(finalPosition) and not self:IsUnderTurretEnemy(Vector(myHero)) then
-						CastSpellTarget(enemy.Addr, _R)
-					end
-				end
-				if self.allyR and self:CountAlliesInRange(finalPosition, 500) > 1 and self:CountAlliesInRange(prepos, 350) == 0 then
-					CastSpellTarget(enemy.Addr, _R)
-				end
-				if (myHero.HP / myHero.MaxHP) * 100 < self.RgapHP and IsValidTarget(enemy.Addr, 300) and enemy.IsMelee then
-					CastSpellTarget(enemy.Addr, _R)
-				end
+	if self:IsUnderTurretEnemy(myHero) and self.Rturrent then
+		return
+	end
+	local TargetR = GetTargetSelector(self.R.range, 0)
+	if IsValidTarget(TargetR, self.R.range) then
+		target = GetAIHero(TargetR)
+		if self:ValidUlt(target) then
+			local DamageAP = {0.5, 0.75, 1}
+			local rDmg = GetDamage("R", target) * DamageAP[myHero.LevelSpell(_R) - 1]
+			if CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and CountAllyChampAroundObject(myHero.Addr, 400) == 0 then
+				local tDis = GetDistance(target)
+				if (rDmg * 7 > target.HP and tDis < 800) then
+					CastSpellToPos(target.x, target.z, _R)
+                    self.RCastTime = GetTimeGame();
+                elseif (rDmg * 6 > target.HP and tDis < 900) then
+                    CastSpellToPos(target.x, target.z, _R)
+                    self.RCastTime = GetTimeGame();
+                elseif (rDmg * 5 > target.HP and tDis < 1000) then
+                    CastSpellToPos(target.x, target.z, _R)
+                    self.RCastTime = GetTimeGame();
+                elseif (rDmg * 4 > target.HP and tDis < 1100) then
+                    CastSpellToPos(target.x, target.z, _R)
+                    self.RCastTime = GetTimeGame();
+                elseif (rDmg * 3 > target.HP and tDis < 1200) then
+                    CastSpellToPos(target.x, target.z, _R)
+                    self.RCastTime = GetTimeGame();
+                elseif (rDmg > target.HP and tDis < 1300) then
+                    CastSpellToPos(target.x, target.z, _R)
+                    self.RCastTime = GetTimeGame();
+                end
+                return;
 			end
+			if (rDmg * 8 > target.HP and rDmg * 2 < target.HP and CountEnemyChampAroundObject(myHero.Addr, 300) == 0 and not self:CanMove(target)) then
+                CastSpellToPos(target.x, target.z, _R)
+                self.RCastTime = GetTimeGame();
+                return;
+            end
 		end
-	end		
+	end
 end
 
 

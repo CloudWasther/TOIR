@@ -12,6 +12,7 @@ function MissFortune:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
@@ -92,6 +93,7 @@ self.NotAttackSpell =
     --Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
     --Callback.Add("DeleteObject", function(...) self:OnDeleteObject(...) end)
     --Callback.Add("UpdateBuff", function(unit, buff, stacks) self:OnUpdateBuff(source, unit, buff, stacks) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
     self:MenuValueDefault()
@@ -99,10 +101,10 @@ end
 
 function MissFortune:MenuValueDefault()
 	self.menu = "MissFortune_Magic"
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_Q = self:MenuBool("Draw Q Range", true)
-	self.menu_Draw_E = self:MenuBool("Draw E Range", true)
-	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
+	self.menu_Draw_E = self:MenuBool("Draw E Range", false)
+	self.menu_Draw_R = self:MenuBool("Draw R Range", false)
 
 	self.autoQ = self:MenuBool("Auto Q", true)
 	self.harassQ = self:MenuBool("Use Q on minion", true)
@@ -207,6 +209,16 @@ local function GetDistanceSqr(p1, p2)
     p2 = GetOrigin(p2) or GetOrigin(myHero)
     return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
 end
+
+function MissFortune:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if self.AGC then
+    		CastSpellToPos(myHero.x, myHero.z, _E) 
+    	end
+    end
+end
+
 
 function MissFortune:OnProcessSpell(unit, spell)
 	
@@ -419,7 +431,7 @@ function MissFortune:OnDraw()
 end
 
 function MissFortune:OnTick()
-	if myHero.IsDead or IsTyping() or IsDodging() then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 	self.HPred_E_M = HPSkillshot({type = "PromptCircle", delay = self.E.delay, range = self.E.range, speed = self.E.speed, radius = self.E.width})
 	--__PrintTextGame(tostring(self.Q.range).."--"..tostring(self.Q1.range))
@@ -434,14 +446,14 @@ function MissFortune:OnTick()
 			end
 		end
 	if CanCast(_Q) and self.autoQ then
-        --self:LogicQ();
+        self:LogicQ();
     end
 
     if CanCast(_E) and self.autoE then
         self:LogicE();
     end
 
-    self:AntiGapCloser()
+    --self:AntiGapCloser()
 		
 
 	if self.Enalble_Mod_Skin then

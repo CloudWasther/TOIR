@@ -14,6 +14,7 @@ function Caitlyn:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -66,10 +67,13 @@ function Caitlyn:__init()
 	self.QCastTime = 0
 	self.RRange = 2300
 
+	self.myLastPath = Vector(0,0,0)
+	self.targetLastPath = Vector(0,0,0)
+
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
     Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
@@ -78,11 +82,11 @@ end
 
 function Caitlyn:MenuValueDefault()
 	self.menu = "Caitlyn_Magic"
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_Q = self:MenuBool("Draw Q Range", true)
-	self.menu_Draw_W = self:MenuBool("Draw W Range", true)
-	self.menu_Draw_E = self:MenuBool("Draw E Range", true)
-	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
+	self.menu_Draw_W = self:MenuBool("Draw W Range", false)
+	self.menu_Draw_E = self:MenuBool("Draw E Range", false)
+	self.menu_Draw_R = self:MenuBool("Draw R Range", false)
 
 	self.autoQ2 = self:MenuBool("Auto Q", true)
 	self.autoQcc = self:MenuBool("Auto Q on CC", true)
@@ -98,7 +102,7 @@ function Caitlyn:MenuValueDefault()
 	self.bushW = self:MenuBool("Auto W bush after enemy enter", true)
 	self.bushW2 = self:MenuBool("Auto W bush and turret if full ammo", true)
 	self.Wspell = self:MenuBool("W on special spell detection", true)
-	self.WmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
+	self.WmodeGC = self:MenuComboBox("Gap Closer position mode", 1)
 	self.wendDas = self:MenuBool("W End Dash", true)
 
 	self.autoE = self:MenuBool("Auto E", true)
@@ -143,7 +147,7 @@ function Caitlyn:OnDrawMenu()
 			self.bushW = Menu_Bool("Auto W bush after enemy enter", self.bushW, self.menu)
 			self.bushW2 = Menu_Bool("Auto W bush and turret if full ammo", self.bushW2, self.menu)
 			self.Wspell = Menu_Bool("W on special spell detection", self.Wspell, self.menu)
-			self.WmodeGC = Menu_ComboBox("Gap Closer position mode", self.WmodeGC, "Dash end position\0My hero position\0\0", self.menu)
+			self.WmodeGC = Menu_ComboBox("Gap Closer position mode", self.WmodeGC, "Dash end position\0My hero position\0\0\0", self.menu)
 			self.wendDas = Menu_Bool("W End Dash", self.wendDas, self.menu)
 			Menu_End()
 		end
@@ -155,7 +159,7 @@ function Caitlyn:OnDrawMenu()
 			self.harrasEQ = Menu_Bool("TRY E + Q", self.harrasEQ, self.menu)
 			self.EQks = Menu_Bool("Ks E + Q + AA", self.EQks, self.menu)
 			self.useE = Menu_KeyBinding("Dash E HotKey Smartcast", self.useE, self.menu)
-			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.WmodeGC, "Dash end position\0Cursor position\0Enemy position\0\0", self.menu)
+			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Dash end position\0Cursor position\0Enemy position\0\0\0", self.menu)
 			--self.eendDas = Menu_Bool("E End Dash", self.eendDas, self.menu)
 			Menu_End()
 		end
@@ -248,19 +252,19 @@ end
 
 function Caitlyn:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravity, dashDistance)
 	if unit.IsMe then
-		local myLastPath = endPos
+		self.myLastPath = endPos
 	end
-	local TargetW = GetTargetSelector(self.W.range - 150, 0)
+	local TargetW = GetTargetSelector(1000, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		if unit.NetworkId == target.NetworkId then
-			local targetLastPath = endPos
+			self.targetLastPath = endPos
 		end
 	end
 
-	if myLastPath ~= nil and targetLastPath ~= nil then
+	if self.myLastPath ~= Vector(0,0,0) and self.targetLastPath ~= Vector(0,0,0) then
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		local getAngle = myHeroPos:AngleBetween(myLastPath, targetLastPath)
+		local getAngle = myHeroPos:AngleBetween(self.myLastPath, self.targetLastPath)
 		if(getAngle < 20) then
             self.IsMovingInSameDirection = true;
         else
@@ -269,14 +273,103 @@ function Caitlyn:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravit
 	end
 end
 
+function Caitlyn:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if CanCast(_E) and IsValidTarget(hero.Addr, self.E.range - 150) then
+          	if self.EmodeGC == 0 then
+          		CastSpellToPos(EndPos.x, EndPos.z, _E)
+          	end
+	        if self.EmodeGC == 1 then
+	          	CastSpellToPos(GetMousePos().x, GetMousePos().z, _E)
+	        end
+
+        	if self.EmodeGC == 2 then
+          		CastSpellToPos(hero.x, hero.z, _E)
+          	end
+        end
+
+        if CanCast(_W) and IsValidTarget(hero.Addr, self.W.range - 150) then
+          	if self.WmodeGC == 0 then
+          		CastSpellToPos(EndPos.x, EndPos.z, _W)
+          	end
+          	if self.WmodeGC == 1 then
+          		CastSpellToPos(myHero.x, myHero.z, _W)
+          	end
+        end
+    end
+end
+
+function Caitlyn:AntiGapCloser()
+	for i, heros in pairs(GetEnemyHeroes()) do
+    	if heros ~= nil then
+      		local hero = GetAIHero(heros)
+      		--if hero.IsDash then
+        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
+        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
+        		if DashPosition ~= nil then
+          			if GetDistance(DashPosition) < 400 then
+          				if CanCast(_E) and IsValidTarget(hero.Addr, self.E.range - 150) then
+          					if self.EmodeGC == 0 then
+          						CastSpellToPos(DashPosition.x, DashPosition.z, _E)
+          					end
+          					if self.EmodeGC == 1 then
+          						CastSpellToPos(GetMousePos().x, GetMousePos().z, _E)
+          					end
+          					if self.EmodeGC == 2 then
+          						CastSpellToPos(hero.x, hero.z, _E)
+          					end
+          				end
+
+          				if CanCast(_W) and IsValidTarget(hero.Addr, self.W.range - 150) then
+          					if self.WmodeGC == 0 then
+          						CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+          					end
+          					if self.WmodeGC == 1 then
+          						CastSpellToPos(myHero.x, myHero.z, _W)
+          					end
+          				end
+          			end
+        		end
+      		--end
+    	end
+	end
+end
+
 function Caitlyn:OnTick()
-	if myHero.IsDead then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
 	self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
 	self.HPred_E_M = HPSkillshot({type = "DelayLine", delay = self.E.delay, range = self.E.range, speed = self.E.speed, collisionH = false, collisionM = true, width = self.E.width})
 	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
+
+	--[[local target, enpos = AntiGap:AntiGapInfo()
+    if target ~= nil and enpos ~= nil then
+    	--self:AntiGapCloser()
+    	if CanCast(_E) and IsValidTarget(target, self.E.range - 150) then
+          	if self.EmodeGC == 0 then
+          		CastSpellToPos(enpos.x, enpos.z, _E)
+          	end
+          	if self.EmodeGC == 1 then
+          		CastSpellToPos(GetMousePos().x, GetMousePos().z, _E)
+          	end
+          	if self.EmodeGC == 2 then
+          		CastSpellToPos(target.x, target.z, _E)
+          	end
+       	end
+
+        if CanCast(_W) and IsValidTarget(target, self.W.range - 150) then
+          	if self.WmodeGC == 0 then
+          		CastSpellToPos(enpos.x, enpos.z, _W)
+          	end
+          	if self.WmodeGC == 1 then
+          		CastSpellToPos(myHero.x, myHero.z, _W)
+          	end
+        end
+        self:AntiGapCloser()
+    end]]
 
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if IsValidTarget(hero, 1000) then
@@ -314,9 +407,7 @@ function Caitlyn:OnTick()
     	CastSpellTarget(TargetR, _R)
     end
 
-	self:KillSteal()
-
-	self:AntiGapCloser()
+	self:KillSteal()	
 
 	self.RRange = 500 * myHero.LevelSpell(_R) + 1800
 
@@ -461,9 +552,9 @@ function Caitlyn:LogicW()
 				CastSpellToPos(WPos.x, WPos.z, _W)
 			end
 			--__PrintTextGame(tostring(self.IsMovingInSameDirection))
-			if self.IsMovingInSameDirection then
-				CastSpellToPos(WPos.x, WPos.z, _W)
-			end
+			--if self.IsMovingInSameDirection then
+				--CastSpellToPos(WPos.x, WPos.z, _W)
+			--end
 		end
 	end
 	if self.telE then
@@ -477,7 +568,7 @@ function Caitlyn:LogicW()
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		--__PrintTextGame(tostring(AmmoW[myHero.LevelSpell(_W)]))
 		if GetAmmoSpell(myHero.Addr, _W) == AmmoW[myHero.LevelSpell(_W)] and CountEnemyChampAroundObject(myHero.Addr, 1000) == 0 then
-			points = self:CirclePoints(8, self.W.range, myHeroPos)
+			points = self:CirclePoints(8, self.W.range, myHero)
 			for i, point in pairs(points) do
 				if self:IsUnderTurretEnemy(point) and not IsWall(point.x, point.y, point.z) then
 					CastSpellToPos(point.x, point.z, _W)
@@ -715,43 +806,6 @@ function Caitlyn:OnProcessSpell(unit, spell)
 	    	end	    	
     	end
     end
-end
-
-
-function Caitlyn:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		--if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 then
-          				if CanCast(_E) and IsValidTarget(hero.Addr, self.E.range - 150) then
-          					if self.EmodeGC == 0 then
-          						CastSpellToPos(DashPosition.x, DashPosition.z, _E)
-          					end
-          					if self.EmodeGC == 1 then
-          						CastSpellToPos(GetMousePos().x, GetMousePos().z, _E)
-          					end
-          					if self.EmodeGC == 2 then
-          						CastSpellToPos(hero.x, hero.z, _E)
-          					end
-          				end
-
-          				if CanCast(_W) and IsValidTarget(hero.Addr, self.W.range - 150) then
-          					if self.WmodeGC == 0 then
-          						CastSpellToPos(DashPosition.x, DashPosition.z, _W)
-          					end
-          					if self.WmodeGC == 1 then
-          						CastSpellToPos(myHero.x, myHero.z, _W)
-          					end
-          				end
-          			end
-        		end
-      		--end
-    	end
-	end
 end
 
 function Caitlyn:GetRealRange(target)

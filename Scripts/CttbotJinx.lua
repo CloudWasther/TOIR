@@ -13,6 +13,7 @@ function Jinx:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -79,6 +80,7 @@ function Jinx:__init()
 	}
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
+	Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
@@ -106,9 +108,10 @@ function Jinx:MenuValueDefault()
 
 	self.autoE = self:MenuBool("Auto E on CC", true)
 	self.comboE = self:MenuBool("Auto E in Combo BETA", true)
-	self.AGC = self:MenuBool("Anti Gapcloser E", true)
+	--self.AGC = self:MenuBool("Anti Gapcloser E", true)
 	self.opsE = self:MenuBool("OnProcessSpellCastE", true)
 	self.telE = self:MenuBool("Auto E teleport", true)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 1)
 
 	self.autoR = self:MenuBool("Auto R", true)
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)
@@ -117,11 +120,11 @@ function Jinx:MenuValueDefault()
 	self.MinRangeR = self:MenuSliderInt("Min R range", 900)
 
 
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_Q = self:MenuBool("Draw Q Range", true)
-	self.menu_Draw_W = self:MenuBool("Draw W Range", true)
-	self.menu_Draw_E = self:MenuBool("Draw E Range", true)
-	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
+	self.menu_Draw_W = self:MenuBool("Draw W Range", false)
+	self.menu_Draw_E = self:MenuBool("Draw E Range", false)
+	self.menu_Draw_R = self:MenuBool("Draw R Range", false)
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 12)
@@ -154,9 +157,10 @@ function Jinx:OnDrawMenu()
 		if Menu_Begin("Setting E") then
 			self.autoE = Menu_Bool("Auto E on CC", self.autoE, self.menu)
 			self.comboE = Menu_Bool("Auto E in Combo BETA", self.comboE, self.menu)
-			self.AGC = Menu_Bool("Anti Gapcloser E", self.AGC, self.menu)
+			--self.AGC = Menu_Bool("Anti Gapcloser E", self.AGC, self.menu)
 			self.opsE = Menu_Bool("OnProcessSpellCastE", self.opsE, self.menu)
 			self.telE = Menu_Bool("Auto E teleport", self.telE, self.menu)
+			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Dash end position\0My hero position\0\0\0", self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
@@ -230,7 +234,6 @@ function Jinx:OnCreateObject(obj)
 end
 
 function Jinx:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravity, dashDistance)
-
 	if unit.IsMe then
 		self.myLastPath = endPos
 	end
@@ -239,13 +242,10 @@ function Jinx:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravity, 
 		target = GetAIHero(TargetE)
 		if unit.NetworkId == target.NetworkId then
 			self.targetLastPath = endPos
-			--__PrintTextGame(target.CharName)
 		end
 	end
 
-	--__PrintTextGame(tostring(self.myLastPath).."--"..tostring(self.targetLastPath))
 	if self.myLastPath ~= Vector(0,0,0) and self.targetLastPath ~= Vector(0,0,0) then
-		--__PrintTextGame("ssssssssss")
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		local getAngle = myHeroPos:AngleBetween(self.myLastPath, self.targetLastPath)
 		if(getAngle < 20) then
@@ -305,8 +305,22 @@ function Jinx:AntiGapCloser()
 	end
 end
 
+function Jinx:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+        if CanCast(_E) then --and IsValidTarget(hero.Addr, self.E.range - 150) then
+          	if self.WmodeGC == 0 then
+          		CastSpellToPos(EndPos.x, EndPos.z, _E)
+          	end
+          	if self.WmodeGC == 1 then
+          		CastSpellToPos(myHero.x, myHero.z, _E)
+          	end
+        end
+    end
+end
+
 function Jinx:OnTick()
-	if myHero.IsDead then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	--self.IsMovingInSameDirection
@@ -328,7 +342,7 @@ function Jinx:OnTick()
 
 	self:AutoEW()
 	self:KillSteal()
-	self:AntiGapCloser()
+	--self:AntiGapCloser()
 	--self:LogicR()
 
 	if CanCast(_Q) and self.autoQ then

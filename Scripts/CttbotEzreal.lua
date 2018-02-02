@@ -12,6 +12,7 @@ function Ezreal:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -33,10 +34,7 @@ function Ezreal:__init()
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
 	Callback.Add("Update", function(...) self:OnUpdate(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
-    --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
-    --Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
-    --Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
     Callback.Add("UpdateBuff", function(unit, buff, stacks) self:OnUpdateBuff(source, unit, buff, stacks) end)
     Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
@@ -45,7 +43,7 @@ end
 
 function Ezreal:MenuValueDefault()
 	self.menu = "Ezreal_Magic"
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
 	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
 	self.menu_Draw_W = self:MenuBool("Draw W Range", false)
 	self.menu_Draw_E = self:MenuBool("Draw E Range", false)
@@ -72,6 +70,7 @@ function Ezreal:MenuValueDefault()
 	self.EAntiMelee = self:MenuBool("E anti-melee", true)
 	self.autoEgrab = self:MenuBool("Auto E anti grab", true)
 	self.E_Mode = self:MenuComboBox("E Mode", 2)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
 
 	self.autoR = self:MenuBool("Auto R KS", true)
 	self.Rcc = self:MenuBool("R cc", true)
@@ -121,7 +120,8 @@ function Ezreal:OnDrawMenu()
 			self.EKsCombo = Menu_Bool("E ks combo", self.EKsCombo, self.menu)
 			self.EAntiMelee = Menu_Bool("E anti-melee", self.EAntiMelee, self.menu)
 			self.autoEgrab = Menu_Bool("Auto E anti grab", self.autoEgrab, self.menu)
-			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)		
+			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)	
+			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Game Cursor\0Away - safe position\0Disable\0\0\0", self.menu)		
 			Menu_End()
 		end
 
@@ -223,20 +223,43 @@ function Ezreal:OnAfterAttack(unit, target)
 	end
 end
 
-function Ezreal:OnTick()
-	self.tickIndex = self.tickIndex + 1
-    if (self.tickIndex > 4) then
-        self.tickIndex = 0;
+function Ezreal:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if self.EmodeGC == 1 then
+	        points = self:CirclePoints(10, self.E.range, Vector(myHero))
+			bestpoint = Vector(myHero):Extended(hero, - self.E.range);
+			local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
+			for i, point in pairs(points) do
+			    local count = self:CountEnemiesInRange(point, self.E.range)
+			    if count < enemies then
+			    	enemies = count;
+		            bestpoint = point;
+		        elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+		            enemies = count;
+		            bestpoint = point;
+			    end
+			end
+			if self:IsGoodPosition(bestpoint) and CanCast(_E) and GetKeyPress(self.Combo) > 0 then   
+				DelayAction(function() CastSpellToPos(bestpoint.x, bestpoint.z, _E) end, 0)          				
+	    	end  
+	    end
+	    if self.EmodeGC == 0 then
+	    	bestpoint = Vector(myHero):Extended(GetMousePos(), self.E.range);
+	    	if self:IsGoodPosition(bestpoint) and CanCast(_E) then
+	    		CastSpellToPos(bestpoint.x, bestpoint.z, _E)
+	    	end
+	    end	 
     end
+end
 
-	if myHero.IsDead then return end
+function Ezreal:OnTick()
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
 	self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, width = self.W.width})
 	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, width = self.R.width})
-
-	--self:LogicSmiteJungle()
 
 	if CanCast(_E) then
 		--if self:LagFree(0) then
@@ -253,7 +276,7 @@ function Ezreal:OnTick()
 		self:LaneClear()
 	end
 
-	self:AntiGapCloser()
+	
 	self:AutoQW()
 
 	if CanCast(_Q) then
@@ -264,10 +287,14 @@ function Ezreal:OnTick()
 		self:LogicW();
 	end
 
-	if --[[self:LagFree(4) and]] CanCast(_R) then
+	if CanCast(_R) then
 		local TargetR = GetTargetSelector(self.R.range, 1)
 	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
-	    	CastSpellTarget(TargetR, _R)
+	    	target = GetAIHero(TargetR)
+	    	local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+	    	if RHitChance >= 2 then
+	    		CastSpellToPos(RPos.x, RPos.z, _R)
+	    	end
 	    end
 		self:LogicR();
 	end
@@ -577,39 +604,31 @@ function Ezreal:AutoQW()
 end
 
 function Ezreal:farmQ()
+	--local orbTarget = GetTargetOrb()
+	--if orbTarget ~= nil and GetType(orbTarget) == 1 then	
+		GetAllUnitAroundAnObject(myHero.Addr, 2000)	
+		for i, obj in ipairs(pUnit) do
+			if obj ~= 0  then
+				--__PrintTextGame(tostring(obj))
+	            local minion = GetUnit(obj)
+	            if IsEnemy(minion.Addr) and not IsDead(minion.Addr) and not IsInFog(minion.Addr) and GetType(minion.Addr) == 1 then
+	            	if IsValidTarget(minion, self.Q.Range) and GetDistance(Vector(minion)) > GetTrueAttackRange() and self.FQ then
 
-	local orbTarget = GetTargetOrb()
-	if orbTarget ~= nil and GetType(orbTarget) == 1 then		
-		for i, minions in ipairs(self:EnemyMinionsTbl()) do
-			if minions ~= nil then
-				local minion = GetUnit(minions)
-				--__PrintTextGame(tostring(GetIndex(orbTarget)))
-				if IsValidTarget(minion.Addr, self.Q.range) and GetDistance(minion.Addr) > GetTrueAttackRange() and minion.NetworkId ~= GetIndex(orbTarget) and self.FQ then
-
-					local delay = GetDistance(orbTarget) / self.Q.speed + self.Q.delay
-					local hpPred = GetHealthPred(minion.Addr, delay, 0.07)
-					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, minion, myHero)
-					--__PrintTextGame(tostring(delay))
-					if hpPred > 0 and hpPred < GetDamage("Q", minion) and QHitChance > 0 then
-						CastSpellToPos(QPos.x, QPos.z, _Q)
+						local delay = GetDistance(minion) / self.Q.Speed + self.Q.Delay
+						local hpPred = GetHealthPred(minion.Addr, delay, 0.07)
+						local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, minion, myHero)						
+						--__PrintTextGame(tostring(GetSpellDamage(_Q, minion)))
+						if hpPred > 0 and hpPred < self:getQDmg(minion) then --GetSpellDamage(_Q, minion) then
+							--local CastPosition, HitChance, Position, AOE = self:GetQLinePreCore(minion)
+							if QHitChance >= 2 then
+								CastSpellToPos(QPos.x, QPos.z, _Q)
+							end
+						end
 					end
-				end
-			end
-		end
-	end
-end
-function Ezreal:EnemyMinionsTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, obj in pairs(pUnit) do
-        if obj ~= 0  then
-            local minions = GetUnit(obj)
-            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
-                table.insert(result, minions.Addr)
-            end
+	            end
+	        end
         end
-    end
-    return result
+    --end
 end
 
 function Ezreal:OnDraw()

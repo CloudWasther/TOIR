@@ -12,6 +12,7 @@ function Corki:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 
     self.Q = Spell(_Q, 925)
     self.W = Spell(_W, 700)
@@ -28,6 +29,7 @@ function Corki:__init()
     self.ts_prio = {}
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
+	Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
 	--Callback.Add("Update", function(...) self:OnUpdate(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
@@ -42,11 +44,11 @@ end
 
 function Corki:MenuValueDefault()
 	self.menu = "Corki_Magic"
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_Q = self:MenuBool("Draw Q Range", true)
-	self.menu_Draw_W = self:MenuBool("Draw W Range", true)
-	self.menu_Draw_E = self:MenuBool("Draw E Range", true)
-	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
+	self.menu_Draw_W = self:MenuBool("Draw W Range", false)
+	self.menu_Draw_E = self:MenuBool("Draw E Range", false)
+	self.menu_Draw_R = self:MenuBool("Draw R Range", false)
 
 	self.autoQ = self:MenuBool("Auto Q", true)
 	self.harassQ = self:MenuBool("Q harass", true)
@@ -177,7 +179,7 @@ end
 
 function Corki:OnTick()
 	
-	if myHero.IsDead then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	--[[GetAllBuffNameActive(myHero.Addr)
@@ -188,9 +190,9 @@ function Corki:OnTick()
 	self.HPred_Q_M = HPSkillshot({type = "PromptCircle", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, radius = self.Q.width})
 	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = false, collisionM = true, width = self.R.width})
 	--__PrintTextGame(tostring(self:Sheen()))
-	if self.AGC then
-		self:AntiGapCloser()
-	end
+	--if self.AGC then
+		--self:AntiGapCloser()
+	--end
 
 	if CanCast(_Q) and self:Sheen() then
 		self:LogicQ();
@@ -738,6 +740,35 @@ function Corki:IsGoodPosition(dashPos)
     end
 
     return false
+end
+
+function Corki:OnAntiGapClose(target, EndPos)
+	--for _,heros in pairs(GetEnemyHeroes()) do
+        --if IsValidTarget(heros, 2000) then
+            hero = GetAIHero(target.Addr)
+            --if hero.NetworkId == target.NetworkId then
+            --__PrintTextGame(tostring(GetDistance(hero)).."<-->"..tostring(GetDistance(EndPos))) 
+            if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+                points = self:CirclePoints(10, self.W.range, Vector(myHero))
+		    	bestpoint = Vector(myHero):Extended(hero, - self.W.range);
+		    	local enemies = self:CountEnemiesInRange(bestpoint, self.W.range)
+		    	for i, point in pairs(points) do
+		    		local count = self:CountEnemiesInRange(point, self.W.range)
+		    		if count < enemies then
+		    			enemies = count;
+	                    bestpoint = point;
+	                elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+	                    enemies = count;
+	                    bestpoint = point;
+		    		end
+		    	end
+		    	if self:IsGoodPosition(bestpoint) and self.AGC and CanCast(_W) then   
+	                CastSpellToPos(bestpoint.x,bestpoint.z, _W) 
+	                return    				
+	          	end
+            end
+        --end
+    --end
 end
 
 function Corki:AntiGapCloser()

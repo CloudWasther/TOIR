@@ -1,5 +1,5 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbCustom.lua")
+--IncludeFile("Lib\\OrbCustom.lua")
 --IncludeFile("Lib\\AntiGapCloser.lua")
 
 Twitch = class()
@@ -178,18 +178,20 @@ function Twitch:MenuKeyBinding(stringKey, valueDefault)
 end
 
 function Twitch:OnTick()
-	if myHero.IsDead then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self:AutoQ()
 	self:AutoW()
 	self:AutoE()
-	self:AutoR()
+	if self.menu_Combo_R then
+		self:AutoR()
+	end
 	self:ReCall()
 
 	self:KillSteal()
 
-	self:LogicSmiteJungle()
+	--self:LogicSmiteJungle()
 
 	if GetKeyPress(self.Combo) > 0 then
 		
@@ -204,87 +206,11 @@ function Twitch:OnTick()
 	end
 end
 
-function Twitch:GetIndexSmite()
-	if GetSpellIndexByName("SummonerSmite") > -1 then
-		return GetSpellIndexByName("SummonerSmite")
-	elseif GetSpellIndexByName("S5_SummonerSmiteDuel") > -1 then
-		return GetSpellIndexByName("S5_SummonerSmiteDuel")
-	elseif GetSpellIndexByName("S5_SummonerSmitePlayerGanker") > -1 then
-		return GetSpellIndexByName("S5_SummonerSmitePlayerGanker")
-	end
-	return -1
-end
-
 function Twitch:GetIndexRecall()
 	if GetSpellIndexByName("recall") > -1 then
 		return GetSpellIndexByName("recall")
 	end
 	return -1
-end
-
-function Twitch:GetSmiteDamage(target)
-	if self:GetIndexSmite() > -1 then
-		if GetType(target) == 0 then
-			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmitePlayerGanker" then
-				return 20 + 8*myHero.Level;
-			end
-			if GetSpellNameByIndex(myHero.Addr, self:GetIndexSmite()) == "S5_SummonerSmiteDuel" then
-				return 54 + 6*myHero.Level;
-			end
-
-		end
-		local DamageSpellSmiteTable = {390, 410, 430, 450, 480, 510, 540, 570, 600, 640, 680, 720, 760, 800, 850, 900, 950, 1000}
-		return DamageSpellSmiteTable[myHero.Level]
-	end
-	return 0
-end
-
-function Twitch:JungleTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, minions in pairs(pUnit) do
-        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
-            table.insert(result, minions)
-        end
-    end
-
-    return result
-end
-
-function Twitch:LogicSmiteJungle()
-	for i, minions in ipairs(self:JungleTbl()) do
-        if minions ~= 0 then
-            local jungle = GetUnit(minions)
-            if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < GetTrueAttackRange() and
-                (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Red" and self.menu_Combo_SmiteRed then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Blue" and self.menu_Combo_SmiteBlue then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_RiftHerald" and self.menu_Combo_SmiteDragon then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName == "SRU_Baron" and self.menu_Combo_SmiteBaron then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and self.menu_Combo_SmiteSmall then
-                	if jungle.CharName == "SRU_Razorbeak" or jungle.CharName == "SRU_Murkwolf" or jungle.CharName == "SRU_Gromp" or jungle.CharName == "SRU_Krug" then
-                    	CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                	end
-                end
-
-                if IsValidTarget(jungle.Addr, 650) and self:GetSmiteDamage(jungle.Addr) > jungle.HP and jungle.CharName:find("SRU_Dragon") and self.menu_Combo_SmiteDragon then
-                    CastSpellTarget(jungle.Addr, self:GetIndexSmite())
-                end
-            end
-        end
-    end
 end
 
 function Twitch:LogicQ()
@@ -333,8 +259,10 @@ end
 
 function Twitch:LogicE()
 	if self.menu_Combo_E == 2 then
-		local target = self:GetTargetBuffE(GetTrueAttackRange() + 50)
+		local targets = self:GetTargetBuffE(GetTrueAttackRange() + 50)
 		--ForceTarget(target)
+		--target = GetAIHero(targets)
+		SetForcedTarget(targets)
 	end
 end
 
@@ -381,14 +309,12 @@ function Twitch:AutoE()
 			CastSpellTarget(myHero.Addr, _E)
 		end
 	end
-	--self.JungleMobs:update()
-    for i, minions in ipairs(self:JungleTbl()) do
-        if minions ~= 0 then
-            local jungle = GetUnit(minions)
+	GetAllUnitAroundAnObject(myHero.Addr, 2000)
+	for i, minions in pairs(pUnit) do
+        if minions ~= 0 and not IsDead(minions) and not IsInFog(minions) and GetType(minions) == 3 then
+        	local jungle = GetUnit(minions)
             if jungle.Type == 3 and jungle.TeamId == 300 and GetDistance(jungle.Addr) < self.E.range and
                 (GetObjName(jungle.Addr) ~= "PlantSatchel" and GetObjName(jungle.Addr) ~= "PlantHealth" and GetObjName(jungle.Addr) ~= "PlantVision") then
-                --local stack = GetBuff(GetBuffByName(jungle.Addr, "TwitchDeadlyVenom"))
-                --__PrintTextGame(tostring(self:getEDmg(jungle)))
                 if IsValidTarget(jungle.Addr, self.E.range) and self:getEDmg(jungle) > jungle.HP and jungle.CharName == "SRU_Red" and self.menu_Combo_EKsRed then
                     CastSpellTarget(jungle.Addr, _E)
                 end

@@ -1,5 +1,5 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
-IncludeFile("Lib\\OrbCustom.lua")
+--IncludeFile("Lib\\OrbCustom.lua")
 --IncludeFile("Lib\\AntiGapCloser.lua")
 
 Lucian = class()
@@ -15,7 +15,7 @@ function Lucian:__init()
 
 	-- VPrediction
 	vpred = VPrediction(true)
-
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -43,7 +43,7 @@ function Lucian:__init()
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    --Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
 
     self:MenuValueDefault()
@@ -65,20 +65,21 @@ function Lucian:MenuValueDefault()
 
 	self.menu_Combo_E = self:MenuBool("Enable E", true)
 	self.menu_Combo_EMode = self:MenuComboBox("E Mode", 2)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
 
 	self.menu_Combo_R = self:MenuBool("Enable R", true)
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)
 	self.autoRLock = self:MenuBool("Enable Auto R Lock", true)
 	self.menu_Combo_Rlock = self:MenuKeyBinding("Lock R On Target", 32)
 
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.Draw_Q_Range = self:MenuBool("Draw Q Range", true)
-	self.Draw_Q2_Range = self:MenuBool("Draw Q2 Range", true)
-	self.Draw_W_Range = self:MenuBool("Draw W Range", true)
-	self.Draw_E_Range = self:MenuBool("Draw E Range", true)
-	self.Draw_R_Range = self:MenuBool("Draw R Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.Draw_Q_Range = self:MenuBool("Draw Q Range", false)
+	self.Draw_Q2_Range = self:MenuBool("Draw Q2 Range", false)
+	self.Draw_W_Range = self:MenuBool("Draw W Range", false)
+	self.Draw_E_Range = self:MenuBool("Draw E Range", false)
+	self.Draw_R_Range = self:MenuBool("Draw R Range", false)
 
-	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", true)
+	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 7)
 
 	self.Combo = self:MenuKeyBinding("Combo", 32)
@@ -105,6 +106,7 @@ function Lucian:OnDrawMenu()
 		if Menu_Begin("Setting E") then
 			self.menu_Combo_E = Menu_Bool("Enable E", self.menu_Combo_E, self.menu)
 			self.menu_Combo_EMode = Menu_ComboBox("E Mode", self.menu_Combo_EMode, "Mouse\0Side\0Safe position\0\0", self.menu)		
+			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Game Cursor\0Away - safe position\0Disable\0\0\0", self.menu)	
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
@@ -212,11 +214,11 @@ end
 
 
 function Lucian:OnTick()
-	if myHero.IsDead or IsTyping() or IsDodging() then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self:AutoQW()
-	self:AntiGapCloser()
+	--self:AntiGapCloser()
 	self:KillSteal()
 	self:OnWaypointLoop()
 	self:LogicR()
@@ -833,6 +835,36 @@ function Lucian:IsGoodPosition(dashPos)
     end
 
     return false
+end
+
+function Lucian:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if self.EmodeGC == 1 then
+	        points = self:CirclePoints(10, self.E.range, Vector(myHero))
+			bestpoint = Vector(myHero):Extended(hero, - self.E.range);
+			local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
+			for i, point in pairs(points) do
+			    local count = self:CountEnemiesInRange(point, self.E.range)
+			    if count < enemies then
+			    	enemies = count;
+		            bestpoint = point;
+		        elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+		            enemies = count;
+		            bestpoint = point;
+			    end
+			end
+			if self:IsGoodPosition(bestpoint) and CanCast(_E) and GetKeyPress(self.Combo) > 0 then   
+				DelayAction(function() CastSpellToPos(bestpoint.x, bestpoint.z, _E) end, 0)          				
+	    	end  
+	    end
+	    if self.EmodeGC == 0 then
+	    	bestpoint = Vector(myHero):Extended(GetMousePos(), self.E.range);
+	    	if self:IsGoodPosition(bestpoint) and CanCast(_E) then
+	    		CastSpellToPos(bestpoint.x, bestpoint.z, _E)
+	    	end
+	    end	 
+    end
 end
 
 function Lucian:AntiGapCloser()

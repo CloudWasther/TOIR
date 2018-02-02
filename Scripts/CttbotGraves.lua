@@ -12,11 +12,10 @@ function Graves:__init()
 	-- VPrediction
 	self.vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
-
-    
 
 	self.Q = Spell(_Q, 1000)
     self.W = Spell(_W, 1100)
@@ -33,8 +32,7 @@ function Graves:__init()
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
-    --Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    --Callback.Add("DoCast", function(...) self:OnDoCast(...) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
 
@@ -56,6 +54,7 @@ function Graves:MenuValueDefault()
 
 	self.Enable_E = self:MenuBool("Enable E", true)
 	self.Enable_E_Reload_JungFarm = self:MenuBool("Enable E Reload JungFarm", true)
+	self.EmodeGC = self:MenuComboBox("Gap Closer position mode", 0)
 	self.E_Mode = self:MenuComboBox("E Mode", 2)
 
 	self.autoR = self:MenuBool("Auto R", true)
@@ -63,14 +62,14 @@ function Graves:MenuValueDefault()
 	self.fastR = self:MenuBool("Fast R ks Combo", true)
 	self.overkillR = self:MenuBool("Overkill protection", true)
 
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.Draw_Q_Range = self:MenuBool("Draw Q Range", true)
-	self.Draw_W_Range = self:MenuBool("Draw W Range", true)
-	self.Draw_E_Range = self:MenuBool("Draw E Range", true)
-	self.Draw_R_Range = self:MenuBool("Draw R Range", true)
-	self.Draw_R2_Range = self:MenuBool("Draw R2 Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.Draw_Q_Range = self:MenuBool("Draw Q Range", false)
+	self.Draw_W_Range = self:MenuBool("Draw W Range", false)
+	self.Draw_E_Range = self:MenuBool("Draw E Range", false)
+	self.Draw_R_Range = self:MenuBool("Draw R Range", false)
+	self.Draw_R2_Range = self:MenuBool("Draw R2 Range", false)
 
-	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", true)
+	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 16)
 
 	self.Combo = self:MenuKeyBinding("Combo", 32)
@@ -98,7 +97,8 @@ function Graves:OnDrawMenu()
 		if Menu_Begin("Setting E") then
 			self.Enable_E = Menu_Bool("Enable E", self.Enable_E, self.menu)
 			self.Enable_E_Reload_JungFarm = Menu_Bool("Enable E Reload JungFarm", self.Enable_E_Reload_JungFarm, self.menu)
-			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)		
+			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)	
+			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Game Cursor\0Away - safe position\0Disable\0\0\0", self.menu)	
 			Menu_End()
 		end
 		if Menu_Begin("Setting R") then
@@ -168,9 +168,43 @@ function Graves:OnAfterAttack(unit, target)
 	end
 end
 
+function Graves:OnAntiGapClose(target, EndPos)
+    hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if self.EmodeGC == 1 then
+	        points = self:CirclePoints(10, self.E.range, Vector(myHero))
+			bestpoint = Vector(myHero):Extended(hero, - self.E.range);
+			local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
+			for i, point in pairs(points) do
+			    local count = self:CountEnemiesInRange(point, self.E.range)
+			    if count < enemies then
+			    	enemies = count;
+		            bestpoint = point;
+		        elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+		            enemies = count;
+		            bestpoint = point;
+			    end
+			end
+			if self:IsGoodPosition(bestpoint) and CanCast(_E) and GetKeyPress(self.Combo) > 0 then   
+				DelayAction(function() CastSpellToPos(bestpoint.x, bestpoint.z, _E) end, 0)          				
+	    	end  
+	    end
+	    if self.EmodeGC == 0 then
+	    	bestpoint = Vector(myHero):Extended(GetMousePos(), self.E.range);
+	    	if self:IsGoodPosition(bestpoint) and CanCast(_E) then
+	    		CastSpellToPos(bestpoint.x, bestpoint.z, _E)
+	    	end
+	    end
+
+		if CanCast(_W) and self.AGCW then
+          	CastSpellToPos(myHero.x, myHero.z, _W) 
+        end		 
+    end
+end
+
 
 function Graves:OnTick()
-	if IsDead(myHero.Addr) then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
@@ -178,8 +212,6 @@ function Graves:OnTick()
 	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
 
 	--self:AutoQW()
-
-	self:AntiGapCloser()
 
 	if GetKeyPress(self.Lane_Clear) > 0 then
 		self:LaneClear()

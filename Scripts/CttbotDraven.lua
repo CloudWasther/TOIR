@@ -11,7 +11,7 @@ end
 function Draven:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -45,6 +45,7 @@ function Draven:__init()
 	}
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
+	Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
 	Callback.Add("Update", function(...) self:OnUpdate(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
@@ -91,7 +92,7 @@ function Draven:MenuValueDefault()
 	self.UseWSlow = self:MenuBool("Use W if Slowed", true)
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
-	self.Set_Skin = self:MenuSliderInt("Set Skin", 18)
+	self.Set_Skin = self:MenuSliderInt("Set Skin", 1)
 
 	self.Combo = self:MenuKeyBinding("Combo", 32)
 	self.Harass = self:MenuKeyBinding("Harass", 67)
@@ -319,23 +320,32 @@ function Draven:OnNewPath(unit, startPos, endPos, isDash, dashSpeed ,dashGravity
 	end
 end
 
-function Draven:OnTick()
-	if myHero.IsDead then return end
-	SetLuaCombo(true)
-	self:CatchAxe()
-	--local stack = GetBuff(GetBuffByName(myHero.Addr, "DravenSpinningAttack"))
-	--__PrintTextGame(tostring(self:QCount()))
+function Draven:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if self.UseEGapcloser and CanCast(_E) then
+    		CastSpellToPos(EndPos.x, EndPos.z, _E)
+    	end
+    end
+end
 
-	--[[GetAllBuffNameActive(myHero.Addr)
-		for i,v in pairs(pBuffName) do
-		__PrintDebug(tostring(v))				      
-	end]]
+function Draven:OnTick()
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
+	SetLuaCombo(true)
+	
+	--[[local target, enpos = AntiGap:AntiGapInfo()
+    if target ~= nil and enpos ~= nil then
+    	if self.UseEGapcloser and CanCast(_E) then
+    		CastSpellToPos(enpos.x, enpos.z, _E)
+    		self:AntiGapCloser()
+    	end
+    end]]
+
+    self:CatchAxe()
 
 	if CanCast(_W) then
 		self:LogicW()
-	end
-
-	self:AntiGapCloser()
+	end	
 
 	if CanCast(_E) and self.UseECombo then
 		self:LogicE()

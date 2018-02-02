@@ -86,6 +86,7 @@ _G.LIB_PATH = SCRIPT_PATH .. "Lib\\"
 
 local Vision = {}
 local NewPath = {}
+local AntiGapClose = {}
 local VisionTick = GetTickCount()
 local WaypointTick = GetTickCount()
 local Keys = {}
@@ -118,10 +119,25 @@ local Callbacks = {
         ["Attack"]                  = {},
         ["AfterAttack"]             = {},
         ["IssueOrder"]              = {},
+        ["AntiGapClose"]            = {},
 }
 
 Callback.Add = function(type, cb) t.insert(Callbacks[type], cb) end
 Callback.Del = function(type, id) t.remove(Callbacks[type], id or 1) end
+
+local function OnAntiGapClose(pUnit, EndPos) 
+    local unit = GetAIHero(pUnit) 
+    --if AntiGapClose[unit.NetworkId] == nil then 
+        --AntiGapClose[unit.NetworkId] = {target = unit , endPos = EndPos} 
+    --end
+    --__PrintTextGame(tostring(GetDistance(myHero, unit)))
+    --if GetDistance(myHero, unit) < 500 then
+        --__PrintTextGame("2222222222222")
+        for i, cb in pairs(Callbacks["AntiGapClose"]) do
+            cb(unit, EndPos)             
+        end 
+    --end
+end
 
 local function OnVision(pUnit)   
         local unit = GetAIHero(pUnit)
@@ -6064,9 +6080,6 @@ AntiGapcloser = class()
 
 function AntiGapcloser:__init(cb)
 
-    self.W = Spell(_W, 1000)
-    self.W:SetSkillShot(0.35, 1400, 250, true)
-
     self.callbacks = {}
     self.activespells = {}
     self.spells = 
@@ -6130,7 +6143,8 @@ function AntiGapcloser:__init(cb)
     self.endPosCheck = Vector(0,0,0)
     self.added = false
   
-    Callback.Add("Tick", function(...) self:OnTick(...) end)
+    --Callback.Add("Tick", function(...) self:OnTick(...) end)
+    Callback.Add("Update", function(...) self:OnUpdate(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
 
@@ -6201,18 +6215,28 @@ function AntiGapcloser:OnProcessSpell(unit, spell)
             if self.spells[i].MenuValue then
                 if spell.Name == self.spells[i].SpellName then
                     if GetTargetById(spell.TargetId) == myHero.Addr then
-                        self.added = true        
+                        --__PrintTextGame("aaaaaaaaaaaa")
+                        --__PrintTextGame(tostring(GetTargetById(spell.TargetId) == myHero.Addr))
+                        --self.added = true      
+                        local data = {unit = unit, spell = spell, startT = GetTimeGame(), endT = GetTimeGame() + 1.9, startPos = Vector(unit), endPos = Vector(myHero)}
+                        table.insert(self.activespells, data)  
+                        --OnAntiGapClose(unit, myHero)
                     end 
                     if GetChampName(GetTargetById(spell.TargetId)) == "NULL" then
-                        self.added = true
+                        --__PrintTextGame("bbbbbbbbbbbbbb")                      
+                        --self.added = true
+                        local data = {unit = unit, spell = spell, startT = GetTimeGame(), endT = GetTimeGame() + 1.9, startPos = Vector(startSpellPos), endPos = Vector(endSpellPos)}
+                        table.insert(self.activespells, data)
+                        --OnAntiGapClose(unit, Vector(endSpellPos))
                     end
+                    return
                 end                 
             end
         end
     end
     if self.added then
-        local data = {unit = unit, spell = spell, startT = GetTimeGame(), endT = GetTimeGame() + 0.9, startPos = Vector(startSpellPos), endPos = Vector(endSpellPos)}
-        table.insert(self.activespells, data)
+        --local data = {unit = unit, spell = spell, startT = GetTimeGame(), endT = GetTimeGame() + 0.9, startPos = Vector(startSpellPos), endPos = Vector(endSpellPos)}
+        --table.insert(self.activespells, data)
         --self:TriggerCallbacks(data.unit, data)
     end
 end
@@ -6235,22 +6259,25 @@ function AntiGapcloser:AntiGapInfo()
     return nil , nil
 end
 
-function AntiGapcloser:OnTick()
+function AntiGapcloser:OnUpdate()
     for i = #self.activespells, 1, -1 do
         if self.activespells[i].endT - GetTimeGame() > 0 then-- and 
             for _,hero in pairs(GetEnemyHeroes()) do
                 if IsValidTarget(hero, 2000) then
                     target = GetAIHero(hero)
                     if self.activespells[i].unit.NetworkId == target.NetworkId then
-                        if GetDistanceSqr(Vector(myHero), Vector(target)) < 360000 then --and GetDistance(Vector(myHero), self.activespells[i].endPos) < 400 then
-                            self:TriggerCallbacks(self.activespells[i].unit, self.activespells[i])
-                        end
+                        --__PrintTextGame(target.CharName)
+                        OnAntiGapClose(target, self.activespells[i].endPos)
+                        --if GetDistanceSqr(Vector(myHero), Vector(target)) < 360000 then --and GetDistance(Vector(myHero), self.activespells[i].endPos) < 400 then
+                            --self:TriggerCallbacks(self.activespells[i].unit, self.activespells[i])
+                        --end
                     end
                 end
             end 
-        elseif GetTimeGame() > self.activespells[i].endT then
+        end
+        if GetTimeGame() > self.activespells[i].endT then
             table.remove(self.activespells, i)
-            self.added = false
+            --self.added = false
         end
     end
 end

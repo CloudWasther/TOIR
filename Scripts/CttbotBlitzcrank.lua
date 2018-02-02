@@ -12,6 +12,7 @@ function Blitzcrank:__init()
 	-- VPrediction
 	vpred = VPrediction()
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 
 	self.Q = Spell(_Q, 1050)
     self.W = Spell(_W, math.huge)
@@ -34,6 +35,7 @@ function Blitzcrank:__init()
 
 	Callback.Add("Update", function(...) self:OnUpdate(...) end)
 	--Callback.Add("Tick", function(...) self:OnTick(...) end)
+	Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
@@ -168,8 +170,13 @@ end
 
 function Blitzcrank:OnTick()
 
-	if IsDead(myHero.Addr) then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
+
+	local target, enpos = AntiGap:AntiGapInfo()
+    if target ~= nil and enpos ~= nil then
+
+    end
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
 
@@ -205,8 +212,15 @@ function Blitzcrank:OnTick()
 end
 
 function Blitzcrank:OnUpdate()
-	if IsDead(myHero.Addr) then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
+	
+	--[[local target, enpos = AntiGap:AntiGapInfo()
+    if target ~= nil and enpos ~= nil then
+    	if CanCast(_E) then
+    		CastSpellTarget(target.Addr, _E)
+    	end
+    end]]
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
 
@@ -239,6 +253,15 @@ function Blitzcrank:OnUpdate()
 	if self.Enalble_Mod_Skin then
 		ModSkin(self.Set_Skin)
 	end
+end
+
+function Blitzcrank:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if CanCast(_E) then
+    		CastSpellTarget(target.Addr, _E)
+    	end
+    end
 end
 
 function Blitzcrank:OnAfterAttack(unit, target)

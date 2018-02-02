@@ -1,4 +1,5 @@
 IncludeFile("Lib\\TOIR_SDK.lua")
+--IncludeFile("Lib\\AntiGapCloser.lua")
 
 Tristana = class()
 
@@ -11,7 +12,7 @@ end
 function Tristana:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -44,11 +45,12 @@ function Tristana:__init()
 
 	self.ts_prio = {}
 
-	Callback.Add("Tick", function(...) self:OnTick(...) end)
-	--Callback.Add("Update", function(...) self:OnUpdate(...) end)	
+	Callback.Add("Tick", function(...) self:OnTick(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
+
     --Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
     --Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
     --Callback.Add("DeleteObject", function(...) self:OnDeleteObject(...) end)
@@ -60,18 +62,19 @@ end
 
 function Tristana:MenuValueDefault()
 	self.menu = "Tristana_Magic"
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_W = self:MenuBool("Draw W Range", true)
-	self.menu_Draw_E = self:MenuBool("Draw E Range", true)
-	self.menu_Draw_R = self:MenuBool("Draw R Range", true)
-	self.eInfo = self:MenuBool("Draw E Info", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_W = self:MenuBool("Draw W Range", false)
+	self.menu_Draw_E = self:MenuBool("Draw E Range", false)
+	self.menu_Draw_R = self:MenuBool("Draw R Range", false)
+	self.eInfo = self:MenuBool("Draw E Info", false)
 
 	self.qcb = self:MenuBool("Auto Q Combo)", true)
 	self.qlc = self:MenuBool("Use Q Lane Clear", true)
 
 	self.Wks = self:MenuBool("W KS logic (W+E+R calculation)", true)
 	self.Wtur = self:MenuBool("dont W if under turrent", true)
-	self.W_Mode = self:MenuComboBox("W GapClose Mode :", 2)
+	self.WAGC = self:MenuBool("W Anti GapClose", true)
+	--self.W_Mode = self:MenuComboBox("W GapClose Mode :", 2)
 	self.smartW = self:MenuKeyBinding("SmartCast W key", 84)
 
 	--self.harassE = self:MenuBool("Harass E", true)
@@ -109,7 +112,8 @@ function Tristana:OnDrawMenu()
 		if Menu_Begin("W Setting") then
 			self.Wks = Menu_Bool("W KS logic (W+E+R calculation)", self.Wks, self.menu)	
 			self.Wtur = Menu_Bool("dont W if under turrent", self.Wtur, self.menu)	
-			self.W_Mode = Menu_ComboBox("W GapClose Mode :", self.W_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)
+			--self.W_Mode = Menu_ComboBox("W GapClose Mode :", self.W_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)
+			self.WAGC = Menu_Bool("W Anti GapClose", self.WAGC, self.menu)	
 			self.smartW = Menu_KeyBinding("SmartCast W key", self.smartW, self.menu)	
 			Menu_End()
 		end
@@ -221,7 +225,7 @@ end
 
 
 function Tristana:OnTick()
-	if myHero.IsDead or IsTyping() or IsDodging() then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	if self.focusE then
@@ -234,8 +238,6 @@ function Tristana:OnTick()
 			end
 		end
 	end
-
-	--self:AntiGapCloser()
 
 	if CanCast(_W) and GetKeyPress(self.smartW) > 0 then
 		CastSpellToPos(GetMousePos().x, GetMousePos().z, _W)
@@ -254,10 +256,38 @@ function Tristana:OnTick()
 	end		
 end
 
-function Tristana:OnUpdate()
-
-
+function Tristana:OnAntiGapClose(target, EndPos)
+	--for _,heros in pairs(GetEnemyHeroes()) do
+        --if IsValidTarget(heros, 2000) then
+            hero = GetAIHero(target.Addr)
+            --if hero.NetworkId == target.NetworkId then
+            --__PrintTextGame(tostring(GetDistance(hero)).."<-->"..tostring(GetDistance(EndPos))) 
+            if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+                points = self:CirclePoints(10, self.W.range, Vector(myHero))
+		    	bestpoint = Vector(myHero):Extended(hero, - self.W.range);
+		    	local enemies = self:CountEnemiesInRange(bestpoint, self.W.range)
+		    	for i, point in pairs(points) do
+		    		local count = self:CountEnemiesInRange(point, self.W.range)
+		    		if count < enemies then
+		    			enemies = count;
+	                    bestpoint = point;
+	                elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
+	                    enemies = count;
+	                    bestpoint = point;
+		    		end
+		    	end
+		    	if self:IsGoodPosition(bestpoint) and self.WAGC and CanCast(_W) then   
+	                CastSpellToPos(bestpoint.x,bestpoint.z, _W) 
+	                return    				
+	          	end
+	          	if self.Rgap and CanCast(_R) and not CanCast(_W) then   
+	          		CastSpellTarget(target.Addr, _R)
+                end
+            end
+        --end
+    --end
 end
+
 function Tristana:LogicW()
 	if self.Wks and myHero.MP > 160 then
 		for i,hero in pairs(GetEnemyHeroes()) do

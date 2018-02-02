@@ -14,7 +14,7 @@ function Thresh:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
-
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -42,7 +42,7 @@ function Thresh:__init()
 	Thresh:aa()
 
 	Callback.Add("Update", function(...) self:OnUpdate(...) end)
-	--Callback.Add("Tick", function(...) self:OnTick(...) end)
+	Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
     Callback.Add("UpdateBuff", function(unit, buff, stacks) self:OnUpdateBuff(source, unit, buff, stacks) end)
@@ -97,12 +97,12 @@ function Thresh:MenuValueDefault()
 	self.menu_Combo_Rks = self:MenuBool("Use R Kill Steal", true)
 
 
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.Draw_Q_Range = self:MenuBool("Draw Q Range", true)
-	self.Draw_W_Range = self:MenuBool("Draw W Range", true)
-	self.Draw_E_Range = self:MenuBool("Draw E Range", true)
-	self.Draw_R_Range = self:MenuBool("Draw R Range", true)
-	self.menu_Draw_CountQ = self:MenuBool("Draw Q Counter", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.Draw_Q_Range = self:MenuBool("Draw Q Range", false)
+	self.Draw_W_Range = self:MenuBool("Draw W Range", false)
+	self.Draw_E_Range = self:MenuBool("Draw E Range", false)
+	self.Draw_R_Range = self:MenuBool("Draw R Range", false)
+	self.menu_Draw_CountQ = self:MenuBool("Draw Q Counter", false)
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 5)
@@ -206,7 +206,7 @@ end
 
 function Thresh:OnTick()
 
-	if IsDead(myHero.Addr) then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
@@ -265,7 +265,7 @@ function Thresh:OnTick()
 end
 
 function Thresh:OnUpdate()
-	if IsDead(myHero.Addr) then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
@@ -278,7 +278,8 @@ function Thresh:OnUpdate()
 						ally = GetAIHero(hero)
 						if not ally.IsMe and not ally.IsDead and GetDistance(ally.Addr) < self.W.range + 300 then
 							if GetDistance(Vector(self.Marked), Vector(ally)) > 800 and GetDistance(Vector(ally)) > 600 then
-								CastSpellToPos(ally.x, ally.z, _W)
+								--CastSpellToPos(ally.x, ally.z, _W)
+								self:CastW(Vector(ally))
 							end
 						end
 					end
@@ -373,6 +374,28 @@ function Thresh:OnRemoveBuff(unit, buff)
 	end
 end
 
+function Thresh:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+        if self.autoW6 then
+          	for i,hero in pairs(GetAllyHeroes()) do
+				if hero ~= nil then
+					ally = GetAIHero(hero)
+					if not ally.IsMe and not ally.IsDead and GetDistance(ally.Addr) < self.W.range + 400 and CanCast(_W) then
+						--CastSpellToPos(ally.x, ally.z, _W)
+						self:CastW(Vector(ally))
+					end
+				end
+			end
+        end
+        if self.menu_Combo_Egap and not IsValidTarget(self.Marked.Addr, 1000) and CanCast(_E) then
+          	CastSpellToPos(target.x, target.z, _E)
+        elseif CanCast(_Q) and self.GapQ then
+          	CastSpellToPos(target.x, target.z, _Q)
+        end
+    end
+end
+
 function Thresh:AntiGapCloser()
 	for i, heros in pairs(GetEnemyHeroes()) do
     	if heros ~= nil then
@@ -386,8 +409,9 @@ function Thresh:AntiGapCloser()
           					for i,hero in pairs(GetAllyHeroes()) do
 								if hero ~= nil then
 									ally = GetAIHero(hero)
-									if not ally.IsMe and not ally.IsDead and GetDistance(ally.Addr) < self.W.range then
-										CastSpellToPos(ally.x, ally.z, _W)
+									if not ally.IsMe and not ally.IsDead and GetDistance(ally.Addr) < self.W.range + 400 then
+										--CastSpellToPos(ally.x, ally.z, _W)
+										self:CastW(Vector(ally))
 									end
 								end
 							end
@@ -572,20 +596,24 @@ function Thresh:LogicW()
 				if not ally.IsMe and not ally.IsDead and GetDistance(ally.Addr) < self.W.range + 400 then
 					if self.autoW4 and ally.Name == "Blitzcrank" then
 						if ally.HasBuff("rocketgrab2") and CanCast(_W) then
-							CastSpellToPos(ally.x, ally.z, _W)
+							--CastSpellToPos(ally.x, ally.z, _W)
+							self:CastW(Vector(ally))
 						end
 					end
 					if self.autoW7 then
 						if CountBuffByType(ally.Addr, 5) > 0 or CountBuffByType(ally.Addr, 5) > 0 then
-							CastSpellToPos(ally.x, ally.z, _W)
+							--CastSpellToPos(ally.x, ally.z, _W)
+							self:CastW(Vector(ally))
 						end
 					end
 					local nearEnemys = CountEnemyChampAroundObject(ally.Addr, 900)
 					if nearEnemys >= self.wCount then
-						CastSpellToPos(ally.x, ally.z, _W)
+						--CastSpellToPos(ally.x, ally.z, _W)
+						self:CastW(Vector(ally))
 					end
 					if self.Wdmg >= ally.HP / ally.MaxHP * 100 then
-						CastSpellToPos(ally.x, ally.z, _W)
+						--CastSpellToPos(ally.x, ally.z, _W)
+						self:CastW(Vector(ally))
 					end
 				end
 			end
@@ -732,6 +760,15 @@ function Thresh:GetUglyAlly(range)
         end
     end
     return result
+end
+
+function Thresh:CastW(pos) 
+	if GetDistance(pos) < self.W.range then
+		CastSpellToPos(pos.x, pos.z, _W)
+	else
+		pos1 = Vector(myHero):Extended(pos, self.W.range)
+		CastSpellToPos(pos1.x, pos1.z, _W)
+	end
 end
 
 function Thresh:autoW()

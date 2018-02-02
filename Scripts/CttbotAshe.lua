@@ -13,6 +13,7 @@ function Ashe:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()
+	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
@@ -53,9 +54,7 @@ function Ashe:__init()
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
-    --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
-    --Callback.Add("NewPath", function(...) self:OnNewPath(...) end)
-    --Callback.Add("CreateObject", function(...) self:OnCreateObject(...) end)
+    Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
 
@@ -65,11 +64,12 @@ end
 function Ashe:MenuValueDefault()
 	self.menu = "Ashe_Magic"
 	self.autoQ = self:MenuBool("Auto Q", true)
-	self.harassQ = self:MenuBool("Harass Q", true)
-	self.farmQ = self:MenuBool("Farm Q", true)
+	self.harassQ = self:MenuBool("Harass Q", false)
+	self.farmQ = self:MenuBool("Farm Q", false)
 
 	self.autoW = self:MenuBool("Auto W", false)
 	self.harassW = self:MenuBool("Harass W", false)
+	self.manaharassW = self:MenuSliderInt("Mana Harass W", 50)
 	self.ksW = self:MenuBool("Auto KS W", true)
 	self.ccW = self:MenuBool("W immobile target", true)
 	for i, enemy in pairs(GetEnemyHeroes()) do
@@ -81,12 +81,13 @@ function Ashe:MenuValueDefault()
 	self.autoR = self:MenuBool("Auto R", true)
 	self.Rkscombo = self:MenuBool("R KS combo R + W + AA", true)
 	self.Rturrent = self:MenuBool("Don't R under turret", true)
-	self.autoRaoe = self:MenuBool("Auto R aoe", true)
+	self.autoRGap = self:MenuBool("Auto R Anti GapClose", true)
+	self.useR = self:MenuKeyBinding("Semi-manual cast R key", 84)
 	--self.MaxRangeR = self:MenuSliderInt("Max R range", 3000)
 	--self.MinRangeR = self:MenuSliderInt("Min R range", 900)
 
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_W = self:MenuBool("Draw W Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_W = self:MenuBool("Draw W Range", false)
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 10)
@@ -107,9 +108,10 @@ function Ashe:OnDrawMenu()
 		end
 		if Menu_Begin("Setting W") then
 			self.autoW = Menu_Bool("Auto W", self.autoW, self.menu)
-			self.harassW = Menu_Bool("Harass W", self.harassW, self.menu)
 			self.ksW = Menu_Bool("Auto KS W", self.ksW, self.menu)
 			self.ccW = Menu_Bool("W immobile target", self.ccW, self.menu)
+			self.harassW = Menu_Bool("Harass W", self.harassW, self.menu)
+			self.manaharassW = Menu_SliderInt("Mana Harass W", self.manaharassW, 0, 100, self.menu)
 			Menu_Text("Auto W to target :")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
@@ -124,7 +126,8 @@ function Ashe:OnDrawMenu()
 			self.autoR = Menu_Bool("Auto R", self.autoR, self.menu)
 			self.Rkscombo = Menu_Bool("R KS combo R + W + AA", self.Rkscombo, self.menu)
 			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)
-			self.autoRaoe = Menu_Bool("Auto R aoe", self.autoRaoe, self.menu)
+			self.autoRGap = Menu_Bool("Auto R Anti GapClose", self.autoRGap, self.menu)
+			self.useR = Menu_KeyBinding("Semi-manual cast R key", self.useR, self.menu)
 			--self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
 			--self.MinRangeR = Menu_SliderInt("Min R range", self.MinRangeR, 0, 3000, self.menu)
 			Menu_End()
@@ -175,7 +178,7 @@ function Ashe:OnAfterAttack(unit, target)
 		if target ~= nil and target.Type == 0 and self.autoQ then
 			if GetKeyPress(self.Combo) > 0 and (myHero.MP > 150 or GetHealthPoint(target.Addr) < GetAADamageHitEnemy(target.Addr) * 5) then
     			CastSpellTarget(myHero.Addr, _Q)
-    		elseif GetKeyPress(self.Harass) > 0 and myHero.MP > 200 and self.harassQ then
+    		elseif GetKeyPress(self.Harass) > 0 and myHero.MP / myHero.MaxMP * 100 > self.manaharassW and self.harassQ then
     			for i = #self.ts_prio, 1, -1 do
 			    	if self.ts_prio[i].Menu then
 			    		if IsValidTarget(target.Addr, GetTrueAttackRange()) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId then
@@ -212,8 +215,20 @@ function Ashe:AntiGapCloser()
 	end
 end
 
+function Ashe:OnAntiGapClose(target, EndPos)
+	hero = GetAIHero(target.Addr)
+    if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
+    	if self:ValidUlt(hero) then
+    		local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, hero, myHero)
+    		if RHitChance > 1 then
+          		CastSpellToPos(RPos.x, RPos.z, _R)
+          	end
+        end
+    end
+end
+
 function Ashe:OnTick()
-	if myHero.IsDead then return end
+	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
 	self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, collisionH = false, collisionM = true, width = self.W.width})
@@ -221,10 +236,26 @@ function Ashe:OnTick()
 
 	self:AutoEW()
 
-	self:AntiGapCloser()
-
+	--self:AntiGapCloser()
+	--[[local target, enpos = AntiGap:AntiGapInfo()
+    if target ~= nil and enpos ~= nil then
+        if self.autoRGap and CanCast(_R) then
+        	self:AntiGapCloser()
+            CastSpellToPos(enpos.x, enpos.z, _R)
+            return
+        end
+	end]]
+	
 	if CanCast(_R) then
-		self:LogicR()
+		local TargetR = GetTargetSelector(self.R.range, 1)
+	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
+	    	target = GetAIHero(TargetR)
+	    	local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+	    	if RHitChance >= 2 then
+	    		CastSpellToPos(RPos.x, RPos.z, _R)
+	    	end
+	    end
+		self:LogicR();
 	end
 
 	if CanCast(_E) and self.autoE then
@@ -262,11 +293,11 @@ function Ashe:LogicW()
 			end
 		end
 	end
-	if self.ccW then
+
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if IsValidTarget(hero, self.W.range- 100) then
 				target = GetAIHero(hero)
-				if not self:CanMove(target) then
+				if not self:CanMove(target) and self.ccW then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.W.width, self.W.range, 65)
 					CastSpellToPos(target.x, target.z, _W)
 				end
@@ -277,7 +308,7 @@ function Ashe:LogicW()
 	            end
 				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
 				--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, CastPosition.x, CastPosition.z, self.W.width, self.W.range, 65)
-				if self.harassW and myHero.MP > 250 and self:CanHarras() and IsValidTarget(target, self.W.range - 200) then
+				if self.harassW and myHero.MP / myHero.MaxMP * 100 > self.manaharassW and self:CanHarras() and IsValidTarget(target, self.W.range - 200) then
 					for i = #self.ts_prio, 1, -1 do
 					    if self.ts_prio[i].Menu then
 					    	if IsValidTarget(target.Addr, self.W.range) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and mainHitChance >= 2 then
@@ -288,7 +319,7 @@ function Ashe:LogicW()
 				end
 			end
 		end
-	end
+	
 end
 
 function Ashe:LogicE()
@@ -304,7 +335,7 @@ function Ashe:LogicE()
 
     for i = #self.ChampionInfoList, 1, -1 do
     	--__PrintTextGame(tostring(self.ChampionInfoList[i].LastVisableTime))
-	    if --[[IsInFog(self.ChampionInfoList[i].target.Addr) or]] self.ChampionInfoList[i].target.IsDead or GetTimeGame() - self.ChampionInfoList[i].LastVisableTime > 3 then
+	    if --[[IsInFog(self.ChampionInfoList[i].target.Addr) or]] self.ChampionInfoList[i].target.IsDead then --or GetTimeGame() - self.ChampionInfoList[i].LastVisableTime > 5 then
 	    	table.remove(self.ChampionInfoList, i)
 	    end
 
@@ -312,6 +343,7 @@ function Ashe:LogicE()
 	    	--__PrintTextGame(tostring(GetTimeGame() - self.ChampionInfoList[i].LastVisableTime))
 	    	pos = Vector(myHero):Extended(self.ChampionInfoList[i].LastVisablePos, 2000)
 	    	CastSpellToPos(pos.x, pos.z, _E)
+	    	table.remove(self.ChampionInfoList, i)
 	    end
     end
 end

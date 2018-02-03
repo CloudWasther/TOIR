@@ -23,7 +23,7 @@ function Sivir:__init()
     self.E = Spell(_E, GetTrueAttackRange())
     self.R = Spell(_R, GetTrueAttackRange())
 
-    self.Q:SetSkillShot(0.35, 1400, 250, true)
+    self.Q:SetSkillShot(0.25, 1400, 90, true)
     self.W:SetTargetted()
     self.E:SetTargetted()
     self.R:SetTargetted()
@@ -218,8 +218,8 @@ end
 
 function Sivir:MenuValueDefault()
 	self.menu = "Sivir_Magic"
-	self.Draw_When_Already = self:MenuBool("Draw When Already", true)
-	self.menu_Draw_Q = self:MenuBool("Draw Q Range", true)
+	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
+	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
 
 	self.qcb = self:MenuBool("Auto Q Combo)", true)
 	self.farmQ = self:MenuBool("Lane clear Q", true)
@@ -361,21 +361,22 @@ function Sivir:OnDeleteObject(obj)
 end
 
 function Sivir:CalculateReturnPos(target)
-	if self.Missile ~= nil and IsValidTarget(target.Addr, self.Q.range + 500) then
-		local finishPosition = Vector(self.Missile)
+	if self.Missile ~= nil and IsValidTarget(target.Addr, self.Q.range) then
+		local finishPosition = Vector(self.Missile)	
 		if self.Missile.Name == "SivirQMissile" then
 			finishPosition = self.MissileEndPos;
 		end
-		local misToPlayer = GetDistance(finishPosition)
-		local tarToPlayer = GetDistance(target)
-
-		if misToPlayer > tarToPlayer then
-			local misToTarget = GetDistance(finishPosition, target)
-			if misToTarget < self.Q.range and misToTarget > 50 then
-				local cursorToTarget = GetDistance(target, Vector(myHero):Extended(GetMousePos(), 100))
-				local ext = finishPosition:Extended(target, cursorToTarget + misToTarget)
-				if GetDistance(ext) < 800 and self:CountEnemiesInRange(ext, 400) < 2 then
-					return ext
+		if finishPosition ~= nil then
+			local misToPlayer = GetDistance(finishPosition)
+			local tarToPlayer = GetDistance(target)
+			if misToPlayer > tarToPlayer then
+				local misToTarget = GetDistance(finishPosition, target)
+				if misToTarget < self.Q.range and misToTarget > 50 then
+					local cursorToTarget = GetDistance(target, Vector(myHero):Extended(GetMousePos(), 100))
+					local ext = finishPosition:Extended(target, cursorToTarget + misToTarget)
+					if GetDistance(ext) < 800 and self:CountEnemiesInRange(ext, 400) < 2 then
+						return ext
+					end
 				end
 			end
 		end
@@ -513,17 +514,13 @@ function Sivir:OnAfterAttack(unit, target)
     		end
     	end
     	if target ~= nil and target.Type == 1 and CanCast(_W) and self.farmW then
-    		if GetEnemyMinionAroundObject(target.Addr, 500) > 4 and not self.IsUnderTurretEnemy(myHero) then
+    		if GetEnemyMinionAroundObject(target.Addr, 500) > 4 and not self.IsUnderTurretEnemy(myHero) and CountEnemyChampAroundObject(target.Addr, 300) > 0 then
     			if GetKeyPress(self.Lane_Clear) > 0 then
     				CastSpellTarget(myHero.Addr, _W)
     			end
     		end
     	end
 	end
-end
-
-function Sivir:OnBeforeAttack(target)
-
 end
 
 
@@ -564,6 +561,7 @@ function Sivir:OnUpdate()
 	if TargetQ ~= 0 and self.aim then
 		target = GetAIHero(TargetQ)	
 		local aa = self:CalculateReturnPos(target)
+		--__PrintTextGame(tostring(aa))
 		if aa ~= nil then
 			if GetKeyPress(self.Combo) > 0 then
 				SetOrbwalkingPoint(aa.x, aa.z)
@@ -580,6 +578,7 @@ end
 
 function Sivir:LogicQ()
 	local TargetQ = GetTargetSelector(self.Q.range - 100, 1)
+	--__PrintTextGame(tostring(TargetQ))
 	if TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
 		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
@@ -610,7 +609,7 @@ function Sivir:LogicQ()
 			    		end
 			    	end
 			    	if not self:CanMove(target) and IsValidTarget(target.Addr, self.Q.range - 100) then
-				       	CastSpellToPos(target.x, target.z, _Q)
+				       	--CastSpellToPos(target.x, target.z, _Q)
 					end
 					local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero)
 					if DashPosition ~= nil then
@@ -684,44 +683,15 @@ function Sivir:OnDraw()
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.range, Lua_ARGB(255,255,0,0))
 		end
 	end
-end
 
-function Sivir:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		--if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-        			if GetDistance(DashPosition) < 400 and CanCast(_R) then
-          				if self.Rgap then
-          					CastSpellTarget(hero.Addr, _R)
-          				end
-          			end
-
-          			if GetDistance(DashPosition) < 400 and CanCast(_W) then
-          				points = self:CirclePoints(10, self.W.range, myHeroPos)
-	    				bestpoint = myHeroPos:Extended(DashPosition, - self.W.range);
-	    				local enemies = self:CountEnemiesInRange(bestpoint, self.W.range)
-	    				for i, point in pairs(points) do
-	    					local count = self:CountEnemiesInRange(point, self.W.range)
-	    					if count < enemies then
-	    						enemies = count;
-                            	bestpoint = point;
-                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
-                            	enemies = count;
-                            	bestpoint = point;
-	    					end
-	    				end
-	    				if self:IsGoodPosition(bestpoint) then   
-                        	CastSpellToPos(bestpoint.x,bestpoint.z, _W)     				
-          				end
-          			end
-        		end
-      		--end
-    	end
-	end
+	--[[local TargetQ = GetTargetSelector(self.Q.range, 1)
+	if TargetQ ~= 0 and self.aim then
+		target = GetAIHero(TargetQ)	
+		local aa = self:CalculateReturnPos(target)
+		if aa ~= nil then
+			DrawCircleGame(aa.x , aa.y, aa.z, 100, Lua_ARGB(255,255,0,0))
+		end
+	end]]
 end
 
 function Sivir:IsImmobileTarget(unit)

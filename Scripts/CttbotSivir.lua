@@ -201,6 +201,8 @@ self.NotAttackSpell =
 	self.spellend = nil
 	self.MissileEndPos = nil
 	self.Missile = nil
+	self.ECasted = false
+	self.ETimestamp = 0
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
 	Callback.Add("Update", function(...) self:OnUpdate(...) end)	
@@ -235,6 +237,8 @@ function Sivir:MenuValueDefault()
 	self.autoEmissile = self:MenuBool("Block unknown missile", true)
 	self.AGC = self:MenuBool("AntiGapcloser E", true)
 	self.Edmg = self:MenuSliderInt("Block under % hp", 50)
+	self.blockmove = self:MenuBool("Spell Shield Block Movement", false)
+	--self.blockduration = self:MenuSliderInt("Spell Shield Block Duration ms", 300)
 
 	self.autoR = self:MenuBool("Auto R", true)
 
@@ -269,8 +273,10 @@ function Sivir:OnDrawMenu()
 		if Menu_Begin("E Setting") then
 			self.autoE = Menu_Bool("Auto E", self.autoE, self.menu)	
 			self.autoEmissile = Menu_Bool("Block unknown missile", self.autoEmissile, self.menu)
-			self.AGC = self:MenuBool("AntiGapcloser E", true)
+			self.AGC = Menu_Bool("AntiGapcloser E", self.AGC, self.menu)	
 			self.Edmg = Menu_SliderInt("Block under % hp", self.Edmg, 0, 100, self.menu)
+			self.blockmove = Menu_Bool("Spell Shield Block Movement", self.blockmove, self.menu)	
+			--self.blockduration = Menu_SliderInt("Spell Shield Block Duration ms", self.blockduration, 50, 500, self.menu)
 			Menu_End()
 		end
 
@@ -389,6 +395,15 @@ function Sivir:IsAutoAttack(spell)
 end
 
 function Sivir:OnProcessSpell(unit, spell)
+	if unit.IsMe then
+		if spell.Name == "SivirE" then
+			if not self.ECasted and self.blockmove then
+				self.ECasted = true
+				self.ETimestamp = GetTimeGame()
+				BlockMove()
+			end
+		end
+	end
 	if not CanCast(_E) or unit.Type ~= 0 or not unit.IsEnemy or myHero.HP / myHero.MaxHP * 100 > self.Edmg or not self.autoE or string.lower(spell.Name) == "tormentedsoil" then
 		return
 	end
@@ -422,7 +437,7 @@ function Sivir:OnProcessSpell(unit, spell)
 				end
 			end
 		end
-	end
+	end	
 end
 
 function Sivir:ProjectOn(point, segmentStart, segmentEnd)
@@ -574,6 +589,14 @@ function Sivir:OnUpdate()
 	else
 		SetOrbwalkingPoint(0, 0)
 	end
+
+	if self.ECasted and GetTimeGame() - self.ETimestamp > 0.25 then
+		if not myHero.HasBuff("SivirE") then
+			self.ECasted = false;
+			UnBlockMove()
+		end
+		
+	end
 end
 
 function Sivir:LogicQ()
@@ -591,6 +614,7 @@ function Sivir:LogicQ()
 				CastSpellToPos(QPos.x, QPos.z, _Q)
 			end
 		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 170 then
+			--UnBlockMove()
 			if QHitChance >= 2 then
 				CastSpellToPos(QPos.x, QPos.z, _Q)
 			end

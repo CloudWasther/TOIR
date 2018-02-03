@@ -15,6 +15,7 @@ function Twitch:__init()
 
 	-- VPrediction
 	vpred = VPrediction(true)
+	HPred = HPrediction()
 
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
@@ -61,14 +62,6 @@ function Twitch:MenuValueDefault()
 
 	self.menu_Combo_R = self:MenuBool("Use R In Combo", true)
 	self.menu_Combo_RCount = self:MenuSliderInt("Auto R If Have Enemy", 2)
-
-	self.menu_Combo_Smiteks = self:MenuBool("Use Smite Kill Steal", true)
-	self.menu_Combo_Smite = self:MenuBool("Use Smite in Combo", true)
-	self.menu_Combo_SmiteSmall = self:MenuBool("Use Smite Small Jungle", true)
-	self.menu_Combo_SmiteBlue = self:MenuBool("Use Smite Blue", true)
-	self.menu_Combo_SmiteRed = self:MenuBool("Use Smite Red", true)
-	self.menu_Combo_SmiteDragon = self:MenuBool("Use Smite Dragon", true)
-	self.menu_Combo_SmiteBaron = self:MenuBool("Use Smite Baron", true)
 
 	self.menu_Draw_Already = self:MenuBool("Draw When Already", true)
 	self.menu_Draw_Q = self:MenuBool("Draw Q Time Stealth", true)
@@ -119,18 +112,7 @@ function Twitch:OnDrawMenu()
 			self.menu_Combo_RCount = Menu_SliderInt("Auto R If Have Enemy", self.menu_Combo_RCount, 1, 5, self.menu)
 			Menu_End()
 		end
-		if Menu_Begin("Setting Smite") then
-			Menu_Text("Smite In Combo")
-			self.menu_Combo_Smiteks = Menu_Bool("Use Smite Kill Steal", self.menu_Combo_Smiteks, self.menu)
-			self.menu_Combo_Smite = Menu_Bool("Use Smite in Combo", self.menu_Combo_Smite, self.menu)
-			Menu_Text("Smite In Jungle")
-			self.menu_Combo_SmiteSmall = Menu_Bool("Use Smite Small Jungle", self.menu_Combo_SmiteSmall, self.menu)
-			self.menu_Combo_SmiteBlue = Menu_Bool("Use Smite Blue", self.menu_Combo_SmiteBlue, self.menu)
-			self.menu_Combo_SmiteRed = Menu_Bool("Use Smite Red", self.menu_Combo_SmiteRed, self.menu)
-			self.menu_Combo_SmiteDragon = Menu_Bool("Use Smite Dragon", self.menu_Combo_SmiteDragon, self.menu)
-			self.menu_Combo_SmiteBaron = Menu_Bool("Use Smite Baron", self.menu_Combo_SmiteBaron, self.menu)
-			Menu_End()
-		end
+
 		if Menu_Begin("Draw Spell") then
 			self.menu_Draw_Already = Menu_Bool("Draw When Already", self.menu_Draw_Already, self.menu)
 			self.menu_Draw_Q = Menu_Bool("Draw Q Time Stealth", self.menu_Draw_Q, self.menu)
@@ -181,6 +163,8 @@ function Twitch:OnTick()
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
+	self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
+
 	self:AutoQ()
 	self:AutoW()
 	self:AutoE()
@@ -223,27 +207,24 @@ function Twitch:LogicQ()
 end
 
 function Twitch:LogicW()
-	local TargetW = GetTargetSelector(self.W.range - 150, 1)
+	local TargetW = GetTargetSelector(self.W.range - 100, 1)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
+		local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-
 		if (GetDistance(target.Addr) < self.W.range - 300 and GetDistance(target.Addr) > 300  or self:IsImmobileTarget(TargetW)) then
-			if self:GetIndexSmite() > -1 and self.menu_Combo_Smite then
-				CastSpellTarget(TargetW, self:GetIndexSmite())
-			end
 			if self.menu_Combo_W then
-				if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 0 then
-		        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+				if WPos and WHitChance >= 2 and self.menu_Combo_Wmode == 0 then
+		        	CastSpellToPos(WPos.x, WPos.z, _W)
 		    	end
-		    	if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 1 then
-		    		posBehind = CastPosition:Extended(myHero, -150)
+		    	if WPos and WHitChance >= 2 and self.menu_Combo_Wmode == 1 then
+		    		posBehind = WPos:Extended(myHero, -100)
 		        	CastSpellToPos(posBehind.x, posBehind.z, _W)
 		    	end
-		    	if CastPosition and HitChance >= 2 and self.menu_Combo_Wmode == 2 then
-		    		posFront = CastPosition:Extended(myHero, 150)
+		    	if WPos and WHitChance >= 2 and self.menu_Combo_Wmode == 2 then
+		    		posFront = WPos:Extended(myHero, 100)
 		        	CastSpellToPos(posFront.x, posFront.z, _W)
 		    	end
 		    end
@@ -382,15 +363,7 @@ function Twitch:KillSteal()
         		CastSpellTarget(myHero.Addr, _E)
         	end
         end
-    end
-
-	local TargetSmite = GetTargetSelector(650, 1)
-	if TargetSmite ~= nil and IsValidTarget(TargetSmite, 650) and CanCast(self:GetIndexSmite()) and self.menu_Combo_Smiteks then
-
-		if self:GetSmiteDamage(TargetSmite) > GetHealthPoint(TargetSmite) then
-			CastSpellTarget(TargetSmite, self:GetIndexSmite())
-		end
-	end
+    end	
 end
 
 

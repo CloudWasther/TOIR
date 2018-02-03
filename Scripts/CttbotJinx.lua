@@ -102,12 +102,13 @@ function Jinx:MenuValueDefault()
 	self.autoW = self:MenuBool("Auto W", false)
 	self.Use_Combo_Wharras = self:MenuBool("Harass W", false)
 	self.Use_W_Anti_GapClose = self:MenuBool("Use W Anti GapClose", true)
-	self.Use_W_End_Dash = self:MenuBool("Auto W End Dash", true)
+	self.menu_Combo_WendDash = self:MenuBool("Auto W End Dash", true)
 	self.Auto_W_Kill_Steal = self:MenuBool("Auto W Kill Steal", true)
 	self.wHC = self:MenuSliderFloat("W HitChane", 1.3)
 
 	self.autoE = self:MenuBool("Auto E on CC", true)
 	self.comboE = self:MenuBool("Auto E in Combo BETA", true)
+	self.menu_Combo_EendDash = self:MenuBool("Auto E End Dash", true)
 	--self.AGC = self:MenuBool("Anti Gapcloser E", true)
 	self.opsE = self:MenuBool("OnProcessSpellCastE", true)
 	self.telE = self:MenuBool("Auto E teleport", true)
@@ -149,7 +150,7 @@ function Jinx:OnDrawMenu()
 			self.autoW = Menu_Bool("Auto W", self.autoW, self.menu)
 			self.Use_Combo_Wharras = Menu_Bool("Harass W", self.Use_Combo_Wharras, self.menu)
 			self.Use_W_Anti_GapClose = Menu_Bool("Use W Anti GapClose", self.Use_W_Anti_GapClose, self.menu)
-			self.Use_W_End_Dash = Menu_Bool("Auto W End Dash", self.Use_W_End_Dash, self.menu)
+			self.menu_Combo_WendDash = Menu_Bool("Auto W End Dash", self.menu_Combo_WendDash, self.menu)
 			self.Auto_W_Kill_Steal = Menu_Bool("Auto W Kill Steal", self.Auto_W_Kill_Steal, self.menu)
 			self.wHC = Menu_SliderFloat("W HitChane", self.wHC, 1, 3, self.menu)
 			Menu_End()
@@ -157,7 +158,7 @@ function Jinx:OnDrawMenu()
 		if Menu_Begin("Setting E") then
 			self.autoE = Menu_Bool("Auto E on CC", self.autoE, self.menu)
 			self.comboE = Menu_Bool("Auto E in Combo BETA", self.comboE, self.menu)
-			--self.AGC = Menu_Bool("Anti Gapcloser E", self.AGC, self.menu)
+			self.menu_Combo_EendDash = Menu_Bool("Auto E End Dash", self.menu_Combo_EendDash, self.menu)
 			self.opsE = Menu_Bool("OnProcessSpellCastE", self.opsE, self.menu)
 			self.telE = Menu_Bool("Auto E teleport", self.telE, self.menu)
 			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Dash end position\0My hero position\0\0\0", self.menu)
@@ -556,35 +557,25 @@ function Jinx:AutoEW()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if hero ~= nil then
 			target = GetAIHero(hero)
-			if IsValidTarget(target, self.E.range) then
-				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.E.delay, self.E.width, self.E.speed, myHero, false)
+			if IsValidTarget(target, 2000) then
+				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, 0.09, 65, 2000, myHero)
 
 				if DashPosition ~= nil then
 					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
-			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash and Collision == 0 then
+			    	if GetDistance(DashPosition) <= self.W.range and self.menu_Combo_WendDash and Collision == 0 and CanCast(_W) then
+			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+			    	end
+			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash and CanCast(_E) then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 			    	end
 				end
 
-				if not self:CanMove(target) and self.autoE then
-					local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
-					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
-				end
-			end
-
-			if IsValidTarget(target, self.W.range - 150) then
-
-				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
-			    if DashPosition ~= nil then
-			    	local collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
-			    	if GetDistance(DashPosition) <= self.W.range and self.menu_Combo_WendDash and collision == 0 then
-			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
-			    	end
+				if not self:CanMove(target) and self.autoW and CanCast(_W) then
+					CastSpellToPos(target.x, target.z, _W)
 				end
 
-				if not self:CanMove(target) and (self.Use_Combo_Wharras or self.autoW) then
-					local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-	                CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+				if not self:CanMove(target) and self.autoE and CanCast(_E) then
+					CastSpellToPos(target.x, target.z, _E)
 				end
 			end
 		end

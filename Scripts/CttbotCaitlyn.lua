@@ -666,11 +666,11 @@ function Caitlyn:LogicR()
 			target = GetAIHero(hero)
 			if IsValidTarget(target.Addr, self.RRange) and self:ValidUlt(target) then
 				if GetDamage("R", target) > target.HP and GetDistance(target.Addr) > GetTrueAttackRange() + 1000 and CountEnemyChampAroundObject(myHero.Addr, 1000) == 0 and CountEnemyChampAroundObject(target.Addr, 700) == 0 then
-					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
-					if RHitChance > -1 then
+					--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+					--if RHitChance > -1 then
 					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(Target, self.R.delay, self.R.width, self.RRange, self.R.speed, myHero, false)
 						CastSpellTarget(target.Addr, _R)
-					end
+					--end
 				end
 			end
 		end

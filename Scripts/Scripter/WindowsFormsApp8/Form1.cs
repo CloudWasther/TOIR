@@ -431,7 +431,7 @@ namespace WindowsFormsApp8
 
         private void button5_Click(object sender, EventArgs e)
         {
-            string OnlineInfo = new WebClient().DownloadString(@"https://raw.githubusercontent.com/cttbot/TOIR/master/Scripts/scriptInfo.txt");
+            string OnlineInfo = new WebClient().DownloadString(@"https://raw.githubusercontent.com/ToirPlus/ToirplusScript/master/scriptInfo.txt");
             StringReader sr = new StringReader(OnlineInfo);
 
             string line;
@@ -507,7 +507,6 @@ namespace WindowsFormsApp8
             {
                 for (var i = 0; i < listInfoOnlineLinkLib.Count; i++)
                 {
-
                     if (File.Exists(Path.Combine(Environment.CurrentDirectory, "Scripts\\Lib\\" + listInfoOnlineNameLib[i])))
                     {
                         if (Md5Hash.ComputeFromFile(Path.Combine(Environment.CurrentDirectory, "Scripts\\Lib\\" + listInfoOnlineNameLib[i])).ToUpper() != listInfoOnlineHashLib[i].ToUpper())
@@ -571,6 +570,7 @@ namespace WindowsFormsApp8
                 
                 listBoxLog.Log(Level.Info, "Download Complete");
                 listBoxLog.Log(Level.Info, listBox2.SelectedItem.ToString() + "Already Active");
+                listBoxLog.Log(Level.Debug, listBox2.SelectedItem.ToString() + "  Hash : " + Md5Hash.ComputeFromFile(Path.Combine(Environment.CurrentDirectory, "Scripts\\" + listBox2.SelectedItem.ToString())));              
             }
         }
 

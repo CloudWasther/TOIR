@@ -63,7 +63,7 @@
             this.listBox1.FormattingEnabled = true;
             this.listBox1.Location = new System.Drawing.Point(293, 13);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(242, 277);
+            this.listBox1.Size = new System.Drawing.Size(227, 277);
             this.listBox1.TabIndex = 0;
             this.listBox1.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.listBox1_MouseDoubleClick);
             // 
@@ -169,7 +169,7 @@
             this.listBox3.FormattingEnabled = true;
             this.listBox3.Location = new System.Drawing.Point(3, 16);
             this.listBox3.Name = "listBox3";
-            this.listBox3.Size = new System.Drawing.Size(534, 101);
+            this.listBox3.Size = new System.Drawing.Size(519, 101);
             this.listBox3.TabIndex = 11;
             // 
             // button5
@@ -197,7 +197,7 @@
             this.progressBar1.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.progressBar1.Location = new System.Drawing.Point(3, 8);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(534, 10);
+            this.progressBar1.Size = new System.Drawing.Size(519, 10);
             this.progressBar1.TabIndex = 14;
             // 
             // label3
@@ -234,7 +234,7 @@
             this.groupBox1.Controls.Add(this.listBox1);
             this.groupBox1.Location = new System.Drawing.Point(3, 42);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(540, 295);
+            this.groupBox1.Size = new System.Drawing.Size(525, 295);
             this.groupBox1.TabIndex = 18;
             this.groupBox1.TabStop = false;
             // 
@@ -243,7 +243,7 @@
             this.groupBox2.Controls.Add(this.progressBar1);
             this.groupBox2.Location = new System.Drawing.Point(3, 459);
             this.groupBox2.Name = "groupBox2";
-            this.groupBox2.Size = new System.Drawing.Size(540, 21);
+            this.groupBox2.Size = new System.Drawing.Size(525, 21);
             this.groupBox2.TabIndex = 19;
             this.groupBox2.TabStop = false;
             // 
@@ -252,7 +252,7 @@
             this.groupBox3.Controls.Add(this.listBox3);
             this.groupBox3.Location = new System.Drawing.Point(3, 338);
             this.groupBox3.Name = "groupBox3";
-            this.groupBox3.Size = new System.Drawing.Size(540, 120);
+            this.groupBox3.Size = new System.Drawing.Size(525, 120);
             this.groupBox3.TabIndex = 20;
             this.groupBox3.TabStop = false;
             // 
@@ -266,7 +266,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(548, 484);
+            this.ClientSize = new System.Drawing.Size(533, 484);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
             this.Controls.Add(this.groupBox1);

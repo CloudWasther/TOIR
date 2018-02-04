@@ -169,19 +169,22 @@ namespace WindowsFormsApp8
             if (_listBox.SelectedItems.Count > 0)
             {
                 StringBuilder selectedItemsAsRTFText = new StringBuilder();
-                selectedItemsAsRTFText.AppendLine(@"{\rtf1\ansi\deff0{\fonttbl{\f0\fcharset0 Courier;}}");
-                selectedItemsAsRTFText.AppendLine(@"{\colortbl;\red255\green255\blue255;\red255\green0\blue0;\red218\green165\blue32;\red0\green128\blue0;\red0\green0\blue255;\red0\green0\blue0}");
+                //selectedItemsAsRTFText.AppendLine(@"{\rtf1\ansi\deff0{\fonttbl{\f0\fcharset0 Courier;}}");
+                //selectedItemsAsRTFText.AppendLine(@"{\colortbl;\red255\green255\blue255;\red255\green0\blue0;\red218\green165\blue32;\red0\green128\blue0;\red0\green0\blue255;\red0\green0\blue0}");
                 foreach (LogEvent logEvent in _listBox.SelectedItems)
                 {
-                    selectedItemsAsRTFText.AppendFormat(@"{{\f0\fs16\chshdng0\chcbpat{0}\cb{0}\cf{1} ", (logEvent.Level == Level.Critical) ? 2 : 1, (logEvent.Level == Level.Critical) ? 1 : ((int)logEvent.Level > 5) ? 6 : ((int)logEvent.Level) + 1);
+                    //selectedItemsAsRTFText.AppendFormat(@"{{\f0\fs16\chshdng0\chcbpat{0}\cb{0}\cf{1} ", (logEvent.Level == Level.Critical) ? 2 : 1, (logEvent.Level == Level.Critical) ? 1 : ((int)logEvent.Level > 5) ? 6 : ((int)logEvent.Level) + 1);
                     selectedItemsAsRTFText.Append(FormatALogEventMessage(logEvent, _messageFormat));
-                    selectedItemsAsRTFText.AppendLine(@"\par}");
+                    //selectedItemsAsRTFText.AppendLine(@"\par}");
                 }
-                selectedItemsAsRTFText.AppendLine(@"}");
+                //selectedItemsAsRTFText.AppendLine(@"}");
                 System.Diagnostics.Debug.WriteLine(selectedItemsAsRTFText.ToString());
                 Clipboard.SetData(DataFormats.Rtf, selectedItemsAsRTFText.ToString());
-            }
+                Clipboard.SetText(selectedItemsAsRTFText.ToString());
 
+                //MessageBox.Show(selectedItemsAsRTFText.ToString());
+            }
+            
         }
 
         public ListBoxLog(ListBox listBox) : this(listBox, DEFAULT_MESSAGE_FORMAT, DEFAULT_MAX_LINES_IN_LISTBOX) { }

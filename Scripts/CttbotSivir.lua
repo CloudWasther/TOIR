@@ -219,7 +219,7 @@ self.NotAttackSpell =
 end
 
 function Sivir:MenuValueDefault()
-	self.menu = "Sivir_Magic"
+	self.menu = "Sivir_Magic Beta"
 	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
 	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
 
@@ -409,7 +409,8 @@ function Sivir:OnProcessSpell(unit, spell)
 	end
 
 	if spell ~= nil and spell.TargetId ~= nil and unit ~= nil then
-		if self.FAKER[spell.Name] and GetTargetById(spell.TargetId) == myHero.Addr and self.autoE then
+		if self.FAKER[spell.Name] and GetTargetById(spell.TargetId) == myHero.Addr then
+			--CastSpellTarget(myHero.Addr, _E)
 			--__PrintTextGame(tostring(self.FAKER[spell.Name]).."--"..tostring(myHero.Addr).."--"..tostring(spell.Name).."--"..tostring(self.FAKER[spell.Name].delay))
 			DelayAction(function() CastSpellTarget(myHero.Addr, _E) end, self.FAKER[spell.Name].delay) 
 		end

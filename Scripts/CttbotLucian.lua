@@ -311,7 +311,7 @@ function Lucian:LogicQ()
 					CastSpellTarget(minion.Addr, _Q)
 				end
 				
-				--[[local j = 0
+				--local j = 0
 				local distance = GetDistance(CastPosition)
 				GetAllUnitAroundAnObject(myHero.Addr, self.Q.range)
 	            for i, minions in ipairs(pUnit) do
@@ -321,15 +321,13 @@ function Lucian:LogicQ()
 							local minionPos = Vector(minion.x, minion.y, minion.z) 
 							local posEx = myHeroPos:Extended(minionPos, distance)
 							local angle = myHeroPos:AngleBetween(CastPosition, posEx)
-							if GetDistance(CastPosition, posEx) < 25 or angle < 10 then
-								__PrintTextGame(tostring(angle))
-								j = j + 1
-								--CastSpellTarget(minion.Addr, _Q)
-								DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,0,255))
+							if GetDistance(CastPosition, posEx) < 25 then
+								--DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,0,255))
+								CastSpellTarget(minion.Addr, _Q)
 							end						
 						end
 					end
-				end]]       
+				end       
 			end
 		end
 	end
@@ -348,7 +346,7 @@ function Lucian:CountMinionInLine(target)
 				local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPos, Vector(minion))
 			    if isOnSegment and (GetDistance(Vector(minions), proj2) <= (65)) then
 			        NH = NH + 1
-			        minioncollision = minion
+			        minioncollision = minions
 			    end
 			end
 		end

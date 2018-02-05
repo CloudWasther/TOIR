@@ -11,7 +11,7 @@ end
 function Corki:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-	HPred = HPrediction()
+	--HPred = HPrediction()
 	AntiGap = AntiGapcloser(nil)
 
     self.Q = Spell(_Q, 925)
@@ -19,7 +19,7 @@ function Corki:__init()
     self.E = Spell(_E, 800)
     self.R = Spell(_R, 1300)
 
-    self.Q:SetSkillShot(0.3, 1000, 200, true)
+    self.Q:SetSkillShot(0.1, 1000, 200, true)
     --self.W:SetSkillShot(0.25, 1600, 80, true)
     self.E:SetTargetted()
     self.R:SetSkillShot(0.2, 2000, 40, true)
@@ -69,7 +69,7 @@ function Corki:MenuValueDefault()
 	self.Rammo = self:MenuSliderInt("Minimum R ammo harass", 3)
 	self.minionR = self:MenuBool("Try R on minion", true)
 	self.useR = self:MenuKeyBinding("Semi-manual cast R key", 84)
-	--self.rHC = self:MenuSliderFloat("R HitChane", 1.3)
+	self.rHC = self:MenuComboBox("R HitChance", 3)
 
 	self.Enalble_Mod_Skin = self:MenuBool("Enalble Mod Skin", false)
 	self.Set_Skin = self:MenuSliderInt("Set Skin", 15)
@@ -112,7 +112,7 @@ function Corki:OnDrawMenu()
 			self.Rammo = Menu_SliderInt("Minimum R ammo harass", self.Rammo, 0, 6, self.menu)
 			self.minionR = Menu_Bool("Try R on minion", self.minionR, self.menu)
 			self.useR = Menu_KeyBinding("Semi-manual cast R key", self.useR, self.menu)
-			--self.rHC = Menu_SliderFloat("R HitChane", self.rHC, 1, 3, self.menu)
+			self.rHC = Menu_ComboBox("R HitChance", self.rHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_End()
 		end
 
@@ -160,6 +160,10 @@ end
 function Corki:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
+
+function Corki:HitChanceManager(hc)
+	return (hc + 3)
+end
 --MP : Q 60 W 100 E 50 R 20
 function Corki:OnBeforeAttack(target)
 	if target ~= nil and target.Type == 0 then
@@ -177,6 +181,29 @@ function Corki:OnBeforeAttack(target)
 	end
 end
 
+function Corki:GetQCirclePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 1, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Corki:GetRLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero.x, myHero.z, false, true, 1, 0, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 AOE = _aoeTargetsHitCount
+		 return CastPosition, HitChance, Position, AOE
+	end
+	return nil , 0 , nil, 0
+end
+
 function Corki:OnTick()
 	
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
@@ -187,8 +214,8 @@ function Corki:OnTick()
 		__PrintDebug(tostring(v))				      
 	end]]
 
-	self.HPred_Q_M = HPSkillshot({type = "PromptCircle", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, radius = self.Q.width})
-	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = false, collisionM = true, width = self.R.width})
+	--self.HPred_Q_M = HPSkillshot({type = "PromptCircle", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, radius = self.Q.width})
+	--self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = false, collisionM = true, width = self.R.width})
 	--__PrintTextGame(tostring(self:Sheen()))
 	--if self.AGC then
 		--self:AntiGapCloser()
@@ -211,8 +238,6 @@ function Corki:OnTick()
 	if GetKeyPress(self.Lane_Clear) > 0 then
 		self:LaneClear()
 	end
-
-	--__PrintTextGame(tostring(self:bonusR()).."--"..tostring(GetAmmoSpell(myHero.Addr, _R)))
 
 	if self.Enalble_Mod_Skin then
 		ModSkin(self.Set_Skin)
@@ -246,31 +271,24 @@ end
 
 function Corki:LogicQ()
     local t = GetTargetSelector(self.Q.range - 150, 0)
-    if CanCast(_Q) and t ~= 0 then
-		target = GetAIHero(t)
+    if CanCast(_Q) and t ~= 0 then	
 		--__PrintTextGame(tostring(self:RDamage(target)))
-		if IsValidTarget(target.Addr, self.Q.range - 150) then
+		if IsValidTarget(t, self.Q.range - 150) then
+			target = GetAIHero(t)
 			--local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-			if GetKeyPress(self.Combo) > 0 and self.autoQ and myHero.MP > 120 and QHitChance > 2 then
-				CastSpellToPos(QPos.x, QPos.z, _Q)
-			elseif GetKeyPress(self.Harass) > 0 and self.harassQ and myHero.MP > 200 and self:CanHarras() then
-				for i = #self.ts_prio, 1, -1 do
-			    	if self.ts_prio[i].Menu then
-			    		if IsValidTarget(target.Addr, self.Q.range) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and QHitChance > 2 then
-			    			CastSpellToPos(QPos.x, QPos.z, _Q)
-			    		end
-			    	end 
-			    end
+			--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			local CastPosition, HitChance, Position = self:GetQCirclePreCore(target)
+			if GetKeyPress(self.Combo) > 0 and self.autoQ and myHero.MP > 120 and HitChance >= 5 then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			else
 				local qDmg = GetDamage("Q", target)				
 				local rDmg = self:RDamage(target)
-				if qDmg > target.HP and QHitChance > 2 then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
-				elseif (rDmg + qDmg) > target.HP and myHero.MP > 80 and QHitChance > 2 then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
-				elseif rDmg + 2 * qDmg > target.HP and myHero.MP > 100 and QHitChance > 2 then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+				if qDmg > target.HP and HitChance >= 6 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				elseif (rDmg + qDmg) > target.HP and myHero.MP > 80 and HitChance >= 5 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				elseif rDmg + 2 * qDmg > target.HP and myHero.MP > 100 and HitChance >= 5 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 				end
 			end
 		end
@@ -280,8 +298,19 @@ function Corki:LogicQ()
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if hero ~= nil then
 				target = GetAIHero(hero)
+				local CastPosition, HitChance, Position = self:GetQCirclePreCore(target)
+				
 				if IsValidTarget(target, self.Q.range - 150) and not self:CanMove(target) then
 					CastSpellToPos(target.x, target.z, _Q)
+				end
+				if self.harassQ and myHero.MP > 200 and self:CanHarras() then
+					for i = #self.ts_prio, 1, -1 do
+				    	if self.ts_prio[i].Menu then
+				    		if IsValidTarget(target.Addr, self.Q.range) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and HitChance >= 5 then
+				    			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				    		end
+				    	end 
+				    end
 				end
 			end
 		end
@@ -335,16 +364,18 @@ function Corki:LogicR()
         rSplash = 300;
     end
     local t = GetTargetSelector(self.R.range - 150, 1) 
-    if t ~= 0 then
-		target = GetAIHero(t)	
-		if IsValidTarget(target.Addr, self.R.range - 150) then
-			local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+    if t ~= 0 then	
+		if IsValidTarget(t, self.R.range - 150) then
+			target = GetAIHero(t)	
+			--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+			local CastPosition, HitChance, Position = self:GetRLinePreCore(target)
+
 			local qDmg = GetDamage("Q", target)
 			local rDmg = self:RDamage(target)
-			if rDmg * 2 > target.HP then --and RHitChance > self.rHC then
-				CastSpellToPos(RPos.x, RPos.z, _R)
-			elseif IsValidTarget(target.Addr, self.Q.range - 150) and qDmg + rDmg > target.HP then --and RHitChance > self.rHC then
-				CastSpellToPos(RPos.x, RPos.z, _R)
+			if rDmg * 2 > target.HP and HitChance >= self:HitChanceManager(self.rHC) then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+			elseif IsValidTarget(target.Addr, self.Q.range - 150) and qDmg + rDmg > target.HP and HitChance >= self:HitChanceManager(self.rHC) then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 			end
 
 			if rDmg * 2 > target.HP then
@@ -359,21 +390,24 @@ function Corki:LogicR()
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if hero ~= nil then
 				target = GetAIHero(hero)
-				if IsValidTarget(target, self.R.range - 150) and CountEnemyChampAroundObject(target.Addr, rSplash) > 1 then
-					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
-					if GetKeyPress(self.Combo) > 0 and myHero.MP > 60 then --and RHitChance > self.rHC then
-						CastSpellToPos(RPos.x, RPos.z, _R)
-					elseif GetKeyPress(self.Harass) > 0 and myHero.MP > 230 and GetAmmoSpell(myHero.Addr, _R) > self.Rammo and self:CanHarras() then
+				if IsValidTarget(target, self.R.range - 150) then --and CountEnemyChampAroundObject(target.Addr, rSplash) > 1 then
+					--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+					local CastPosition, HitChance, Position = self:GetRLinePreCore(target)
+					--__PrintTextGame(tostring(HitChance >= self:HitChanceManager(self.rHC)))
+					if GetKeyPress(self.Combo) > 0 and myHero.MP > 60 and HitChance >= self:HitChanceManager(self.rHC) then
+						--__PrintTextGame("string szText")
+						CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+					elseif myHero.MP > 230 and GetAmmoSpell(myHero.Addr, _R) > self.Rammo and self:CanHarras() then
 					    if self.ts_prio[i].Menu then
-					    	if IsValidTarget(target.Addr, self.R.range - 150) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId then --and RHitChance > self.rHC then
-					    		CastSpellToPos(RPos.x, RPos.z, _R)
+					    	if IsValidTarget(target.Addr, self.R.range - 150) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId and HitChance >= self:HitChanceManager(self.rHC) then
+					    		CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 					    	end 
 					    end
 					end
 
-					if GetKeyPress(self.Combo) > 0 and myHero.MP > 60 then
+					if GetKeyPress(self.Combo) > 0 and myHero.MP > 60 and CountEnemyChampAroundObject(target.Addr, rSplash) > 1 then
 						self:CastRminion(target)
-					elseif GetKeyPress(self.Harass) > 0 and myHero.MP > 230 and GetAmmoSpell(myHero.Addr, _R) > self.Rammo and self:CanHarras() then
+					elseif myHero.MP > 230 and GetAmmoSpell(myHero.Addr, _R) > self.Rammo and self:CanHarras() and CountEnemyChampAroundObject(target.Addr, rSplash) > 1 then
 					    if self.ts_prio[i].Menu then
 					    	if IsValidTarget(target.Addr, self.R.range - 150) and target.NetworkId == self.ts_prio[i].Enemy.NetworkId then
 					    		self:CastRminion(target)
@@ -382,14 +416,15 @@ function Corki:LogicR()
 					end
 				end
 				if myHero.MP > 130 and IsValidTarget(target, self.R.range - 150) then
-					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+					local Collision = CountCollision(myHero.x, myHero.z, target.x, target.z, self.R.delay, self.R.width, self.R.range, self.R.speed, 0, 5, 5, 5, 5)
+					--__PrintTextGame(tostring(Collision))
 					if not self:CanMove(target) then
 						self:CastRminion(target)
-						CastSpellToPos(target.x, target.z, _R)
+						local Collision = CountCollision(myHero.x, myHero.z, target.x, target.z, self.R.delay, self.R.width, self.R.range, self.R.speed, 0, 5, 5, 5, 5)
+						if Collision == 0 then
+							CastSpellToPos(target.x, target.z, _R)
+						end
 					end
-					if RHitChance >= 3 then
-				       	CastSpellToPos(RPos.x, RPos.z, _R)
-				    end
 				end
 			end
 		end
@@ -398,7 +433,8 @@ end
 
 function Corki:CastRminion(target)
 	if self.minionR then
-		local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero) 
+		--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero) 
+		local CastPosition, HitChance, Position = self:GetRLinePreCore(target)
 		local rSplash = 150;
 	    if self:bonusR() then
 	        rSplash = 300;
@@ -409,8 +445,8 @@ function Corki:CastRminion(target)
 	        if obj ~= 0  then
 	            local minions = GetUnit(obj)
             	if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and GetType(minions.Addr) == 1 then
-            		if RHitChance < 0 and GetDistance(RPos, Vector(minions)) < rSplash then
-            			CastSpellToPos(RPos.x, RPos.z, _R)
+            		if HitChance <= 1 and GetDistance(CastPosition, Vector(minions)) < rSplash then
+            			CastSpellToPos(CastPosition.x, CastPosition.z, _R)
             		end
             	end
             end
@@ -429,22 +465,17 @@ function Corki:AutoQR()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if hero ~= nil then
 			target = GetAIHero(hero)
-			if IsValidTarget(target, self.Q.range) then
-				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
+			if IsValidTarget(target, 2000) then
+				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, 0.25, 65, 2000, myHero)
 
-				if DashPosition ~= nil then				
-			    	if GetDistance(DashPosition) <= self.Q.range then
-			    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
-			    	end
-				end			
-			end
-
-			if IsValidTarget(target, self.R.range) then
-				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.R.delay, self.R.width, self.R.speed, myHero, false)				
-			    if DashPosition ~= nil then
-			    	local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.R.width, self.R.range, 65)
-			    	if GetDistance(DashPosition) <= self.R.range and Collision == 0 then
+				if DashPosition ~= nil then
+					local Collision = CountCollision(myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.R.delay, self.R.width, self.R.range, self.R.speed, 0, 5, 5, 5, 5)
+			    	if GetDistance(DashPosition) <= self.R.range - 100 and Collision == 0 and CanCast(_R) then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _R)
+			    	end
+
+			    	if GetDistance(DashPosition) <= self.Q.range  - 100 and CanCast(_Q) then
+			    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 			    	end
 				end			
 			end
@@ -474,20 +505,6 @@ function Corki:LaneClear()
             end
         end	
 	end
-end
-
-function Corki:EnemyMinionsTbl()
-    GetAllUnitAroundAnObject(myHero.Addr, 2000)
-    local result = {}
-    for i, obj in pairs(pUnit) do
-        if obj ~= 0  then
-            local minions = GetUnit(obj)
-            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
-                table.insert(result, minions.Addr)
-            end
-        end
-    end
-    return result
 end
 
 function Corki:OnDraw()
@@ -750,7 +767,7 @@ function Corki:OnAntiGapClose(target, EndPos)
             --__PrintTextGame(tostring(GetDistance(hero)).."<-->"..tostring(GetDistance(EndPos))) 
             if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
                 points = self:CirclePoints(10, self.W.range, Vector(myHero))
-		    	bestpoint = Vector(myHero):Extended(hero, - self.W.range);
+		    	bestpoint = Vector(myHero):Extended(Vector(hero), - self.W.range);
 		    	local enemies = self:CountEnemiesInRange(bestpoint, self.W.range)
 		    	for i, point in pairs(points) do
 		    		local count = self:CountEnemiesInRange(point, self.W.range)
@@ -764,41 +781,9 @@ function Corki:OnAntiGapClose(target, EndPos)
 		    	end
 		    	if self:IsGoodPosition(bestpoint) and self.AGC and CanCast(_W) then   
 	                CastSpellToPos(bestpoint.x,bestpoint.z, _W) 
-	                return    				
+	                --return    				
 	          	end
             end
         --end
     --end
-end
-
-function Corki:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 and CanCast(_W) then
-          				points = self:CirclePoints(10, self.E.range, myHeroPos)
-	    				bestpoint = myHeroPos:Extended(DashPosition, - self.W.range);
-	    				local enemies = self:CountEnemiesInRange(bestpoint, self.W.range)
-	    				for i, point in pairs(points) do
-	    					local count = self:CountEnemiesInRange(point, self.W.range)
-	    					if count < enemies then
-	    						enemies = count;
-                            	bestpoint = point;
-                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
-                            	enemies = count;
-                            	bestpoint = point;
-	    					end
-	    				end
-	    				if self:IsGoodPosition(bestpoint) then   
-                        	CastSpellToPos(bestpoint.x,bestpoint.z, _W)     				
-          				end
-          			end
-        		end
-      		end
-    	end
-	end
 end

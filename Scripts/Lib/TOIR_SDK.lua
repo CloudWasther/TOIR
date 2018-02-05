@@ -1828,10 +1828,10 @@ local DamageLibTable = {
   },
 
   ["Graves"] = {
-    {Slot = "Q", Stage = 1, DamageType = 1, Damage = function(source, target, level) return ({55, 70, 85, 100, 115})[level] + 0.75 * source.TotalDmg end},
-    {Slot = "Q", Stage = 2, DamageType = 1, Damage = function(source, target, level) return ({80, 125, 170, 215, 260})[level] + ({0.4, 0.6, 0.8, 1, 1.2})[level] * source.TotalDmg end},
+    {Slot = "Q", Stage = 1, DamageType = 1, Damage = function(source, target, level) return ({45, 60, 75, 90, 105})[level] + source.BonusDmg end},
+    {Slot = "Q", Stage = 2, DamageType = 1, Damage = function(source, target, level) return ({80, 115, 140, 175, 205})[level] + ({0.4, 0.7, 1, 1.3, 1.6})[level] * source.BonusDmg end},
     {Slot = "W", Stage = 1, DamageType = 2, Damage = function(source, target, level) return ({60, 110, 160, 210, 260})[level] + 0.6 * source.MagicDmg end},
-    {Slot = "R", Stage = 1, DamageType = 1, Damage = function(source, target, level) return ({250, 400, 550})[level] + 1.5 * source.TotalDmg end},
+    {Slot = "R", Stage = 1, DamageType = 1, Damage = function(source, target, level) return ({250, 400, 550})[level] + 1.5 * source.BonusDmg end},
   },
 
   ["Hecarim"] = {

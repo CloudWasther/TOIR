@@ -12,7 +12,7 @@ function Jinx:__init()
 	--orbwalk = Orbwalking()
 	-- VPrediction
 	vpred = VPrediction(true)
-	HPred = HPrediction()
+	--HPred = HPrediction()
 	AntiGap = AntiGapcloser(nil)
 	--TS
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
@@ -104,7 +104,7 @@ function Jinx:MenuValueDefault()
 	self.Use_W_Anti_GapClose = self:MenuBool("Use W Anti GapClose", true)
 	self.menu_Combo_WendDash = self:MenuBool("Auto W End Dash", true)
 	self.Auto_W_Kill_Steal = self:MenuBool("Auto W Kill Steal", true)
-	self.wHC = self:MenuSliderFloat("W HitChane", 1.3)
+	self.wHC = self:MenuComboBox("W HitChance", 3)
 
 	self.autoE = self:MenuBool("Auto E on CC", true)
 	self.comboE = self:MenuBool("Auto E in Combo BETA", true)
@@ -119,7 +119,7 @@ function Jinx:MenuValueDefault()
 	self.Rturrent = self:MenuBool("Don't R under turret", true)
 	self.MaxRangeR = self:MenuSliderInt("Max R range", 3000)
 	self.MinRangeR = self:MenuSliderInt("Min R range", 900)
-
+	self.useR = self:MenuKeyBinding("Semi-manual cast R key", 84)
 
 	self.Draw_When_Already = self:MenuBool("Draw When Already", false)
 	self.menu_Draw_Q = self:MenuBool("Draw Q Range", false)
@@ -152,7 +152,7 @@ function Jinx:OnDrawMenu()
 			self.Use_W_Anti_GapClose = Menu_Bool("Use W Anti GapClose", self.Use_W_Anti_GapClose, self.menu)
 			self.menu_Combo_WendDash = Menu_Bool("Auto W End Dash", self.menu_Combo_WendDash, self.menu)
 			self.Auto_W_Kill_Steal = Menu_Bool("Auto W Kill Steal", self.Auto_W_Kill_Steal, self.menu)
-			self.wHC = Menu_SliderFloat("W HitChane", self.wHC, 1, 3, self.menu)
+			self.wHC = Menu_ComboBox("W HitChance", self.wHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting E") then
@@ -170,6 +170,7 @@ function Jinx:OnDrawMenu()
 			self.Rturrent = Menu_Bool("Don't R under turret", self.Rturrent, self.menu)
 			self.MaxRangeR = Menu_SliderInt("Max R range", self.MaxRangeR, 0, 3000, self.menu)
 			self.MinRangeR = Menu_SliderInt("Min R range", self.MinRangeR, 0, 3000, self.menu)
+			self.useR = Menu_KeyBinding("Semi-manual cast R key", self.useR, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Draw Spell") then
@@ -214,6 +215,33 @@ end
 
 function Jinx:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function Jinx:HitChanceManager(hc)
+	return (hc + 3)
+end
+
+function Jinx:GetWLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero.x, myHero.z, false, true, 1, 0, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Jinx:GetRLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero.x, myHero.z, false, true, 1, 1, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 AOE = _aoeTargetsHitCount
+		 return CastPosition, HitChance, Position, AOE
+	end
+	return nil , 0 , nil, 0
 end
 
 function Jinx:OnCreateObject(obj)
@@ -289,31 +317,14 @@ function Jinx:OnBeforeAttack(target)
     end
 end
 
-function Jinx:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		--if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, self.E.speed, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 and CanCast(_E) and self.AGC then
-          				CastSpellToPos(DashPosition.x,DashPosition.z, _E)
-          			end
-        		end
-      		--end
-    	end
-	end
-end
-
 function Jinx:OnAntiGapClose(target, EndPos)
 	hero = GetAIHero(target.Addr)
     if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
         if CanCast(_E) then --and IsValidTarget(hero.Addr, self.E.range - 150) then
-          	if self.WmodeGC == 0 then
+          	if self.EmodeGC == 0 then
           		CastSpellToPos(EndPos.x, EndPos.z, _E)
           	end
-          	if self.WmodeGC == 1 then
+          	if self.EmodeGC == 1 then
           		CastSpellToPos(myHero.x, myHero.z, _E)
           	end
         end
@@ -326,9 +337,9 @@ function Jinx:OnTick()
 
 	--self.IsMovingInSameDirection
 
-	self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, collisionH = false, collisionM = true, width = self.W.width})
-	self.HPred_E_M = HPSkillshot({type = "PromptCircle", delay = self.E.delay, range = self.E.range, speed = self.E.speed, radius = self.E.width})
-	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
+	--self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, collisionH = false, collisionM = true, width = self.W.width})
+	--self.HPred_E_M = HPSkillshot({type = "PromptCircle", delay = self.E.delay, range = self.E.range, speed = self.E.speed, radius = self.E.width})
+	--self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
 
 	for i, heros in ipairs(GetEnemyHeroes()) do
 		if heros ~= nil then
@@ -355,7 +366,15 @@ function Jinx:OnTick()
 	end
 
 	if CanCast(_R) then
-		self:LogicR()
+		local TargetR = GetTargetSelector(self.R.range, 1)
+	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
+	    	target = GetAIHero(TargetR)
+	    	local CastPosition, HitChance, Position, AOE = self:GetRLinePreCore(target)
+	    	if HitChance >= 5 then
+	    		CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+	    	end
+	    end
+		self:LogicR();
 	end
 
 	if CanCast(_W) and self.autoW then
@@ -441,9 +460,10 @@ function Jinx:LogicW()
 			if TargetW ~= 0 then
 				target = GetAIHero(TargetW)
 				if self:GetRealDistance(target) > GetTrueAttackRange() then-- self:bonusRange() then
-					local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
-	                if WHitChance >= self.wHC then
-	                    CastSpellToPos(WPos.x, WPos.z, _W)
+					--local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+					local CastPosition, HitChance, Position = self:GetWLinePreCore(target)
+	                if HitChance >= self:HitChanceManager(self.wHC) then
+	                    CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 	                end
 				end
 			end
@@ -454,25 +474,22 @@ function Jinx:LogicW()
 		if hero ~= nil then
 			target = GetAIHero(hero)
 			if IsValidTarget(target, self.W.range - 150) and GetDistance(target.Addr) > self:bonusRange() then
-				local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+				--local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+				local CastPosition, HitChance, Position = self:GetWLinePreCore(target)
 				local comboDmg = GetDamage("W", target)
 				if CanCast(_R) and myHero.MP > 200 then
 					comboDmg = comboDmg + GetDamage("R", target)
 				end
-				if comboDmg > target.HP and self:ValidUlt(target) and WHitChance >= self.wHC then
-					CastSpellToPos(WPos.x, WPos.z, _W)
+				if comboDmg > target.HP and self:ValidUlt(target) and HitChance >= self:HitChanceManager(self.wHC) then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 				end
 			end
 
 			if IsValidTarget(target, self.W.range - 150) and not self:CanMove(target) then
-				CastSpellToPos(target.x, target.z, _W)
-			end
-
-			if IsValidTarget(target.Addr, self.W.range - 150) then
-				local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
-				if WHitChance >= 3 then
-			        CastSpellToPos(WPos.x, WPos.z, _W)
-			    end
+				local Collision = CountCollision(myHero.x, myHero.z, target.x, target.z, self.W.delay, self.W.width, self.W.range, self.W.speed, 0, 5, 5, 5, 5)
+				if Collision == 0 then
+					CastSpellToPos(target.x, target.z, _W)
+				end
 			end
 		end
 	end
@@ -483,18 +500,11 @@ function Jinx:LogicE()
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if IsValidTarget(hero, self.E.range + 50) then
 				target = GetAIHero(hero)
-				local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
-				if IsValidTarget(target.Addr, self.E.range - 150) then
+				if IsValidTarget(target.Addr, self.E.range - 100) then
 					if not self:CanMove(target) then
-						CastSpellToPos(EPos.x, EPos.z, _E)
+						CastSpellToPos(target.x, target.z, _E)
 						return
 					end
-				end
-				if IsValidTarget(target.Addr, self.E.range - 150) then
-					local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
-					if EHitChance >= 3 then
-				        CastSpellToPos(EPos.x, EPos.z, _E)
-				    end
 				end
 			end
 		end
@@ -509,13 +519,14 @@ function Jinx:LogicE()
 			local TargetE = GetTargetSelector(self.E.range, 0)
 			if CanCast(_E) and TargetE ~= 0 then
 				target = GetAIHero(TargetE)
-				local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+				--local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+				local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 1, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
 				if CountBuffByType(target.Addr, 10) == 1 then
-					CastSpellToPos(EPos.x, EPos.z, _E)
+					CastSpellToPos(castPosX, castPosZ, _E)
 				end
-				if GetDistance(EPos, Vector(target)) > 200 then
-					if self.IsMovingInSameDirection then
-						CastSpellToPos(EPos.x, EPos.z, _E)
+				if GetDistance(Vector(castPosX, target.y, castPosZ), Vector(target)) > 200 then
+					if self.IsMovingInSameDirection and hitChance >= 6 then
+						CastSpellToPos(castPosX, castPosZ, _E)
 					end
 				end
 			end
@@ -540,11 +551,12 @@ function Jinx:LogicR()
 				target = GetAIHero(hero)
 				if IsValidTarget(target, self.MaxRangeR) and self:ValidUlt(target) then
 					if GetDamage("R", target) > target.HP and self:GetRealDistance(target) > self:bonusRange() + 200 then
-						local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
-						if RHitChance > 2 and self:GetRealDistance(target) > self:bonusRange() + 300 + GetBoundingRadius(target.Addr) and CountEnemyChampAroundObject(target.Addr, 500) == 0 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
-							CastSpellToPos(RPos.x, RPos.z, _R)
-						elseif CountEnemyChampAroundObject(target.Addr, 200) > 2 and RHitChance > 2 then
-							CastSpellToPos(RPos.x, RPos.z, _R)
+						--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+						local CastPosition, HitChance, Position = self:GetRLinePreCore(target)
+						if HitChance >= 6 and self:GetRealDistance(target) > self:bonusRange() + 300 + GetBoundingRadius(target.Addr) and CountEnemyChampAroundObject(target.Addr, 500) == 0 and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 then
+							CastSpellToPos(CastPosition.x, CastPosition.z, _R)
+						elseif CountEnemyChampAroundObject(target.Addr, 200) > 2 and HitChance >= 6 then
+							CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 						end
 					end
 				end
@@ -561,21 +573,15 @@ function Jinx:AutoEW()
 				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, 0.09, 65, 2000, myHero)
 
 				if DashPosition ~= nil then
-					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.width, self.W.range, 65)
-			    	if GetDistance(DashPosition) <= self.W.range and self.menu_Combo_WendDash and Collision == 0 and CanCast(_W) then
-			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+			    	if GetDistance(DashPosition) <= self.W.range and GetDistance(DashPosition) > 500 and self.menu_Combo_WendDash and CanCast(_W) then
+			    		local Collision = CountCollision(myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.W.delay, self.W.width, self.W.range, self.W.speed, 0, 5, 5, 5, 5)
+			    		if Collision == 0 then
+			    			CastSpellToPos(DashPosition.x, DashPosition.z, _W)
+			    		end
 			    	end
 			    	if GetDistance(DashPosition) <= self.E.range and self.menu_Combo_EendDash and CanCast(_E) then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 			    	end
-				end
-
-				if not self:CanMove(target) and self.autoW and CanCast(_W) then
-					CastSpellToPos(target.x, target.z, _W)
-				end
-
-				if not self:CanMove(target) and self.autoE and CanCast(_E) then
-					CastSpellToPos(target.x, target.z, _E)
 				end
 			end
 		end

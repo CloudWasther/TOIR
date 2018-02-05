@@ -47,7 +47,7 @@ function Twitch:MenuValueDefault()
 	self.menu_Combo_QRecall = self:MenuKeyBinding("Safe Recall", 66)
 
 	self.menu_Combo_W = self:MenuBool("Auto Use W Combo", false)
-	self.menu_Combo_Wmode = self:MenuComboBox("W Mode", 2)
+	self.menu_Combo_Wmode = self:MenuComboBox("W Mode", 0)
 	self.menu_Combo_Wgap = self:MenuBool("Use W Anti GapClose", true)
 	self.menu_Combo_WendDash = self:MenuBool("Use W End Dash", true)
 	self.menu_Combo_WCount = self:MenuSliderInt("Auto W if Hit", 2)
@@ -97,7 +97,7 @@ function Twitch:OnDrawMenu()
 			Menu_End()
 		end
 		if Menu_Begin("Setting E") then
-			--self.menu_Combo_E = Menu_ComboBox("Mode Target", self.menu_Combo_E, "Normal\0Have E\0\0\0\0", self.menu)
+			self.menu_Combo_E = Menu_ComboBox("Mode Target", self.menu_Combo_E, "Normal\0Have E\0\0\0\0", self.menu)
 			self.menu_Combo_EAuto = Menu_SliderInt("Auto E Out Range & Stack", self.menu_Combo_EAuto, 1, 6, self.menu)
 			self.menu_Combo_EKs = Menu_Bool("Auto E Kill Steal", self.menu_Combo_EKs, self.menu)
 			Menu_Text("E In Jungle")
@@ -159,11 +159,22 @@ function Twitch:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
 
+function Twitch:GetWCirclePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 1, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
 function Twitch:OnTick()
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
-	self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
+	--self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
 
 	self:AutoQ()
 	self:AutoW()
@@ -212,19 +223,20 @@ function Twitch:LogicW()
 		target = GetAIHero(TargetW)
 		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
 		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
-		local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+		--local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+		local CastPosition, HitChance, Position = self:GetWCirclePreCore(target)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 		if (GetDistance(target.Addr) < self.W.range - 300 and GetDistance(target.Addr) > 300  or self:IsImmobileTarget(TargetW)) then
 			if self.menu_Combo_W then
-				if WPos and WHitChance >= 2 and self.menu_Combo_Wmode == 0 then
-		        	CastSpellToPos(WPos.x, WPos.z, _W)
+				if CastPosition ~= nil and HitChance >= 6 and self.menu_Combo_Wmode == 0 then
+		        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		    	end
-		    	if WPos and WHitChance >= 2 and self.menu_Combo_Wmode == 1 then
-		    		posBehind = WPos:Extended(myHero, -100)
+		    	if CastPosition ~= nil and HitChance >= 6 and self.menu_Combo_Wmode == 1 then
+		    		posBehind = CastPosition:Extended(myHero, -100)
 		        	CastSpellToPos(posBehind.x, posBehind.z, _W)
 		    	end
-		    	if WPos and WHitChance >= 2 and self.menu_Combo_Wmode == 2 then
-		    		posFront = WPos:Extended(myHero, 100)
+		    	if CastPosition ~= nil and HitChance >= 6 and self.menu_Combo_Wmode == 2 then
+		    		posFront = CastPosition:Extended(myHero, 100)
 		        	CastSpellToPos(posFront.x, posFront.z, _W)
 		    	end
 		    end
@@ -239,7 +251,7 @@ function Twitch:LogicW()
 end
 
 function Twitch:LogicE()
-	if self.menu_Combo_E == 2 then
+	if self.menu_Combo_E == 1 then
 		local targets = self:GetTargetBuffE(GetTrueAttackRange() + 50)
 		--ForceTarget(target)
 		--target = GetAIHero(targets)

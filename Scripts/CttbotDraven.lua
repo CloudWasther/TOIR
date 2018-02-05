@@ -184,6 +184,29 @@ function Draven:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
 
+function Draven:GetELinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Draven:GetRLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 AOE = _aoeTargetsHitCount
+		 return CastPosition, HitChance, Position, AOE
+	end
+	return nil , 0 , nil, 0
+end
+
 function Draven:OnBeforeAttack(target)
 	if CanCast(_Q) then
 		if target.Type == 0 then
@@ -340,6 +363,7 @@ function Draven:OnTick()
     		self:AntiGapCloser()
     	end
     end]]
+    self:AntiGapCloser()
 
     self:CatchAxe()
 
@@ -374,14 +398,15 @@ function Draven:LogicE()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if hero ~= nil then
 			target = GetAIHero(hero)
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
+			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
+			local CastPosition, HitChance, Position = self:GetELinePreCore(target)
 			if IsValidTarget(target.Addr, self.E.range) and GetDistance(Vector(target)) > GetTrueAttackRange() and GetDamage("E", target) > target.HP then				
-				if HitChance >= 2 then
+				if HitChance >= 6 then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 				end
 			end
 			if IsValidTarget(target.Addr, 300) and target.IsMelee then
-				if HitChance >= 2 then
+				if HitChance >= 6 then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 				end
 			end
@@ -390,17 +415,18 @@ function Draven:LogicE()
 	local TargetE = GetTargetSelector(self.E.range - 150, 1)
 	if TargetE ~= 0 then
 		target = GetAIHero(TargetE)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
+		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero, false)
+		local CastPosition, HitChance, Position = self:GetELinePreCore(target)
 		if IsValidTarget(target.Addr, self.E.range) then
 			if GetKeyPress(self.Combo) > 0 then
 				if myHero.MP > 170 then
 					if GetDistance(Vector(target)) > GetTrueAttackRange() then
-						if HitChance >= 2 then
+						if HitChance >= 6 then
 							CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 						end
 					end
 					if myHero.HP < myHero.MaxHP * 0.5 then
-						if HitChance >= 2 then
+						if HitChance >= 6 then
 							CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 						end
 					end
@@ -425,10 +451,11 @@ function Draven:LogicR()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if IsValidTarget(hero, 2000 - 150) then
 			target = GetAIHero(hero)
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero, false)
+			local CastPosition, HitChance, Position = self:GetRLinePreCore(target)
 			if self.UseRCombo and CanCast(_R) then
 				local rDmg = GetDamage("R", target)
-				if rDmg * 2 > target.HP and (GetDistance(target.Addr) > GetTrueAttackRange() or CountEnemyChampAroundObject(target.Addr, self.E.range) > 2) and HitChance >= 2 then
+				if rDmg * 2 > target.HP and (GetDistance(target.Addr) > GetTrueAttackRange() or CountEnemyChampAroundObject(target.Addr, self.E.range) > 2) and HitChance >= 6 then
 					CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 				end
 			end
@@ -500,13 +527,9 @@ function Draven:AntiGapCloser()
         		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
         		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
         		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
-          				CastSpellToPos(DashPosition.x,DashPosition.z, _E)
-          			else
-          				if GetDistance(DashPosition) <= self.E.range then
-			    			CastSpellToPos(DashPosition.x, DashPosition.z, _E)
-			    		end
-          			end
+          			if GetDistance(DashPosition) <= self.E.range then
+			    		CastSpellToPos(DashPosition.x, DashPosition.z, _E)
+			    	end
         		end
       		end
     	end

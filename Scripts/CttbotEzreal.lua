@@ -32,7 +32,7 @@ function Ezreal:__init()
     self.ts_prio = {}
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
-	Callback.Add("Update", function(...) self:OnUpdate(...) end)
+	--Callback.Add("Update", function(...) self:OnUpdate(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("AntiGapClose", function(target, EndPos) self:OnAntiGapClose(target, EndPos) end)
     Callback.Add("DrawMenu", function(...) self:OnDrawMenu(...) end)
@@ -52,8 +52,8 @@ function Ezreal:MenuValueDefault()
 	self.stack = self:MenuBool("Stack Tear if full mana", true)
 	self.jungQ = self:MenuBool("Jungle Q", true)
 	self.FQ = self:MenuBool("Farm Q out range last hit", true)
-	self.qHC = self:MenuComboBox("Q HitChance", 1)
-	self.PredicMode = self:MenuComboBox("Prediction Mode", 0)
+	self.qHC = self:MenuComboBox("Q HitChance", 3)
+	--self.PredicMode = self:MenuComboBox("Prediction Mode", 0)
 	for i, enemy in pairs(GetEnemyHeroes()) do
         table.insert(self.ts_prio, { Enemy = GetAIHero(enemy), Menu = self:MenuBool(GetAIHero(enemy).CharName, true)})
     end
@@ -63,7 +63,7 @@ function Ezreal:MenuValueDefault()
 	self.wPush = self:MenuBool("W ally (push tower)", true)
 	self.harassW = self:MenuBool("Harass W", true)
 	self.HarassManaW = self:MenuSliderInt("Harass W Mana", 30)
-	self.wHC = self:MenuSliderFloat("W HitChane", 1.5)
+	self.wHC = self:MenuComboBox("W HitChance", 3)
 
 	self.smartEW = self:MenuKeyBinding("SmartCast E + W key", 84)
 	self.EKsCombo = self:MenuBool("E ks combo", true)
@@ -97,12 +97,12 @@ function Ezreal:OnDrawMenu()
 			self.jungQ = Menu_Bool("Jungle Q", self.jungQ, self.menu)
 			self.FQ = Menu_Bool("Farm Q out range last hit", self.FQ, self.menu)
 			self.qHC = Menu_ComboBox("Q HitChance", self.qHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
-			self.PredicMode = Menu_ComboBox("Prediction Mode", self.PredicMode, "VPrediction\0HPrediction\0CorePrediction (not yet)\0\0", self.menu)
+			--self.PredicMode = Menu_ComboBox("Prediction Mode", self.PredicMode, "VPrediction\0HPrediction\0CorePrediction (not yet)\0\0", self.menu)	
 			Menu_Text("Harass Enemy")
 			for i, enemy in pairs(GetEnemyHeroes()) do
             	self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
         	end
-			self.HarassManaQ = Menu_SliderInt("Harass Q Mana", self.HarassManaQ, 0, 100, self.menu)
+			self.HarassManaQ = Menu_SliderInt("Harass Q Mana", self.HarassManaQ, 0, 100, self.menu)				
 			Menu_End()
 		end
 
@@ -111,7 +111,7 @@ function Ezreal:OnDrawMenu()
 			self.wPush = Menu_Bool("W ally (push tower)", self.wPush, self.menu)
 			self.harassW = Menu_Bool("Harass W", self.harassW, self.menu)
 			self.HarassManaW = Menu_SliderInt("Harass W Mana", self.HarassManaW, 0, 100, self.menu)
-			self.wHC = Menu_SliderFloat("W HitChane", self.wHC, 1, 3, self.menu)
+			self.wHC = Menu_ComboBox("W HitChance", self.wHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_End()
 		end
 
@@ -120,8 +120,8 @@ function Ezreal:OnDrawMenu()
 			self.EKsCombo = Menu_Bool("E ks combo", self.EKsCombo, self.menu)
 			self.EAntiMelee = Menu_Bool("E anti-melee", self.EAntiMelee, self.menu)
 			self.autoEgrab = Menu_Bool("Auto E anti grab", self.autoEgrab, self.menu)
-			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)
-			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Game Cursor\0Away - safe position\0Disable\0\0\0", self.menu)
+			self.E_Mode = Menu_ComboBox("E Mode", self.E_Mode, "Mouse\0Side\0Safe position\0\0\0", self.menu)	
+			self.EmodeGC = Menu_ComboBox("Gap Closer position mode", self.EmodeGC, "Game Cursor\0Away - safe position\0Disable\0\0\0", self.menu)		
 			Menu_End()
 		end
 
@@ -156,7 +156,7 @@ function Ezreal:OnDrawMenu()
 			self.Last_Hit = Menu_KeyBinding("Last Hit", self.Last_Hit, self.menu)
 			Menu_End()
 		end
-
+		
 		Menu_End()
 	end
 end
@@ -182,28 +182,18 @@ function Ezreal:MenuKeyBinding(stringKey, valueDefault)
 end
 
 function Ezreal:HitChanceManager(hc)
-	if self.PredicMode == 0 then
-		return hc
-	end
-	if self.PredicMode == 1 then
-		return hc
-	end
-	return 0
+	return (hc + 3)
 end
 
 function Ezreal:OnUpdateBuff(source, unit, buff, stacks)
-
 	if unit.IsMe and self.autoEgrab and CanCast(_E) then
-		--__PrintTextGame(tostring(buff.Name))
 		if buff.Name == "rocketgrab2" then
-
+			
 			local dashPos = self:CastDash(true);
 			if dashPos ~= Vector(0, 0, 0) then
-				--__PrintTextGame("111111111111111")
 				DelayAction(function() CastSpellToPos(dashPos.x,dashPos.z, _E) end, 0.3)
-
+				
 			else
-				--__PrintTextGame("2222222222222")
 				DelayAction(function() CastSpellToPos(dashPos.x,dashPos.z, _E) end, 0.3)
 			end
 		end
@@ -240,16 +230,16 @@ function Ezreal:OnAntiGapClose(target, EndPos)
 		            bestpoint = point;
 			    end
 			end
-			if self:IsGoodPosition(bestpoint) and CanCast(_E) and GetKeyPress(self.Combo) > 0 then
-				DelayAction(function() CastSpellToPos(bestpoint.x, bestpoint.z, _E) end, 0)
-	    	end
+			if self:IsGoodPosition(bestpoint) and CanCast(_E) and GetKeyPress(self.Combo) > 0 then   
+				DelayAction(function() CastSpellToPos(bestpoint.x, bestpoint.z, _E) end, 0)          				
+	    	end  
 	    end
 	    if self.EmodeGC == 0 then
 	    	bestpoint = Vector(myHero):Extended(GetMousePos(), self.E.range);
 	    	if self:IsGoodPosition(bestpoint) and CanCast(_E) then
 	    		CastSpellToPos(bestpoint.x, bestpoint.z, _E)
 	    	end
-	    end
+	    end	 
     end
 end
 
@@ -258,8 +248,8 @@ function Ezreal:OnTick()
 	SetLuaCombo(true)
 
 	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
-	self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, width = self.W.width})
-	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, width = self.R.width})
+	--self.HPred_W_M = HPSkillshot({type = "DelayLine", delay = self.W.delay, range = self.W.range, speed = self.W.speed, width = self.W.width})
+	--self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, width = self.R.width})
 
 	if CanCast(_E) then
 		--if self:LagFree(0) then
@@ -276,7 +266,7 @@ function Ezreal:OnTick()
 		self:LaneClear()
 	end
 
-
+	
 	self:AutoQW()
 
 	if CanCast(_Q) then
@@ -291,9 +281,9 @@ function Ezreal:OnTick()
 		local TargetR = GetTargetSelector(self.R.range, 1)
 	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
 	    	target = GetAIHero(TargetR)
-	    	local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
-	    	if RHitChance >= 2 then
-	    		CastSpellToPos(RPos.x, RPos.z, _R)
+	    	local CastPosition, HitChance, Position, AOE = self:GetRLinePreCore(target)
+	    	if HitChance >= 5 then
+	    		CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 	    	end
 	    end
 		self:LogicR();
@@ -301,25 +291,53 @@ function Ezreal:OnTick()
 
 	if self.Enalble_Mod_Skin then
 		ModSkin(self.Set_Skin)
-	end
+	end		
 end
 
+function Ezreal:GetQLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero.x, myHero.z, false, true, 1, 0, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Ezreal:GetWLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Ezreal:GetRLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 AOE = _aoeTargetsHitCount
+		 return CastPosition, HitChance, Position, AOE
+	end
+	return nil , 0 , nil, 0
+end
 
 function Ezreal:LaneClear()
 	if CanCast(_Q) and (GetType(GetTargetOrb()) == 3) and self.jungQ then
 		if (GetObjName(GetTargetOrb()) ~= "PlantSatchel" and GetObjName(GetTargetOrb()) ~= "PlantHealth" and GetObjName(GetTargetOrb()) ~= "PlantVision") then
 			target = GetUnit(GetTargetOrb())
-	    	local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+	    	local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+	    	if HitChance > 2 then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+			end
 		end
 	end
-end
-
-function Ezreal:OnUpdate()
-	--self.tickIndex = self.tickIndex + 1
-    --if (self.tickIndex > 4) then
-        --self.tickIndex = 0;
-    --end
 end
 
 
@@ -336,60 +354,27 @@ function Ezreal:LagFree(offset)
     return false
 end
 
-function Ezreal:GamePing()
-    return GetLatency() / 2000
-end
-
-function Ezreal:bonusRange()
-	return (670 + GetBoundingRadius(myHero.Addr) + 25 * myHero.LevelSpell(_Q))
-end
-
-function Ezreal:GetRealPowPowRange(target)
-	return (620 + GetBoundingRadius(myHero.Addr) + GetBoundingRadius(target.Addr))
-end
-
-function Ezreal:GetRealDistance(target)
-	local targetPos = Vector(target.x, target.y, target.z)
-	return (GetDistance(targetPos) + GetBoundingRadius(myHero.Addr) + GetBoundingRadius(target.Addr))
-end
-
 function Ezreal:LogicQ()
     	if GetKeyPress(self.Combo) > 0 and myHero.MP > 130 then
     		local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 			if CanCast(_Q) and TargetQ ~= 0 then
 				target = GetAIHero(TargetQ)
-				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 		    	if HitChance >= self:HitChanceManager(self.qHC) then
-		    		if self.PredicMode == 0 then
-		        		CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		        	end
-		        end
-		        if QHitChance >= self:HitChanceManager(self.qHC) then
-		        	if self.PredicMode == 1 then
-		        		CastSpellToPos(QPos.x, QPos.z, _Q)
-		        	end
+		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		        end
     		end
     	end
 
     	for i, heros in ipairs(GetEnemyHeroes()) do
 			if heros ~= nil then
-				local target = GetAIHero(heros)
-				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
-			    if self.ts_prio[i].Menu then
-			    	if IsValidTarget(target.Addr, self.Q.range - 150) then
-			    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and myHero.MP / myHero.MaxMP * 100 > self.HarassManaQ and self:CanHarras() then
-							if HitChance >= self.qHC then
-								if self.PredicMode == 0 then
-								    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-								end
-							end
-							if QHitChance >= self.qHC then
-								if self.PredicMode == 1 then
-								    CastSpellToPos(QPos.x, QPos.z, _Q)
-								end
+				local target = GetAIHero(heros)	
+				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+			    if self.ts_prio[i].Menu then	    			    	
+			    	if IsValidTarget(target, self.Q.range - 150) then
+			    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and myHero.MP / myHero.MaxMP * 100 > self.HarassManaQ and self:CanHarras() then				    						
+							if HitChance >= self:HitChanceManager(self.qHC) then
+								CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 							end
 						end
 			    	end
@@ -397,50 +382,32 @@ function Ezreal:LogicQ()
 
 				local wDmg = GetDamage("W", target)
 				local qDmg = GetDamage("Q", target)
-				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-				local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
-				if IsValidTarget(target.Addr, self.Q.range - 150) then
-					if (qDmg + wDmg > target.HP) then
+				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+				if IsValidTarget(target, self.Q.range - 150) then
+					if (qDmg + wDmg > target.HP) then 
 				    	if HitChance >= self:HitChanceManager(self.qHC) then
-				    		if self.PredicMode == 0 then
-				        		CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				        	end
-				        end
-				        if QHitChance >= self:HitChanceManager(self.qHC) then
-				        	if self.PredicMode == 1 then
-				        		CastSpellToPos(QPos.x, QPos.z, _Q)
-				        	end
+				        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 				        end
 				    elseif (qDmg > target.HP) then
-				    	if HitChance >= 2 then
-				    		if self.PredicMode == 0 then
-				        		CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-				        	end
-				        end
-				        if QHitChance >= 2 then
-				        	if self.PredicMode == 1 then
-				        		CastSpellToPos(QPos.x, QPos.z, _Q)
-				        	end
+				    	if HitChance >= self:HitChanceManager(self.qHC) then
+				        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 				        end
 					end
-					if not self:CanMove(target) and IsValidTarget(target.Addr, self.Q.range - 150) then
-						local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
+					if not self:CanMove(target) and IsValidTarget(target, self.Q.range - 150) then
+						local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.Width, self.Q.range, 65)
 				    	if Collision == 0 then
 				        	CastSpellToPos(target.x, target.z, _Q)
 				        end
 					end
 
-					if QHitChance >= 3 then
-			        	CastSpellToPos(QPos.x, QPos.z, _Q)
-			        end
-			        if HitChance >= 5 then
+					if HitChance >= 7 then
 			        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-			        end
-				end
+			        end 
+				end				
 			end
 		end
 
-		if myHero.MP > 30 and GetKeyPress(self.Lane_Clear) > 0 then
+		if myHero.MP > 30 and (GetKeyPress(self.Lane_Clear) > 0 or GetKeyPress(self.Last_Hit) > 0)then
 			self:farmQ();
 		elseif self.stack and CanCast(_Q) and not myHero.HasBuff("recall") and myHero.MP > myHero.MaxMP * 0.95 and (GetItemByID(3070) > 0 or GetItemByID(3004) > 0 or GetItemByID(3003) > 0) and CountEnemyChampAroundObject(myHero.Addr, 1000) == 0 then
 			pos = Vector(myHero):Extended(GetMousePos(), 500)
@@ -461,20 +428,19 @@ function Ezreal:LogicW()
 	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
-		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		if GetKeyPress(self.Combo) > 0 and myHero.MP > 240 and WHitChance >= self.wHC then
-			CastSpellToPos(WPos.x, WPos.z, _W)
+		local CastPosition, HitChance, Position = self:GetWLinePreCore(target)
+		if GetKeyPress(self.Combo) > 0 and myHero.MP > 240 and HitChance >= self:HitChanceManager(self.wHC) then
+			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		elseif GetKeyPress(self.Harass) > 0 and self.harassW and myHero.MP > myHero.MaxMP * 0.8 and self:CanHarras() then
-			CastSpellToPos(WPos.x, WPos.z, _W)
+			CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 		else
 			local wDmg = GetDamage("W", target)
 			local qDmg = GetDamage("Q", target)
-			if wDmg > target.HP and WHitChance >= self.wHC then
-				CastSpellToPos(WPos.x, WPos.z, _W)
+			if wDmg > target.HP and HitChance >= self:HitChanceManager(self.wHC) then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 				self.OverKill = GetTimeGame()
-			elseif (wDmg + qDmg > target.HP and CanCast(_Q)) and WHitChance >= self.wHC then
-				CastSpellToPos(WPos.x, WPos.z, _W)
+			elseif (wDmg + qDmg > target.HP and CanCast(_Q)) and HitChance >= self:HitChanceManager(self.wHC) then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 			end
 		end
 	end
@@ -487,12 +453,12 @@ function Ezreal:LogicW()
 					CastSpellToPos(target.x, target.z, _W)
 				end
 
-				if IsValidTarget(target.Addr, self.W.range - 150) then
-					local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
-					if WHitChance >= 3 then
-			        	CastSpellToPos(WPos.x, WPos.z, _W)
-			        end
-				end
+				if IsValidTarget(target, self.W.range - 150) then
+					local CastPosition, HitChance, Position = self:GetWLinePreCore(target)
+					if HitChance >= 7 then
+			        	CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			        end 
+				end	
 			end
 		end
 	end
@@ -502,27 +468,12 @@ function Ezreal:LogicE()
 	local TargetE = GetTargetSelector(1300, 0)
 	if CanCast(_E) and TargetE ~= 0 then
 		target = GetAIHero(TargetE)
-		if self.EAntiMelee then
-			for i,hero in pairs(GetEnemyHeroes()) do
-				if hero ~= nil then
-					target = GetAIHero(hero)
-					--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, 0.2, self.W.width, self.W.range, self.W.speed, myHero, false)
-					if IsValidTarget(target.Addr, 1000) and target.IsMelee and GetDistance(target.Addr) < 250 then
-						local dashPos = self:CastDash(true);
-						if dashPos ~= Vector(0, 0, 0) then
-							CastSpellToPos(dashPos.x,dashPos.z, _E)
-						end
-					end
-				end
-			end
-		end
-		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-		if IsValidTarget(target.Addr, self.E.range + GetTrueAttackRange()) and GetKeyPress(self.Combo) > 0 and self.EKsCombo and myHero.HP / myHero.MaxHP > 0.4 and GetDistance(target.Addr, GetMousePos()) + 300 < GetDistance(target.Addr) and
-		 GetDistance(target.Addr) > GetTrueAttackRange() and (GetTimeGame() - self.OverKill) > 0.3 and not self:IsUnderTurretEnemy(myHeroPos) then
-		 	local dashPosition = myHeroPos:Extended(GetMousePos(), self.E.range)
+		if IsValidTarget(target, self.E.range + GetTrueAttackRange()) and GetKeyPress(self.Combo) > 0 and self.EKsCombo and myHero.HP / myHero.MaxHP > 0.4 and GetDistance(Vector(target), GetMousePos()) + 300 < GetDistance(target) and
+		 GetDistance(Vector(target)) > GetTrueAttackRange() and (GetTimeGame() - self.OverKill) > 0.3 and not self:IsUnderTurretEnemy(Vector(myHero)) then
+		 	local dashPosition = Vector(myHero):Extended(GetMousePos(), self.E.range)
 		 	if self:CountEnemiesInRange(dashPosition, 900) < 3 then
 		 		local dmgCombo = 0
-		 		if IsValidTarget(target.Addr, 950) then
+		 		if IsValidTarget(target, 950) then
 		 			dmgCombo = GetAADamageHitEnemy(target.Addr) + GetDamage("E", target)
 		 		end
 		 		if CanCast(_Q) and myHero.MP > 120 then
@@ -538,6 +489,23 @@ function Ezreal:LogicE()
 		 	end
 		end
 	end
+
+	if self.EAntiMelee then
+		for i,hero in pairs(GetEnemyHeroes()) do
+			if hero ~= nil then
+				target = GetAIHero(hero)
+				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, 0.2, self.W.Width, self.W.range, self.W.Speed, myHero, false)
+				if IsValidTarget(target, 1000) then 
+					if target.IsMelee and GetDistance(Vector(target)) < 250 then
+						local dashPos = self:CastDash(true);
+						if dashPos ~= Vector(0, 0, 0) then
+							CastSpellToPos(dashPos.x,dashPos.z, _E)
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
 function Ezreal:LogicR()
@@ -549,20 +517,18 @@ function Ezreal:LogicR()
 		for i,hero in pairs(GetEnemyHeroes()) do
 			if hero ~= nil then
 				target = GetAIHero(hero)
-				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.delay, self.R.width, self.MaxRangeR, self.R.speed, myHero, false)
-				if IsValidTarget(target.Addr, self.MaxRangeR) and self:ValidUlt(target) then
-					local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
-					if self.Rcc and IsValidTarget(target.Addr, self.Q.range + self.E.range) and target.HP < myHero.MaxHP and not self:CanMove(target) then
+				local CastPosition, HitChance, Position, AOE = self:GetRLinePreCore(target)
+				--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.R.Delay, self.R.Width, self.MaxRangeR, self.R.Speed, myHero, false)			
+				if IsValidTarget(target, self.MaxRangeR) and self:ValidUlt(target) then
+					--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+					if self.Rcc and IsValidTarget(target, self.Q.range + self.E.range) and target.HP < myHero.MaxHP and not self:CanMove(target) then
 						CastSpellToPos(target.x,target.z, _R)
 					end
-					if GetDamage("R", target) > target.HP and CountEnemyChampAroundObject(target.Addr, 500) == 0 and GetDistance(RPos) > self.MinRangeR then
-						if RHitChance > 2 then
-							CastSpellToPos(RPos.x,RPos.z, _R)
+					if GetDamage("R", target) > target.HP and CountEnemyChampAroundObject(target.Addr, 500) == 0 and GetDistance(CastPosition) > self.MinRangeR then
+						if HitChance >= 5 then
+							CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 						end
-					end
-					--if GetKeyPress(self.Combo) > 0 and CountEnemyChampAroundObject(target.Addr, 1200) == 0 and self.Raoe then
-						--CastSpellToPos(CastPosition.x,CastPosition.z, _R)
-					--end
+					end 
 				end
 			end
 		end
@@ -580,24 +546,19 @@ function Ezreal:AutoQW()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if hero ~= nil then
 			target = GetAIHero(hero)
-			if IsValidTarget(target, self.Q.range) then
-				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
+			if IsValidTarget(target, 2000) then
+				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, 0.25, 65, 2000, myHero)
 
 				if DashPosition ~= nil then
-					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
-			    	if GetDistance(DashPosition) <= self.Q.range and Collision == 0 then
+					local Collision = CountCollision(myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, 0, 5, 5, 5, 5)
+			    	if GetDistance(DashPosition) <= self.Q.range - 100 and Collision == 0 and CanCast(_Q) then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
 			    	end
-				end
-			end
 
-			if IsValidTarget(target, self.W.range) then
-				local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
-			    if DashPosition ~= nil then
-			    	if GetDistance(DashPosition) <= self.W.range then
+			    	if GetDistance(DashPosition) <= self.W.range  - 100 and CanCast(_W) then
 			    		CastSpellToPos(DashPosition.x, DashPosition.z, _W)
 			    	end
-				end
+				end			
 			end
 		end
 	end
@@ -605,22 +566,22 @@ end
 
 function Ezreal:farmQ()
 	--local orbTarget = GetTargetOrb()
-	--if orbTarget ~= nil and GetType(orbTarget) == 1 then
-		GetAllUnitAroundAnObject(myHero.Addr, 2000)
+	--if orbTarget ~= nil and GetType(orbTarget) == 1 then	
+		GetAllUnitAroundAnObject(myHero.Addr, self.Q.range)	
 		for i, obj in ipairs(pUnit) do
 			if obj ~= 0  then
 				--__PrintTextGame(tostring(obj))
 	            local minion = GetUnit(obj)
 	            if IsEnemy(minion.Addr) and not IsDead(minion.Addr) and not IsInFog(minion.Addr) and GetType(minion.Addr) == 1 then
-	            	if IsValidTarget(minion, self.Q.Range) and GetDistance(Vector(minion)) > GetTrueAttackRange() and self.FQ then
+	            	if IsValidTarget(minion, self.Q.range) and GetDistance(Vector(minion)) > GetTrueAttackRange() and self.FQ then
 
 						local delay = GetDistance(minion) / self.Q.speed + self.Q.delay
 						local hpPred = GetHealthPred(minion.Addr, delay, 0.07)
-						local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, minion, myHero)
+						local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, minion, myHero)						
 						--__PrintTextGame(tostring(GetSpellDamage(_Q, minion)))
-						if hpPred > 0 and hpPred < self:getQDmg(minion) then --GetSpellDamage(_Q, minion) then
+						if hpPred > 0 and hpPred < GetDamage("Q", minion) then --GetSpellDamage(_Q, minion) then
 							--local CastPosition, HitChance, Position, AOE = self:GetQLinePreCore(minion)
-							if QHitChance >= 2 then
+							if QHitChance >= 0 then
 								CastSpellToPos(QPos.x, QPos.z, _Q)
 							end
 						end
@@ -659,55 +620,13 @@ function Ezreal:OnDraw()
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.R.range, Lua_ARGB(255,255,0,0))
 		end
 	end
-
-	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
-	if CanCast(_Q) and TargetQ ~= 0 then
-		target = GetAIHero(TargetQ)
-		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		if QPos ~= nil then
-			DrawCircleGame(QPos.x , QPos.y, QPos.z, 200, Lua_ARGB(255,255,0,0))
-		end
-	end
 end
 
 function Ezreal:OnProcessSpell(unit, spell)
 	local spellName = spell.Name:lower()
 	if unit.IsMe then
 		--__PrintDebug(spell.Name)
-	end
-end
-
-
-function Ezreal:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		--if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
-          				points = self:CirclePoints(10, self.E.range, myHeroPos)
-	    				bestpoint = myHeroPos:Extended(DashPosition, - self.E.range);
-	    				local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
-	    				for i, point in pairs(points) do
-	    					local count = self:CountEnemiesInRange(point, self.E.range)
-	    					if count < enemies then
-	    						enemies = count;
-                            	bestpoint = point;
-                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
-                            	enemies = count;
-                            	bestpoint = point;
-	    					end
-	    				end
-	    				if self:IsGoodPosition(bestpoint) then
-                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)
-          				end
-          			end
-        		end
-      		--end
-    	end
-	end
+	end	
 end
 
 function Ezreal:IsImmobileTarget(unit)
@@ -923,36 +842,4 @@ function Ezreal:IsGoodPosition(dashPos)
     end
 
     return false
-end
-
-function Ezreal:AntiGapCloser()
-	for i, heros in pairs(GetEnemyHeroes()) do
-    	if heros ~= nil then
-      		local hero = GetAIHero(heros)
-      		if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
-        		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-        		if DashPosition ~= nil then
-          			if GetDistance(DashPosition) < 400 and CanCast(_E) then
-          				points = self:CirclePoints(10, self.E.range, myHeroPos)
-	    				bestpoint = myHeroPos:Extended(DashPosition, - self.E.range);
-	    				local enemies = self:CountEnemiesInRange(bestpoint, self.E.range)
-	    				for i, point in pairs(points) do
-	    					local count = self:CountEnemiesInRange(point, self.E.range)
-	    					if count < enemies then
-	    						enemies = count;
-                            	bestpoint = point;
-                            elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
-                            	enemies = count;
-                            	bestpoint = point;
-	    					end
-	    				end
-	    				if self:IsGoodPosition(bestpoint) then
-                        	CastSpellToPos(bestpoint.x,bestpoint.z, _E)
-          				end
-          			end
-        		end
-      		end
-    	end
-	end
 end

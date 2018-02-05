@@ -11,7 +11,7 @@ end
 function Blitzcrank:__init()
 	-- VPrediction
 	vpred = VPrediction()
-	HPred = HPrediction()
+	--HPred = HPrediction()
 	AntiGap = AntiGapcloser(nil)
 
 	self.Q = Spell(_Q, 1050)
@@ -53,7 +53,7 @@ function Blitzcrank:MenuValueDefault()
 	self.maxGrab = self:MenuSliderInt("Max range grab", self.Q.range)
 	self.minGrab = self:MenuSliderInt("Min range grab", 250)
 	self.qHC = self:MenuComboBox("Q HitChance", 1)
-	self.PredicMode = self:MenuComboBox("Prediction Mode", 0)
+	--self.PredicMode = self:MenuComboBox("Prediction Mode", 0)
 	self.menu_Combo_QendDash = self:MenuBool("Auto Q End Dash", true)
 	self.menu_Combo_Qinterrup = self:MenuBool("Use Q Interrup", true)
 	self.menu_Combo_Qks = self:MenuBool("Use Q Kill Steal", true)
@@ -101,7 +101,7 @@ function Blitzcrank:OnDrawMenu()
 			self.menu_Combo_Qks = Menu_Bool("Use Q Kill Steal", self.menu_Combo_Qks, self.menu)
 			self.qCC = Menu_Bool("Auto Q cc", self.qCC, self.menu)
 			self.qTur = Menu_Bool("Auto Q under turret", self.qTur, self.menu)
-			self.PredicMode = Menu_ComboBox("Prediction Mode", self.PredicMode, "VPrediction\0HPrediction\0CorePrediction (not yet)\0\0", self.menu)
+			--self.PredicMode = Menu_ComboBox("Prediction Mode", self.PredicMode, "VPrediction\0HPrediction\0CorePrediction (not yet)\0\0", self.menu)
 			self.qHC = Menu_ComboBox("Q HitChance", self.qHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_Text("Auto Q to target :")
 			for i, enemy in pairs(GetEnemyHeroes()) do
@@ -168,61 +168,15 @@ function Blitzcrank:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
 
-function Blitzcrank:OnTick()
-
-	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
-	SetLuaCombo(true)
-
-	local target, enpos = AntiGap:AntiGapInfo()
-    if target ~= nil and enpos ~= nil then
-
-    end
-
-	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
-
-	if CanCast(_Q) then
-        self:LogicQ();
-    end
-
-    if CanCast(_R) then
-        self:LogicR();
-    end
-
-    if CanCast(_W) then
-        self:LogicW()
-    end
-
-	if self.menu_Combo_QendDash then
-		self:autoQtoEndDash()
-	end
-
-	self:KillSteal()
-
-	if not self.Q:IsReady() and GetTimeGame() - self.grabW > 2 then
-		local targetQ = GetTargetSelector(self.Q.range, 0) --orbwalk:getTarget(self.Q.range)
-		if GetBuffByName(targetQ, "rocketgrab2") ~= 0 and IsValidTarget(targetQ, self.Q.range) then
-			self.grabS = self.grabS + 1
-			self.grabW = GetTimeGame()
-		end
-	end
-
-	if self.Enalble_Mod_Skin then
-		ModSkin(self.Set_Skin)
-	end
+function Blitzcrank:HitChanceManager(hc)
+	return (hc + 3)
 end
 
 function Blitzcrank:OnUpdate()
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
-	
-	--[[local target, enpos = AntiGap:AntiGapInfo()
-    if target ~= nil and enpos ~= nil then
-    	if CanCast(_E) then
-    		CastSpellTarget(target.Addr, _E)
-    	end
-    end]]
 
-	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
+	--self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, collisionH = false, collisionM = true, width = self.Q.width})
 
 	if CanCast(_Q) then
         self:LogicQ();
@@ -285,6 +239,17 @@ function Blitzcrank:OnBeforeAttack(target)
 	--end
 end
 
+function Blitzcrank:GetQLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero.x, myHero.z, false, true, 1, 0, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
 function Blitzcrank:OnDraw()
 
 	--[[for i, heros in ipairs(GetEnemyHeroes()) do
@@ -319,7 +284,12 @@ function Blitzcrank:OnDraw()
 		end
 	end
 
-	local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
+	local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(myHero, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)
+
+	if DashPosition ~= nil then
+	    DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
+	end
+	--[[local TargetQ = GetTargetSelector(self.Q.range - 150, 0)
 	if IsValidTarget(TargetQ, self.Q.range - 150) and CanCast(_Q) and (GetDistance(TargetQ) <= self.Q.range) then
 		Target = GetAIHero(TargetQ)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
@@ -338,7 +308,7 @@ function Blitzcrank:OnDraw()
 
   	if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range - 150 then
 	    --DrawCircleGame(DashPosition.x, DashPosition.y, DashPosition.z, 200, Lua_ARGB(255, 255, 0, 0))
-	end
+	end]]
 
 	local percent = 0
     if (self.grab > 0) and self.menu_Draw_CountQ then
@@ -346,6 +316,15 @@ function Blitzcrank:OnDraw()
 		DrawTextD3DX(100, 100, " grab: "..tostring(self.grab).." grab successful: " ..tostring(self.grabS).. " grab successful % : " ..tostring(percent).. "%", Lua_ARGB(255, 0, 255, 10))
 	end
 end
+
+--[[function Blitzcrank:OnNewPath(unit, pStartPos, pEndPos, pathCount, dashSpeed, isDash, isDashGravity, dashGravityCount)
+	for i = 0, pathCount-1, 1 do
+		local x, y, z = GetPathWayPos(pStartPos + i*12)
+		__PrintDebug('-- x-------: ' .. tostring(x))
+		__PrintDebug('-- y-------: ' .. tostring(y))
+		__PrintDebug('-- z-------: ' .. tostring(z))					
+	end			
+end]]
 
 function Blitzcrank:OnProcessSpell(unit, spell)
 	if spell and unit.IsMe and spell.Name == "RocketGrab" then
@@ -380,18 +359,23 @@ function Blitzcrank:autoQtoEndDash()
 	for i, enemy in pairs(GetEnemyHeroes()) do
 		if enemy ~= nil then
 		    target = GetAIHero(enemy)
-		    local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)	    	
 		    if IsValidTarget(target.Addr, self.maxGrab) then
-		    	if QHitChance >= 3 and target.IsDash then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+		    --local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			    local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, true)	    	
+			    --if IsValidTarget(target.Addr, self.maxGrab) then
+			    	--if QHitChance >= 3 and target.IsDash then
+						--CastSpellToPos(QPos.x, QPos.z, _Q)
+					--end
+			    --end
+			    if DashPosition ~= nil then
+			    	if GetDistance(DashPosition) <= self.Q.range then
+			  		--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
+				  		local Collision = CountCollision(myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, 0, 5, 5, 5, 5)
+				  		if Collision == 0 then
+					    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
+					    end
+					end
 				end
-		    end
-		    if DashPosition ~= nil and GetDistance(DashPosition) <= self.Q.range then
-		  		local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, DashPosition.x, DashPosition.z, self.Q.width, self.Q.range, 65)
-		  		if Collision == 0 then
-			    	CastSpellToPos(DashPosition.x, DashPosition.z, _Q)
-			    end
 			end
 		end
 	end
@@ -405,20 +389,14 @@ function Blitzcrank:LogicQ()
 	local TargetQ = GetTargetSelector(self.maxGrab, 0)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+		--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+		local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 
-		if (GetDistance(QPos) < self.maxGrab and GetDistance(QPos) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
+		if (GetDistance(CastPosition) < self.maxGrab and GetDistance(CastPosition) > self.minGrab) or CountEnemyChampAroundObject(target.Addr, 1500) == 1 then
 			if self.menu_Combo_Q and GetKeyPress(self.Combo) > 0 then			
-				if HitChance >= self.qHC then
-		    		if self.PredicMode == 0 then
-		        		CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		        	end
-		        end
-		        if QHitChance >= self.qHC then
-		        	if self.PredicMode == 1 then
-		        		CastSpellToPos(QPos.x, QPos.z, _Q)
-		        	end
+				if HitChance >= self:HitChanceManager(self.qHC) then
+		        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		        end
 		    end
 		end		
@@ -427,28 +405,23 @@ function Blitzcrank:LogicQ()
 	for i, enemy in pairs(GetEnemyHeroes()) do
 		if enemy ~= nil then
 			target = GetAIHero(enemy)	
-			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+			--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
+			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 		    if self.ts_prio[i].Menu then	    			    	
 		    	if IsValidTarget(target.Addr, self.maxGrab) then
 		    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then				    						
-						if HitChance >= self.qHC then
-							if self.PredicMode == 0 then
-							    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-							end
+						if HitChance >= self:HitChanceManager(self.qHC) then
+							CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 						end
-						if QHitChance >= self.qHC then
-							if self.PredicMode == 1 then
-							    CastSpellToPos(QPos.x, QPos.z, _Q)
-							end
-						end 
 					end
 		    	end
 		    end
 
 		    if IsValidTarget(target.Addr, self.maxGrab) then
 		    	if not self:CanMove(target) and self.qCC then
-					local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
+		    		local Collision = CountCollision(myHero.x, myHero.z, target.x, target.z, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, 0, 5, 5, 5, 5)
+					--local Collision = CountObjectCollision(0, target.Addr, myHero.x, myHero.z, target.x, target.z, self.Q.width, self.Q.range, 65)
 				    if Collision == 0 then
 				        CastSpellToPos(target.x, target.z, _Q)
 				    end
@@ -457,18 +430,11 @@ function Blitzcrank:LogicQ()
 
 		    if IsValidTarget(target.Addr, self.maxGrab) and self.qTur then
 				if self:IsUnderAllyTurret(Vector(target)) then
-					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
 					local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, true)
-					if HitChance >= self.qHC then
-					    if self.PredicMode == 0 then
-					        CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-					    end
+					if HitChance >= self:HitChanceManager(self.qHC) then
+					    CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 					end
-					if QHitChance >= self.qHC then
-					    if self.PredicMode == 1 then
-					        CastSpellToPos(QPos.x, QPos.z, _Q)
-					    end
-					end 
 				end
 		    end
 		end	   

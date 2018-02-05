@@ -11,7 +11,7 @@ end
 function Sivir:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-	HPred = HPrediction()
+	--HPred = HPrediction()
 	AntiGap = AntiGapcloser(nil)
 
 	--TS
@@ -226,6 +226,7 @@ function Sivir:MenuValueDefault()
 	self.qcb = self:MenuBool("Auto Q Combo)", true)
 	self.farmQ = self:MenuBool("Lane clear Q", true)
 	self.aim = self:MenuBool("Auto aim returned missile", true)
+	self.qHC = self:MenuComboBox("Q HitChance", 3)
 
 	self.harassW = self:MenuBool("Harass W", true)
 	self.farmW = self:MenuBool("Lane clear W", true)
@@ -237,7 +238,7 @@ function Sivir:MenuValueDefault()
 	self.autoEmissile = self:MenuBool("Block unknown missile", true)
 	self.AGC = self:MenuBool("AntiGapcloser E", true)
 	self.Edmg = self:MenuSliderInt("Block under % hp", 50)
-	self.blockmove = self:MenuBool("Spell Shield Block Movement", false)
+	--self.blockmove = self:MenuBool("Spell Shield Block Movement", false)
 	--self.blockduration = self:MenuSliderInt("Spell Shield Block Duration ms", 300)
 
 	self.autoR = self:MenuBool("Auto R", true)
@@ -257,6 +258,7 @@ function Sivir:OnDrawMenu()
 			self.qcb = Menu_Bool("Auto Q Combo", self.qcb, self.menu)	
 			self.farmQ = Menu_Bool("Lane clear Q", self.farmQ, self.menu)	
 			self.aim = Menu_Bool("Auto aim returned missile", self.aim, self.menu)
+			self.qHC = Menu_ComboBox("Q HitChance", self.qHC, "Low\0Medium\0High\0Very High\0\0", self.menu)
 			Menu_End()
 		end
 
@@ -275,7 +277,7 @@ function Sivir:OnDrawMenu()
 			self.autoEmissile = Menu_Bool("Block unknown missile", self.autoEmissile, self.menu)
 			self.AGC = Menu_Bool("AntiGapcloser E", self.AGC, self.menu)	
 			self.Edmg = Menu_SliderInt("Block under % hp", self.Edmg, 0, 100, self.menu)
-			self.blockmove = Menu_Bool("Spell Shield Block Movement", self.blockmove, self.menu)	
+			--self.blockmove = Menu_Bool("Spell Shield Block Movement", self.blockmove, self.menu)	
 			--self.blockduration = Menu_SliderInt("Spell Shield Block Duration ms", self.blockduration, 50, 500, self.menu)
 			Menu_End()
 		end
@@ -324,6 +326,21 @@ end
 
 function Sivir:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function Sivir:HitChanceManager(hc)
+	return (hc + 3)
+end
+
+function Sivir:GetQLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
 end
 
 function Sivir:OnAntiGapClose(target, EndPos)
@@ -395,15 +412,6 @@ function Sivir:IsAutoAttack(spell)
 end
 
 function Sivir:OnProcessSpell(unit, spell)
-	if unit.IsMe then
-		if spell.Name == "SivirE" then
-			if not self.ECasted and self.blockmove then
-				self.ECasted = true
-				self.ETimestamp = GetTimeGame()
-				BlockMove()
-			end
-		end
-	end
 	if not CanCast(_E) or unit.Type ~= 0 or not unit.IsEnemy or myHero.HP / myHero.MaxHP * 100 > self.Edmg or not self.autoE or string.lower(spell.Name) == "tormentedsoil" then
 		return
 	end
@@ -544,7 +552,7 @@ function Sivir:OnTick()
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
-	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
+	--self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
 
 	--__PrintTextGame(tostring(myHero.HasBuff("GoldCardPreAttack")))
 	--self:CatchAxe()
@@ -594,7 +602,7 @@ function Sivir:OnUpdate()
 	if self.ECasted and GetTimeGame() - self.ETimestamp > 0.25 then
 		if not myHero.HasBuff("SivirE") then
 			self.ECasted = false;
-			UnBlockMove()
+			--UnBlockMove()
 		end
 		
 	end
@@ -605,19 +613,19 @@ function Sivir:LogicQ()
 	--__PrintTextGame(tostring(TargetQ))
 	if TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+		local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 		local qDmg = GetDamage("Q", target)
 		if GetDistance(target) < GetTrueAttackRange() then
 			qDmg = qDmg + GetAADamageHitEnemy(target.Addr) * 3
 		end
 		if qDmg > target.HP then
-			if QHitChance >= 2 then
-				CastSpellToPos(QPos.x, QPos.z, _Q)
+			if HitChance >= self:HitChanceManager(self.qHC) then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			end
 		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 170 then
 			--UnBlockMove()
-			if QHitChance >= 2 then
-				CastSpellToPos(QPos.x, QPos.z, _Q)
+			if HitChance >= self:HitChanceManager(self.qHC) then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			end
 		else
 			for i, heros in ipairs(GetEnemyHeroes()) do
@@ -626,15 +634,15 @@ function Sivir:LogicQ()
 			    	if self.ts_prio[i].Menu then	    			    	
 			    		if IsValidTarget(target.Addr, self.Q.range - 150) then
 			    			if target.NetworkId == self.ts_prio[i].Enemy.NetworkId and self:CanHarras() then	
-			    				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-			    				if QHitChance >= 2 and not self.IsUnderTurretEnemy(myHero) then
-									CastSpellToPos(QPos.x, QPos.z, _Q)
-								end
+			    				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+						    	if HitChance >= self:HitChanceManager(self.qHC) and not self.IsUnderTurretEnemy(myHero) then
+						        	CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
+						        end
 			    			end
 			    		end
 			    	end
 			    	if not self:CanMove(target) and IsValidTarget(target.Addr, self.Q.range - 100) then
-				       	--CastSpellToPos(target.x, target.z, _Q)
+				       	CastSpellToPos(target.x, target.z, _Q)
 					end
 					local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero)
 					if DashPosition ~= nil then

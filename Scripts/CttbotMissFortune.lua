@@ -11,7 +11,7 @@ end
 function MissFortune:__init()
 	-- VPrediction
 	vpred = VPrediction(true)
-	HPred = HPrediction()
+	--HPred = HPrediction()
 	AntiGap = AntiGapcloser(nil)
 
 	--TS
@@ -27,7 +27,7 @@ function MissFortune:__init()
     self.Q:SetTargetted()
     self.Q1:SetSkillShot(0.25, 1500, 70, true)
     self.W:SetTargetted()
-    self.E:SetSkillShot(0.5, math.huge, 200, true)
+    self.E:SetSkillShot(0.5, 2000, 300, true)
     self.R:SetSkillShot(0.25, 3000, 50, true)
 
     self.SpellAttack =
@@ -212,6 +212,29 @@ local function GetDistanceSqr(p1, p2)
     return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
 end
 
+function MissFortune:GetECirclePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 1, self.E.delay, self.E.width, self.E.range, self.E.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function MissFortune:GetRConePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 2, self.R.delay, 60, self.R.range, self.R.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 AOE = _aoeTargetsHitCount
+		 return CastPosition, HitChance, Position, AOE
+	end
+	return nil , 0 , nil, 0
+end
+
 function MissFortune:OnAntiGapClose(target, EndPos)
 	hero = GetAIHero(target.Addr)
     if GetDistance(EndPos) < 500 or GetDistance(hero) < 500 then
@@ -224,7 +247,7 @@ end
 
 function MissFortune:OnProcessSpell(unit, spell)
 	if unit.IsMe and spell.Name == "MissFortuneBulletTime" then
-		self.RCastTime = GetTimeGame()
+		self.RCastTime = GetTimeGame()		
 	end
 end
 
@@ -430,9 +453,9 @@ end
 function MissFortune:OnTick()
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
-	self.HPred_E_M = HPSkillshot({type = "PromptCircle", delay = self.E.delay, range = self.E.range, speed = self.E.speed, radius = self.E.width})
+	--self.HPred_E_M = HPSkillshot({type = "PromptCircle", delay = self.E.delay, range = self.E.range, speed = self.E.speed, radius = self.E.width})
 	--__PrintTextGame(tostring(self.Q.range).."--"..tostring(self.Q1.range))
-		for i,hero in pairs(GetEnemyHeroes()) do
+		--[[for i,hero in pairs(GetEnemyHeroes()) do
 			if IsValidTarget(hero, 22000) then
 				target = GetAIHero(hero)	
 						--CastSpellTarget(target.Addr, _W)
@@ -441,7 +464,7 @@ function MissFortune:OnTick()
 				--local mainCastPosition, mainHitChance = vpred:GetConeAOECastPosition(t2, self.Q.delay, 45, self.Q1.range, self.Q1.speed, t1)
 				--__PrintDebug(tostring(mainHitChance))
 			end
-		end
+		end]]
 	if CanCast(_Q) and self.autoQ then
         self:LogicQ();
     end
@@ -482,10 +505,10 @@ function MissFortune:LogicQ()
 					if enemy ~= nil then
 						target = GetAIHero(enemy)
 					    if self.ts_prio[i].Menu then	    			    	
-					    	if IsValidTarget(self.ts_prio[i].Enemy.Addr, self.Q.range) then
-					    		--if target.NetworkId == self.ts_prio[i].Enemy.NetworkId then				    
-									CastSpellTarget(self.ts_prio[i].Enemy.Addr, _Q)
-								--end
+					    	if IsValidTarget(target.Addr, self.Q.range) then
+					    		if target.NetworkId == self.ts_prio[i].Enemy.NetworkId then				    
+									CastSpellTarget(target.Addr, _Q)
+								end
 					    	end
 					    end					   
 					end	   
@@ -531,17 +554,18 @@ end
 
 function MissFortune:LogicE()
 	local TargetE = GetTargetSelector(self.E.range, 0)
-	if IsValidTarget(TargetE, self.E.range) then
+	if TargetE ~= 0 then
 		target = GetAIHero(TargetE)
-		local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+		--local EPos, EHitChance = HPred:GetPredict(self.HPred_E_M, target, myHero)
+		local CastPosition, HitChance, Position = self:GetECirclePreCore(target)
 		local eDmg = GetDamage("E", target)
-		if eDmg > target.HP then			
-			CastSpellToPos(EPos.x, EPos.z, _E)
-		elseif eDmg + GetDamage("Q", target) > target.HP and myHero.MP > 220 then
-			CastSpellToPos(EPos.x, EPos.z, _E)
-		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 250 then
-			if GetDistance(EPos) > GetTrueAttackRange() or CountEnemyChampAroundObject(myHero.Addr, 300) > 0 or CountEnemyChampAroundObject(target.Addr, 250) > 1 then
-				CastSpellToPos(EPos.x, EPos.z, _E)
+		if eDmg > target.HP and HitChance >= 6 then			
+			CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+		elseif eDmg + GetDamage("Q", target) > target.HP and myHero.MP > 220 and HitChance >= 6 then
+			CastSpellToPos(CastPosition.x, CastPosition.z, _E)
+		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 250 and HitChance >= 6 then
+			if GetDistance(CastPosition) > GetTrueAttackRange() or CountEnemyChampAroundObject(myHero.Addr, 300) > 0 or CountEnemyChampAroundObject(target.Addr, 250) > 1 then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 			else
 				for i, enemy in pairs(GetEnemyHeroes()) do
 					if enemy ~= nil then
@@ -571,42 +595,46 @@ function MissFortune:LogicE()
 end
 
 function MissFortune:LogicR()
-	if self:IsUnderTurretEnemy(myHero) and self.Rturrent then
+	if self:IsUnderTurretEnemy(Vector(myHero)) and self.Rturrent then
 		return
 	end
 	local TargetR = GetTargetSelector(self.R.range, 0)
 	if IsValidTarget(TargetR, self.R.range) then
 		target = GetAIHero(TargetR)
+		
+		--__PrintTextGame(tostring(HitChance).."--"..tostring(GetDamage("R", target)))
 		if self:ValidUlt(target) then
-			local DamageAP = {0.5, 0.75, 1}
-			local rDmg = GetDamage("R", target) * DamageAP[myHero.LevelSpell(_R) - 1]
-			if CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and CountAllyChampAroundObject(myHero.Addr, 400) == 0 then
+			--local DamageAP = {0.5, 0.75, 1}
+			local rDmg = GetDamage("R", target) --* DamageAP[myHero.LevelSpell(_R)]
+			if CountEnemyChampAroundObject(myHero.Addr, 800) <= 1 and CountAllyChampAroundObject(myHero.Addr, 400) == 0 then
+				local CastPosition, HitChance, Position = self:GetRConePreCore(target)
 				local tDis = GetDistance(target)
 				if (rDmg * 7 > target.HP and tDis < 800) then
-					CastSpellToPos(target.x, target.z, _R)
+					CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                     self.RCastTime = GetTimeGame();
                 elseif (rDmg * 6 > target.HP and tDis < 900) then
-                    CastSpellToPos(target.x, target.z, _R)
+                    CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                     self.RCastTime = GetTimeGame();
                 elseif (rDmg * 5 > target.HP and tDis < 1000) then
-                    CastSpellToPos(target.x, target.z, _R)
+                    CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                     self.RCastTime = GetTimeGame();
                 elseif (rDmg * 4 > target.HP and tDis < 1100) then
-                    CastSpellToPos(target.x, target.z, _R)
+                    CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                     self.RCastTime = GetTimeGame();
                 elseif (rDmg * 3 > target.HP and tDis < 1200) then
-                    CastSpellToPos(target.x, target.z, _R)
+                    CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                     self.RCastTime = GetTimeGame();
                 elseif (rDmg > target.HP and tDis < 1300) then
-                    CastSpellToPos(target.x, target.z, _R)
+                    CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                     self.RCastTime = GetTimeGame();
                 end
-                return;
+                --return;
 			end
 			if (rDmg * 8 > target.HP and rDmg * 2 < target.HP and CountEnemyChampAroundObject(myHero.Addr, 300) == 0 and not self:CanMove(target)) then
-                CastSpellToPos(target.x, target.z, _R)
+				local CastPosition, HitChance, Position = self:GetRConePreCore(target)
+                CastSpellToPos(CastPosition.x, CastPosition.z, _R)
                 self.RCastTime = GetTimeGame();
-                return;
+                --return;
             end
 		end
 	end

@@ -10,8 +10,8 @@ end
 
 function Graves:__init()
 	-- VPrediction
-	self.vpred = VPrediction(true)
-	HPred = HPrediction()
+	vpred = VPrediction(true)
+	--HPred = HPrediction()
 	AntiGap = AntiGapcloser(nil)
 
 	--TS
@@ -46,7 +46,7 @@ function Graves:MenuValueDefault()
 	self.QWlogic = self:MenuBool("Use Q and W only if don't have ammo", true)
 	--self.Qharras = self:MenuBool("Harass Q", true)
 	self.jungQ = self:MenuBool("Jungle Q", true)
-	self.qHC = self:MenuSliderFloat("Q HitChane", 1)
+	--self.qHC = self:MenuSliderFloat("Q HitChane", 1)
 
 	self.autoW = self:MenuBool("Auto W", false)
 	self.AGCW = self:MenuBool("AntiGapcloser W", true)
@@ -86,7 +86,7 @@ function Graves:OnDrawMenu()
 			self.QWlogic = Menu_Bool("Use Q and W only if don't have ammo", self.QWlogic, self.menu)
 			--self.Qharras = Menu_Bool("Harass Q", self.Qharras, self.menu)
 			self.jungQ = Menu_Bool("Jungle Q", self.jungQ, self.menu)
-			self.qHC = Menu_SliderFloat("Q HitChane", self.qHC, 0, 3, self.menu)
+			--self.qHC = Menu_SliderFloat("Q HitChane", self.qHC, 0, 3, self.menu)
 			Menu_End()
 		end
 		if Menu_Begin("Setting W") then
@@ -153,6 +153,40 @@ function Graves:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
 end
 
+function Graves:GetQLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero.x, myHero.z, false, true, 1, 3, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Graves:GetWCirclePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 1, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
+end
+
+function Graves:GetRLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.R.delay, self.R.width, self.R.range, self.R.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 AOE = _aoeTargetsHitCount
+		 return CastPosition, HitChance, Position, AOE
+	end
+	return nil , 0 , nil, 0
+end
+
 function Graves:OnAfterAttack(unit, target)
 	if unit.IsMe then
 		if CanCast(_E) and self.Enable_E then
@@ -207,9 +241,9 @@ function Graves:OnTick()
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
-	self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
-	self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
-	self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
+	--self.HPred_Q_M = HPSkillshot({type = "DelayLine", delay = self.Q.delay, range = self.Q.range, speed = self.Q.speed, width = self.Q.width})
+	--self.HPred_W_M = HPSkillshot({type = "PromptCircle", delay = self.W.delay, range = self.W.range, speed = self.W.speed, radius = self.W.width})
+	--self.HPred_R_M = HPSkillshot({type = "DelayLine", delay = self.R.delay, range = self.R.range, speed = self.R.speed, collisionH = true, collisionM = false, width = self.R.width})
 
 	--self:AutoQW()
 
@@ -238,7 +272,7 @@ function Graves:LaneClear()
 	if CanCast(_Q) and (GetType(GetTargetOrb()) == 3) and self.jungQ then
 		if (GetObjName(GetTargetOrb()) ~= "PlantSatchel" and GetObjName(GetTargetOrb()) ~= "PlantHealth" and GetObjName(GetTargetOrb()) ~= "PlantVision") then
 			target = GetUnit(GetTargetOrb())
-	    	local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+	    	local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		end
 	end
@@ -271,29 +305,30 @@ function Graves:LogicQ()
 		target = GetAIHero(TargetQ)
 		
 		if IsValidTarget(target.Addr, self.Q.range - 150) then
-			local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-			local step = GetDistance(QPos) / 20
+			--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+			local step = GetDistance(CastPosition) / 20
 			for i = 1, 20, 1 do 
-				local p = Vector(myHero):Extended(QPos, step * i)
+				local p = Vector(myHero):Extended(CastPosition, step * i)
 				if IsWall(p.x, p.y, p.z) then
 					return
 				end
 			end
 
-			if GetKeyPress(self.Combo) > 0 and myHero.MP > 160 and QHitChance >= self.qHC then
-				CastSpellToPos(QPos.x, QPos.z, _Q)
+			if GetKeyPress(self.Combo) > 0 and myHero.MP > 160 and HitChance >= 6 then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			--elseif GetKeyPress(self.Harass) > 0 and self.Qharras and myHero.MP > 330 and QHitChance >= self.qHC then
 				--CastSpellToPos(QPos.x, QPos.z, _Q)
 			else
 				local qDmg = GetDamage("Q", target)
 				local rDmg = GetDamage("R", target)
-				if qDmg > target.HP and QHitChance > 1 then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+				if qDmg > target.HP and HitChance >= 6 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 					self.OverKill = GetTimeGame()
-				elseif qDmg + rDmg > target.HP and CanCast(_R) and myHero.MP > 160 and QHitChance > 1 then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+				elseif qDmg + rDmg > target.HP and CanCast(_R) and myHero.MP > 160 and HitChance >= 6 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 					if self.fastR and rDmg > target.HP then
-						CastSpellToPos(QPos.x, QPos.z, _R)
+						CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 					end
 				end
 			end
@@ -307,13 +342,14 @@ function Graves:LogicQ()
 					CastSpellToPos(target.x, target.z, _Q)
 				end
 				if IsValidTarget(target, self.Q.range - 200) then
-					local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
-					local QPred = Vector(myHero):Extended(QPos, self.Q.range - 150)
-					if GetDistance(QPos) < self.Q.range - 150 and QHitChance >= 3 then
-						CastSpellToPos(QPos.x, QPos.z, _Q)
+					--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
+					local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+					local QPred = Vector(myHero):Extended(CastPosition, self.Q.range - 150)
+					if GetDistance(CastPosition) < self.Q.range - 150 and HitChance >= 6 then
+						CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 					end
 					if IsWall(QPred.x, QPred.y, QPred.z) and self.Auto_Q_If_Wall then
-						CastSpellToPos(QPos.x, QPos.z, _Q)
+						CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 					end
 				end
 			end
@@ -326,15 +362,16 @@ function Graves:LogicW()
 	if TargetW ~= 0 then
 		target = GetAIHero(TargetW)		
 		if IsValidTarget(target.Addr, self.W.range - 150) then
-			local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+			--local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
+			local CastPosition, HitChance, Position = self:GetWCirclePreCore(target)
 			local wDmg = GetDamage("W", target)
-			if wDmg > target.HP and WHitChance > 1 then
-				CastSpellToPos(WPos.x, WPos.z, _W)
-			elseif wDmg + GetDamage("Q", target) > target.HP and myHero.MP >  230 and WHitChance > 1 then
-				CastSpellToPos(WPos.x, WPos.z, _W)
-			elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 230 and WHitChance > 1 then
-				if GetDistance(WPos) > GetTrueAttackRange() or CountEnemyChampAroundObject(target.Addr, 300) > 0 or self:CountEnemiesInRange(Vector(target), 250) > 1 or target.HP / target.MaxHP < 0.5 then
-					CastSpellToPos(WPos.x, WPos.z, _W)
+			if wDmg > target.HP and HitChance >= 6 then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			elseif wDmg + GetDamage("Q", target) > target.HP and myHero.MP >  230 and HitChance >= 6 then
+				CastSpellToPos(CastPosition.x, CastPosition.z, _W)
+			elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 230 and HitChance >= 6 then
+				if GetDistance(CastPosition) > GetTrueAttackRange() or CountEnemyChampAroundObject(target.Addr, 300) > 0 or self:CountEnemiesInRange(Vector(target), 250) > 1 or target.HP / target.MaxHP < 0.5 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _W)
 				end
 			end
 		end
@@ -346,12 +383,6 @@ function Graves:LogicW()
 				if IsValidTarget(target, self.W.range - 150) and not self:CanMove(target)then
 					CastSpellToPos(target.x, target.z, _W)
 				end
-				if IsValidTarget(target, self.W.range - 150) then
-					local WPos, WHitChance = HPred:GetPredict(self.HPred_W_M, target, myHero)
-					if GetDistance(WPos) < self.W.range - 150 and WHitChance >= 3 then
-						CastSpellToPos(WPos.x, WPos.z, _W)
-					end
-				end
 			end
 		end
 	end
@@ -362,18 +393,21 @@ function Graves:LogicR()
 		if hero ~= nil then
 			target = GetAIHero(hero)
 			if IsValidTarget(target, self.R.range - 150) and self:ValidUlt(target) then
-				local rDmg = GetDamage("R", target)
+				local rDmg = GetDamage("Q", target)
+				--__PrintTextGame(tostring(rDmg))
 				if rDmg > target.HP then
 					if self.overkillR and target.HP < myHero.HP then
 						if GetDistance(Vector(target)) < GetTrueAttackRange() or CountAllyChampAroundObject(target.Addr, 400) > 0 then
-							local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+							--local RPos, RHitChance = HPred:GetPredict(self.HPred_R_M, target, myHero)
+							local CastPosition, HitChance, Position = self:GetRLinePreCore(target)
+										__PrintTextGame(tostring(HitChance))
 							local rDmg2 = rDmg * 0.8
-							if RHitChance > 1 then 
-								CastSpellToPos(RPos.x, RPos.z, _R)
+							if HitChance >= 6 then 
+								CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 							end
 							if rDmg2 > target.HP then
-								if RHitChance < 0 then
-									CastSpellToPos(RPos.x, RPos.z, _R)
+								if HitChance <= 1 then
+									CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 								end
 							end
 						end
@@ -388,8 +422,8 @@ function Graves:AutoQW()
 	local TargetQ = GetTargetSelector(self.Q.range - 150, 1)
 	if CanCast(_Q) and TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = self.vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
+		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
+		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.Q.delay, self.Q.width, self.Q.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
     	local QPred = myHeroPos:Extended(CastPosition, self.Q.range - 150)
 
@@ -409,8 +443,8 @@ function Graves:AutoQW()
 	local TargetW = GetTargetSelector(self.W.range - 150, 0)
 	if CanCast(_W) and TargetW ~= 0 then
 		target = GetAIHero(TargetW)
-		local CastPosition, HitChance, Position = self.vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
-		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
+		local CastPosition, HitChance, Position = vpred:GetCircularCastPosition(target, self.W.delay, self.W.width, self.W.range, self.W.speed, myHero, false)
+		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(target, self.W.delay, self.W.width, self.W.speed, myHero, false)
 		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
 	    if DashPosition ~= nil then
@@ -708,7 +742,7 @@ function Graves:AntiGapCloser()
     	if heros ~= nil then
       		local hero = GetAIHero(heros)
       		--if hero.IsDash then
-        		local TargetDashing, CanHitDashing, DashPosition = self.vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
+        		local TargetDashing, CanHitDashing, DashPosition = vpred:IsDashing(hero, 0.09, 65, 2000, myHero, false)
         		local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
         		if DashPosition ~= nil then
           			if GetDistance(DashPosition) < 400 and CanCast(_E) then

@@ -482,7 +482,7 @@ function Caitlyn:LogicQ()
 		--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, target, myHero)
 		--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q.delay, self.Q.width, self.Q.range, self.Q.speed, myHero, false)
 		local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 and HitChance >= 6 then
+		if self:GetRealDistance(target) > self:bonusRange() + 250 and GetDistance(target.Addr) > GetTrueAttackRange() and GetDamage("Q", target) > target.HP and CountEnemyChampAroundObject(myHero.Addr, 400) == 0 and HitChance >= 6 then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		elseif GetKeyPress(self.Combo) > 0 and myHero.MP > 250 and CountEnemyChampAroundObject(myHero.Addr, self:bonusRange() + 100 + GetBoundingRadius(target.Addr)) == 0 and not self.autoQ and HitChance >= 6 then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)

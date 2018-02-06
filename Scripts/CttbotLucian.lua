@@ -319,8 +319,8 @@ function Lucian:LogicQ()
 						if GetType(minions) == 1 and IsValidTarget(minions, self.Q.range) and IsEnemy(minions) then
 							local minion = GetUnit(minions)
 							local minionPos = Vector(minion.x, minion.y, minion.z) 
-							local posEx = myHeroPos:Extended(minionPos, distance)
-							local angle = myHeroPos:AngleBetween(CastPosition, posEx)
+							local posEx = Vector(myHero):Extended(minionPos, distance)
+							local angle = Vector(myHero):AngleBetween(CastPosition, posEx)
 							if GetDistance(CastPosition, posEx) < 25 then
 								--DrawCircleGame(minion.x , minion.y, minion.z, 200, Lua_ARGB(255,255,0,255))
 								CastSpellTarget(minion.Addr, _Q)

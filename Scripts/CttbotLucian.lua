@@ -20,16 +20,18 @@ function Lucian:__init()
     --self.menu_ts = TargetSelector(1750, 0, myHero, true, true, true)
 
 	self.Q = Spell(_Q, 650)
-    self.Q2 = Spell(_Q, 1000)
+    --self.Q2 = Spell(_Q, 1000)
     self.W = Spell(_W, 1000)
     self.E = Spell(_E, 450)
     self.R = Spell(_R, 1300)
 
     self.Q:SetTargetted()
-    self.Q2:SetTargetted()
-    self.Q2.width = 50
-    self.Q2.delay = 0.35
-    self.W:SetSkillShot(0.30, 1600, 80, true)
+    --self.Q2:SetTargetted()
+    --self.Q2.width = 50
+    --self.Q2.delay = 0.35
+	--self.Q2:SetSkillShot(0.35, 1600, 50, true)
+	self.Q2 = ({Slot = 0, delay = 0.35, range = 1000, speed = 1600, width = 60})
+	self.W:SetSkillShot(0.30, 1600, 80, true)
     self.E:SetSkillShot()
     self.R:SetSkillShot(0.25, 2800, 110, true)
 
@@ -119,7 +121,7 @@ function Lucian:OnDrawMenu()
 		if Menu_Begin("Draw Spell") then
 			self.Draw_When_Already = Menu_Bool("Draw When Already", self.Draw_When_Already, self.menu)
 			self.Draw_Q_Range = Menu_Bool("Draw Q Range", self.Draw_Q_Range, self.menu)
-			self.Draw_Q2_Range = Menu_Bool("Draw Q2 Range", self.Draw_R2_Range, self.menu)
+			self.Draw_Q2_Range = Menu_Bool("Draw Q2 Range", self.Draw_Q2_Range, self.menu)
 			self.Draw_W_Range = Menu_Bool("Draw W Range", self.Draw_W_Range, self.menu)
 			self.Draw_E_Range = Menu_Bool("Draw E Range", self.Draw_E_Range, self.menu)
 			self.Draw_R_Range = Menu_Bool("Draw R Range", self.Draw_R_Range, self.menu)			
@@ -159,6 +161,17 @@ end
 
 function Lucian:MenuKeyBinding(stringKey, valueDefault)
 	return ReadIniInteger(self.menu, stringKey, valueDefault)
+end
+
+function Lucian:GetQLinePreCore(target)
+	local castPosX, castPosZ, unitPosX, unitPosZ, hitChance, _aoeTargetsHitCount = GetPredictionCore(target.Addr, 0, self.Q2.delay, self.Q2.width, self.Q2.range, self.Q2.speed, myHero.x, myHero.z, false, false, 1, 5, 5, 5, 5, 5)
+	if target ~= nil then
+		 CastPosition = Vector(castPosX, target.y, castPosZ)
+		 HitChance = hitChance
+		 Position = Vector(unitPosX, target.y, unitPosZ)
+		 return CastPosition, HitChance, Position
+	end
+	return nil , 0 , nil
 end
 
 function Lucian:OnWaypoint(pUnit)            
@@ -207,7 +220,7 @@ function Lucian:OnWaypointLoop()
                 self:OnWaypoint(v)  
             end                         
         end
-        self.WaypointTick = GetTickCount()
+        --self.WaypointTick = GetTickCount()
     --end
 end
 
@@ -304,8 +317,9 @@ function Lucian:LogicQ()
 	if CanCast(_Q) and TargetQ2 ~= 0 then
 		if IsValidTarget(TargetQ2, self.Q2.range) then
 			target = GetAIHero(TargetQ2)
-			local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q2.delay, self.Q2.width, self.Q2.range, math.huge, myHero, false)
-			if HitChance >= 2 and GetDistance(Vector(target)) > self.Q.range and GetDistance(Vector(target)) <= self.Q2.range then
+			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q2.delay, self.Q2.width, self.Q2.range, math.huge, myHero, false)
+			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+			if HitChance >= 6 and GetDistance(CastPosition) > self.Q.range and GetDistance(CastPosition) <= self.Q2.range then
 				local countMinion, minion = self:CountMinionInLine(target)
 				if minion ~= nil and countMinion >= self.menu_Combo_Qhit then
 					CastSpellTarget(minion.Addr, _Q)
@@ -327,31 +341,88 @@ function Lucian:LogicQ()
 							end						
 						end
 					end
-				end       
+				end      
 			end
 		end
 	end
 end
 
+local function GetDistanceSqr(p1, p2)
+    p2 = GetOrigin(p2) or GetOrigin(myHero)
+    return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
+end
+
+function Lucian:ProjectOn(point, segmentStart, segmentEnd)
+	local cx = point.x;
+    local cy = point.z;
+    local ax = segmentStart.x;
+    local ay = segmentStart.z;
+    local bx = segmentEnd.x;
+    local by = segmentEnd.z;
+    local rL = ((cx - ax) * (bx - ax) + (cy - ay) * (by - ay)) / (math.pow(bx - ax, 2) + math.pow(by - ay, 2));
+    local pointLine = Vector(ax + rL * (bx - ax), 0, ay + rL * (by - ay))
+    if (rL < 0) then
+        rS = 0;
+    elseif (rL > 1) then
+        rS = 1;
+    else
+        rS = rL;
+    end
+    if rS == rL then
+    	isOnSegment = true
+    	pointSegment = pointLine
+    else
+    	isOnSegment = false
+    	pointSegment = Vector(ax + rS * (bx - ax), 0, ay + rS * (by - ay))
+    end
+    return isOnSegment, pointSegment
+end
+
+function Lucian:Distance(point, segmentStart, segmentEnd, onlyIfOnSegment, squared)
+	local isOnSegment, pointSegment = self:ProjectOn(point, segmentStart, segmentEnd)
+	if isOnSegment or onlyIfOnSegment == false then
+		if squared then
+			return GetDistanceSqr(pointSegment, point)
+		else
+			return GetDistance(pointSegment, point)
+		end
+	end
+	return math.huge
+end
+
+function Lucian:CanHitSkillShot(target, minion)
+	local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+	local powCalc = math.pow(self.Q2.width, 2)
+	if self:Distance(Vector(minion), Vector(myHero), CastPosition, true, true) <= powCalc then
+		return true
+	end
+	return false
+end
+
 function Lucian:CountMinionInLine(target)
 	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-    local targetPos = Vector(target.x, target.y, target.z)
+    --local targetPos = Vector(target.x, target.y, target.z)
+    local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 	local NH = 0
 	local minioncollision
-	GetAllUnitAroundAnObject(myHero.Addr, 2000)
+	GetAllUnitAroundAnObject(myHero.Addr, self.Q2.range)
 	for i, obj in ipairs(pUnit) do
 		if obj ~= 0 then
 			local minions = GetUnit(obj)
-            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and (GetType(minions.Addr) == 1 or GetType(minions.Addr) == 2) then
-				local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, targetPos, Vector(minion))
-			    if isOnSegment and (GetDistance(Vector(minions), proj2) <= (65)) then
+            if IsEnemy(minions.Addr) and not IsDead(minions.Addr) and not IsInFog(minions.Addr) and GetType(minions.Addr) == 1 then
+            	if self:CanHitSkillShot(target, minions) then
+				--local proj2, pointLine, isOnSegment = VectorPointProjectionOnLineSegment(myHeroPos, CastPosition, Vector(minions))
+			    --if isOnSegment and (GetDistanceSqr(Vector(minions), proj2) <= (65) ^ 2) then
 			        NH = NH + 1
 			        minioncollision = minions
+			        --DrawCircleGame(minions.x , minions.y, minions.z, 100, Lua_ARGB(255,255,0,255))
 			    end
 			end
 		end
 	end
     return NH , minioncollision
+
+
     --[[local NH = 0
 	local minioncollision = nil
     local targetPos = Vector(target.x, target.y, target.z)
@@ -458,7 +529,7 @@ function Lucian:AutoQW()
 		local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q2.delay, self.Q2.width, self.Q2.range, math.huge, myHero, false)
 		if HitChance >= 2 and GetDistance(Vector(target)) > self.Q.range and GetDistance(Vector(target)) <= self.Q2.range then
 			local countMinion, minion = self:CountMinionInLine(target)
-			if minion ~= nil and myHero.MP / myHero.MaxMP * 100 >= self.menu_Combo_Qmana then
+			if minion ~= nil and countMinion >= self.menu_Combo_Qhit and myHero.MP / myHero.MaxMP * 100 >= self.menu_Combo_Qmana then
 				CastSpellTarget(minion.Addr, _Q)
 			end		       
 		end
@@ -595,6 +666,18 @@ function Lucian:OnDraw()
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q2.range, Lua_ARGB(255,0,0,255))
 		end
 	end
+
+	--[[local TargetQ2 = GetTargetSelector(self.Q2.range, 1)
+	if CanCast(_Q) and TargetQ2 ~= 0 then
+		if IsValidTarget(TargetQ2, self.Q2.range) then
+			target = GetAIHero(TargetQ2)
+			--local CastPosition, HitChance, Position = vpred:GetLineCastPosition(target, self.Q2.delay, self.Q2.width, self.Q2.range, math.huge, myHero, false)
+			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+			if GetDistance(CastPosition) > self.Q.range and GetDistance(CastPosition) <= self.Q2.range then
+				__PrintTextGame(tostring(self:CountMinionInLine(target)))
+			end
+		end
+	end]]
 end
 
 function Lucian:OnProcessSpell(unit, spell)
@@ -658,10 +741,6 @@ end
   return dx * dx + dz * dz
 end]]
 
-local function GetDistanceSqr(p1, p2)
-    p2 = GetOrigin(p2) or GetOrigin(myHero)
-    return (p1.x - p2.x) ^ 2 + ((p1.z or p1.y) - (p2.z or p2.y)) ^ 2
-end
 
 function Lucian:IsUnderTurretEnemy(pos)			--Will Only work near myHero
 	GetAllUnitAroundAnObject(myHero.Addr, 2000)

@@ -695,14 +695,6 @@ function Lucian:OnProcessSpell(unit, spell)
         	self.passRdy = false
         end
     end
-
-    if unit.IsMe and myHero.NetworkId ~= GetIndex(GetTargetById(spell.TargetId))  and string.find(string.lower(spell.Name), "attack") ~= nil then
-    	self.modeTarget = GetType(GetTargetById(spell.TargetId))
-    	self.targetslector = GetTargetById(spell.TargetId)   
-    else
-    	self.modeTarget = 4
-    	self.targetslector = nil	
-    end
 end
 
 function Lucian:OnDoCast(unit, spell)
@@ -877,7 +869,7 @@ function Lucian:InAARange(point)
   --if not "AAcheck" then
     --return true
   --end
-  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
+  if GetType(GetTargetOrb()) == 0 then
     --local targetpos = GetPos(orbwalk:GetTargetOrb())
     local target = GetAIHero(GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)

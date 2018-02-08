@@ -657,7 +657,7 @@ function Tristana:InAARange(point)
   --if not "AAcheck" then
     --return true
   --end
-  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
+  if GetType(GetTargetOrb()) == 0 then
     --local targetpos = GetPos(orbwalk:GetTargetOrb())
     local target = GetAIHero(GetTargetOrb())
     local targetpos = Vector(target.x, target.y, target.z)

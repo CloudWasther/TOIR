@@ -396,7 +396,7 @@ function Jinx:FishBoneActive()
 end
 
 function Jinx:bonusRange()
-	return (670 + GetBoundingRadius(myHero.Addr) + 25 * myHero.LevelSpell(_Q))
+	return (700 + GetBoundingRadius(myHero.Addr) + 25 * myHero.LevelSpell(_Q))
 end
 
 function Jinx:GetRealPowPowRange(target)
@@ -624,6 +624,7 @@ function Jinx:KillSteal()
 end
 
 function Jinx:OnDraw()
+	DrawCircleGame(myHero.x , myHero.y, myHero.z, self:bonusRange(), Lua_ARGB(255,0,0,255))
 	if self.menu_Draw_Already then
 		if self.menu_Draw_Q then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, GetTrueAttackRange(), Lua_ARGB(255,255,0,0))

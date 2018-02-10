@@ -5,12 +5,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Lucian = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Lucian" then
+	--if GetChampName(GetMyChamp()) == "Lucian" then
 		Lucian:__init()
-	end
+	--end
 end
 
 function Lucian:__init()
+	if myHero.CharName ~= "Lucian" then
+        return;
+    end
 	--orbwalk = Orbwalking()
 
 	-- VPrediction

@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 MissFortune = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "MissFortune" then
+	--if GetChampName(GetMyChamp()) == "MissFortune" then
 		MissFortune:__init()
-	end
+	--end
 end
 
 function MissFortune:__init()
+	if myHero.CharName ~= "MissFortune" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	--HPred = HPrediction()
@@ -85,7 +88,7 @@ self.NotAttackSpell =
 	self.mininonListCanQ = {}
 
 	Callback.Add("Tick", function(...) self:OnTick(...) end)
-	--Callback.Add("Update", function(...) self:OnUpdate(...) end)	
+	Callback.Add("Update", function(...) self:OnUpdate(...) end)	
     Callback.Add("Draw", function(...) self:OnDraw(...) end)
     Callback.Add("ProcessSpell", function(unit, spell) self:OnProcessSpell(unit, spell) end)
     --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
@@ -485,7 +488,14 @@ function MissFortune:OnTick()
 end
 
 function MissFortune:OnUpdate()
-
+	if myHero.HasBuff("missfortunebulletsound") then
+		SetLuaMoveOnly(true)
+        SetLuaBasicAttackOnly(true)
+        return;
+    else
+    	SetLuaMoveOnly(false)
+    	SetLuaBasicAttackOnly(false)
+	end
 end
 
 function MissFortune:LogicQ()

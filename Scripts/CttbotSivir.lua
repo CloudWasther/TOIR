@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Sivir = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Sivir" then
+	--if GetChampName(GetMyChamp()) == "Sivir" then
 		Sivir:__init()
-	end
+	--end
 end
 
 function Sivir:__init()
+	if myHero.CharName ~= "Sivir" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	--HPred = HPrediction()

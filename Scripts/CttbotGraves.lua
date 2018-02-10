@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Graves = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Graves" then
+	--if GetChampName(GetMyChamp()) == "Graves" then
 		Graves:__init()
-	end
+	--end
 end
 
 function Graves:__init()
+	if myHero.CharName ~= "Graves" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	--HPred = HPrediction()

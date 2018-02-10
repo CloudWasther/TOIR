@@ -5,12 +5,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Twitch = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Twitch" then
+	--if GetChampName(GetMyChamp()) == "Twitch" then
 		Twitch:__init()
-	end
+	--end
 end
 
 function Twitch:__init()
+	if myHero.CharName ~= "Twitch" then
+        return;
+    end
 	--orbwalk = Orbwalking()
 
 	-- VPrediction

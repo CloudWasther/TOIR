@@ -5,12 +5,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Caitlyn = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Caitlyn" then
+	--if GetChampName(GetMyChamp()) == "Caitlyn" then
 		Caitlyn:__init()
-	end
+	--end
 end
 
 function Caitlyn:__init()
+	if myHero.CharName ~= "Caitlyn" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	--HPred = HPrediction()

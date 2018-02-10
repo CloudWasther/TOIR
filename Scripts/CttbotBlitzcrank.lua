@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Blitzcrank = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Blitzcrank" then
+	--if GetChampName(GetMyChamp()) == "Blitzcrank" then
 		Blitzcrank:__init()
-	end
+	--end
 end
 
 function Blitzcrank:__init()
+	if myHero.CharName ~= "Blitzcrank" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction()
 	--HPred = HPrediction()

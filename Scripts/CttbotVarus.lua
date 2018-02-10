@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Varus = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Varus" then
+	--if GetChampName(GetMyChamp()) == "Varus" then
 		Varus:__init()
-	end
+	--end
 end
 
 function Varus:__init()
+	if myHero.CharName ~= "Varus" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	AntiGap = AntiGapcloser(nil)
@@ -87,7 +90,7 @@ function Varus:OnDrawMenu()
 			self.maxQ = Menu_Bool("Cast Q only max range", self.maxQ, self.menu)
 			self.fastQ = Menu_Bool("Fast cast Q", self.fastQ, self.menu)
 			self.qonly = Menu_Bool("Only Q if have W", self.qonly, self.menu)
-			Menu_Text("Harass Enemy")
+			--Menu_Text("Harass Enemy")
 			--for i, enemy in pairs(GetEnemyHeroes()) do
             	--self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
         	--end
@@ -248,19 +251,22 @@ function Varus:OnUpdate()
 
 	self:AutoER()
 
-	local timecasting = GetTimeGame() - self.CastTime
-	local range = self:CalcQRange2(timecasting)
-	if self.Charging and GetKeyPress(self.Combo) == 0 then
-		local TargetQ = GetTargetSelector(self.Q.maxrange, 1)
+	
+	--[[if self.Charging and GetKeyPress(self.Combo) == 0 then
+		local timecasting = GetTimeGame() - self.CastTime
+		local range = self:CalcQRange2(timecasting)
+		local TargetQ = GetTargetSelector(2000, 1)
 		if TargetQ ~= 0 then
 			target = GetAIHero(TargetQ)
-			local CastPosition, HitChance
 			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 			if HitChance >= 6 and range > GetDistance(target) + 200 then
 				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			end
+			if HitChance >= 6 and GetDistance(target) < GetTrueAttackRange() then
+				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+			end
 		end
-	end
+	end]]
 end
 
 --[[function Varus:OnTick()
@@ -326,22 +332,28 @@ function Varus:LogicQ()
 		end
 	end]]
 
-	if self.maxQ and range < 1600 and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 then
+	if self.maxQ and range < 1600 then --and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 then --and not self.Charging then
 		return
 	end
 
 	local TargetQ = GetTargetSelector(self.Q.maxrange, 1)
 	if TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-		if (CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and self.qonly and self:GetPassiveCount(target) > 0) or not CanCast(_W) then
+		--local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+		if (CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and self.qonly and self:GetPassiveCount(target) > 0) or myHero.LevelSpell(_E) == 0 then
 			if GetKeyPress(self.Combo) > 0 then
-				self:CastQ(target, CastPosition, HitChance)
+				self:CastQ(target)
 			end
 		else
-			if GetKeyPress(self.Combo) > 0 and  CanCast(_E) and (not CanCast(_W) or (CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and GetDistance(target) > GetTrueAttackRange())) then
-				self:CastQ(target, CastPosition, HitChance)
+			if GetKeyPress(self.Combo) > 0 and ((CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and GetDistance(target) > GetTrueAttackRange()) or myHero.LevelSpell(_E) == 0) and not self.qonly then
+				self:CastQ(target)
 			end
+		end
+		if not self.Charging and GetDistance(target) < GetTrueAttackRange() then
+			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+	    	if HitChance >= 4 then
+	    		ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+	    	end
 		end
 	end
 
@@ -350,7 +362,7 @@ function Varus:LogicQ()
 		target = GetAIHero(GetTargetOrb())
 		if GetKeyPress(self.Combo) > 0 then
 			if self:GetPassiveCount(target) >= 3 then
-				self:CastQ(target, CastPosition, HitChance)
+				self:CastQ(target)
 			end
 		end
 	end
@@ -358,9 +370,9 @@ function Varus:LogicQ()
 	for i,hero in pairs(GetEnemyHeroes()) do
 		if IsValidTarget(hero, self.Q.maxrange - 200) then
 			enemy = GetAIHero(hero)
-			local CastPosition, HitChance, Position = self:GetQLinePreCore(enemy)
+			--local CastPosition, HitChance, Position = self:GetQLinePreCore(enemy)
 			if self:GetPassiveCount(enemy) >= self.wCount then				
-				self:CastQ(enemy, CastPosition, HitChance)
+				self:CastQ(enemy)
 			end
 			--[[if self.ts_prio[i].Menu then	    			    	
 			    if IsValidTarget(enemy, self.Q.maxrange) then
@@ -371,11 +383,12 @@ function Varus:LogicQ()
 			    end
 			end]]
 			if self:GetQDmg(enemy) > enemy.HP then
-				self:CastQ(enemy, CastPosition, HitChance)
+				self:CastQ(enemy)
 			end
 
-			if not self:CanMove(enemy) then
-				self:CastQ(enemy, CastPosition, HitChance)
+			if not self:CanMove(enemy) then --and self.Charging then
+				self:CastQ(enemy)
+				--ReleaseSpellToPos(enemy.x, enemy.z, _Q)
 			end
 		end
 	end
@@ -607,31 +620,48 @@ function Varus:CalcQRange2(timer)
 	return total
 end
 
-function Varus:CastQ(target, pos, hitchance)
+function Varus:CastQ(target)
 	--__PrintTextGame(tostring(target))
+	local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 	local timecasting = GetTimeGame() - self.CastTime
-	local range = self:CalcQRange2(timecasting)
+	local range = self:CalcQRange(timecasting)
 	if not self.Charging then
 		if IsValidTarget(target.Addr, self.Q.maxrange) then
-			CastSpellToPos(pos.x, pos.z, _Q)
+			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		end
 	else
-		if GetDistance(pos) < range - 350 and self.fastQ and hitchance >= 6 then
-			ReleaseSpellToPos(pos.x, pos.z, _Q)
-		elseif range == self.Q.maxrange and GetDistance(pos) < range - 350 and hitchance >= 6 then
-			ReleaseSpellToPos(pos.x, pos.z, _Q)
-		elseif target == nil then
-			local TargetQ = GetTargetSelector(self.Q.maxrange, 1)
-			if TargetQ ~= 0 then
-				target = GetAIHero(TargetQ)
-				local CastPosition, HitChance
-				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-				if HitChance >= 6 then
-					ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		if GetDistance(CastPosition) < range - 350 and self.fastQ and HitChance >= 6 then
+			ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		elseif range == self.Q.maxrange and GetDistance(CastPosition) < range - 350 and HitChance >= 6 then
+			ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		elseif GetDistance(target) < GetTrueAttackRange() and HitChance >= 6 then
+			ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		else
+			for i, heros in ipairs(GetEnemyHeroes()) do
+				if heros ~= nil then
+					local targetQ = GetAIHero(heros)
+					if IsValidTarget(targetQ.Addr, GetTrueAttackRange()) then
+						local CastPosition, HitChance, Position = self:GetQLinePreCore(targetQ)
+						if HitChance >= 5 then
+							--__PrintTextGame("1111111111111111")
+							ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+						end
+					end
 				end
 			end
-		end
-		return;
+			--__PrintTextGame("string szText")
+			--[[local TargetQ = GetTargetSelector(GetTrueAttackRange(), 1)
+			if TargetQ ~= 0 then
+				targetQ = GetAIHero(TargetQ)
+				local CastPosition, HitChance
+				local CastPosition, HitChance, Position = self:GetQLinePreCore(targetQ)
+				if HitChance >= 5 and GetDistance(targetQ) < 1800 then
+					--__PrintTextGame("1111111111111111")
+					ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+				end
+			end]]
+			return;
+		end		
 	end
 end
 

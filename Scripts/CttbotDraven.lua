@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Draven = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Draven" then
+	--if GetChampName(GetMyChamp()) == "Draven" then
 		Draven:__init()
-	end
+	--end
 end
 
 function Draven:__init()
+	if myHero.CharName ~= "Draven" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	AntiGap = AntiGapcloser(nil)

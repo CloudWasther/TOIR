@@ -4,12 +4,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Tristana = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Tristana" then
+	--if GetChampName(GetMyChamp()) == "Tristana" then
 		Tristana:__init()
-	end
+	--end
 end
 
 function Tristana:__init()
+	if myHero.CharName ~= "Tristana" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	AntiGap = AntiGapcloser(nil)

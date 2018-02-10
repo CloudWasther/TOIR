@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Corki = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Corki" then
+	--if GetChampName(GetMyChamp()) == "Corki" then
 		Corki:__init()
-	end
+	--end
 end
 
 function Corki:__init()
+	if myHero.CharName ~= "Corki" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	--HPred = HPrediction()

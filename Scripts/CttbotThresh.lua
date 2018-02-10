@@ -5,12 +5,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Thresh = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Thresh" then
+	--if GetChampName(GetMyChamp()) == "Thresh" then
 		Thresh:__init()
-	end
+	--end
 end
 
 function Thresh:__init()
+	if myHero.CharName ~= "Thresh" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	--HPred = HPrediction()

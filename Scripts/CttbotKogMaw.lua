@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 KogMaw = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "KogMaw" then
+	--if GetChampName(GetMyChamp()) == "KogMaw" then
 		KogMaw:__init()
-	end
+	--end
 end
 
 function KogMaw:__init()
+	if myHero.CharName ~= "KogMaw" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	AntiGap = AntiGapcloser(nil)

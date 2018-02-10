@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Jinx = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Jinx" then
+	--if GetChampName(GetMyChamp()) == "Jinx" then
 		Jinx:__init()
-	end
+	--end
 end
 
 function Jinx:__init()
+	if myHero.CharName ~= "Jinx" then
+        return;
+    end
 	--orbwalk = Orbwalking()
 	-- VPrediction
 	vpred = VPrediction(true)

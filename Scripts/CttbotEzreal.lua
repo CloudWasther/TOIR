@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Ezreal = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Ezreal" then
+	--if GetChampName(GetMyChamp()) == "Ezreal" then
 		Ezreal:__init()
-	end
+	--end
 end
 
 function Ezreal:__init()
+	if myHero.CharName ~= "Ezreal" then
+        return;
+    end
 	-- VPrediction
 	vpred = VPrediction(true)
 	HPred = HPrediction()

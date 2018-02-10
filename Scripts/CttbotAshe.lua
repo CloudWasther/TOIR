@@ -3,12 +3,15 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Ashe = class()
 
 function OnLoad()
-	if GetChampName(GetMyChamp()) == "Ashe" then
+	--if GetChampName(GetMyChamp()) == "Ashe" then
 		Ashe:__init()
-	end
+	--end
 end
 
 function Ashe:__init()
+	if myHero.CharName ~= "Ashe" then
+        return;
+    end
 	--orbwalk = Orbwalking()
 	-- VPrediction
 	vpred = VPrediction(true)

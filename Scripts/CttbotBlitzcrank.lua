@@ -3,15 +3,12 @@ IncludeFile("Lib\\TOIR_SDK.lua")
 Blitzcrank = class()
 
 function OnLoad()
-	--if GetChampName(GetMyChamp()) == "Blitzcrank" then
+	if GetChampName(GetMyChamp()) == "Blitzcrank" then
 		Blitzcrank:__init()
-	--end
+	end
 end
 
 function Blitzcrank:__init()
-	if myHero.CharName ~= "Blitzcrank" then
-        return;
-    end
 	-- VPrediction
 	vpred = VPrediction()
 	--HPred = HPrediction()
@@ -529,9 +526,10 @@ function Blitzcrank:KillSteal()
 			end
 
 			if IsValidTarget(hero.Addr, self.Q.range - 150) and CanCast(_Q) and self.menu_Combo_Qks and GetDamage("Q", hero) > GetHealthPoint(hero.Addr) then
-				local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
-				if QHitChance >= 2 then
-					CastSpellToPos(QPos.x, QPos.z, _Q)
+				--local QPos, QHitChance = HPred:GetPredict(self.HPred_Q_M, hero, myHero)
+				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+				if HitChance >= 6 then
+					CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
 				end
 			end
 		end

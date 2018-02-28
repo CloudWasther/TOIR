@@ -16,13 +16,10 @@ function Varus:__init()
 	vpred = VPrediction(true)
 	AntiGap = AntiGapcloser(nil)
 
-    --self.Q = Spell(_Q, 1150)
-    --self.Q2 = Spell(_Q, 1600)
     self.E = Spell(_E, 1050)
     self.R = Spell(_R, 1400)
 
     self.Q = ({Slot = 0, delay = 0.25, minrange = 1150, maxrange = 1800, speed = 1750, width = 70})
-    --self.Q:SetSkillShot(0.25, 1650, 70, true)
     self.E:SetSkillShot(0.25, 1400, 120, true)
     self.R:SetSkillShot(1.2, 2000, 120, true)
 
@@ -35,9 +32,6 @@ function Varus:__init()
     self._chargedCastedT = 0
     self.Charging = false
 
-	--Callback.Add("Tick", function(...) self:OnTick(...) end)
-	--Callback.Add("AfterAttack", function(...) self:OnAfterAttack(...) end)
-    --Callback.Add("BeforeAttack", function(...) self:OnBeforeAttack(...) end)
     Callback.Add("Update", function(...) self:OnUpdate(...) end)
     Callback.Add("PlayAnimation", function(unit, anim) self:OnPlayAnimation(unit, anim) end)
     Callback.Add("ProcessSpell", function(...) self:OnProcessSpell(...) end)
@@ -56,12 +50,7 @@ function Varus:MenuValueDefault()
 	self.menu_Draw_R = self:MenuBool("Draw R Range", false)
 
 	self.autoQ = self:MenuBool("Auto Q", true)
-	self.maxQ = self:MenuBool("Cast Q only max range", true)
-	self.fastQ = self:MenuBool("Fast cast Q", true)
-	self.qonly = self:MenuBool("Only Q if have W", false)
-	--for i, enemy in pairs(GetEnemyHeroes()) do
-        --table.insert(self.ts_prio, { Enemy = GetAIHero(enemy), Menu = self:MenuBool(GetAIHero(enemy).CharName, true)})
-    --end
+	self.qMode = self:MenuComboBox("Mode Combo Q : ", 1)
 
 	self.wCount = self:MenuSliderInt("Auto Cast Spell if Count W", 3)
 
@@ -87,13 +76,7 @@ function Varus:OnDrawMenu()
 	if Menu_Begin(self.menu) then
 		if Menu_Begin("Setting Q") then
 			self.autoQ = Menu_Bool("Auto Q", self.autoQ, self.menu)
-			self.maxQ = Menu_Bool("Cast Q only max range", self.maxQ, self.menu)
-			self.fastQ = Menu_Bool("Fast cast Q", self.fastQ, self.menu)
-			self.qonly = Menu_Bool("Only Q if have W", self.qonly, self.menu)
-			--Menu_Text("Harass Enemy")
-			--for i, enemy in pairs(GetEnemyHeroes()) do
-            	--self.ts_prio[i].Menu = Menu_Bool(GetAIHero(enemy).CharName, self.ts_prio[i].Menu, self.menu)
-        	--end
+			self.qMode = Menu_ComboBox("Mode Combo Q : ", self.qMode, "Fast Q\0Max Q\0\0\0", self.menu)
 			Menu_End()
 		end
 
@@ -210,13 +193,6 @@ function Varus:OnAntiGapClose(target, EndPos)
 end
 
 function Varus:OnUpdate()
-	--self.R.range = 1050 + 300 * myHero.LevelSpell(_R)
-    --self.W.range = 680 + 130 * myHero.LevelSpell(_W)
-
-    --[[GetAllBuffNameActive(myHero.Addr)
-		for i,v in pairs(pBuffName) do
-		__PrintDebug(tostring(v))
-	end]]
 	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
 	SetLuaCombo(true)
 
@@ -251,60 +227,32 @@ function Varus:OnUpdate()
 
 	self:AutoER()
 
-	
-	--[[if self.Charging and GetKeyPress(self.Combo) == 0 then
+	local TargetQ = GetTargetSelector(2000, 1)
+	if TargetQ ~= 0 then
+		target = GetAIHero(TargetQ)
+		local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
 		local timecasting = GetTimeGame() - self.CastTime
-		local range = self:CalcQRange2(timecasting)
-		local TargetQ = GetTargetSelector(2000, 1)
-		if TargetQ ~= 0 then
-			target = GetAIHero(TargetQ)
-			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-			if HitChance >= 6 and range > GetDistance(target) + 200 then
-				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
-			end
-			if HitChance >= 6 and GetDistance(target) < GetTrueAttackRange() then
+		local range = self:CalcQRange(timecasting)
+		if self.Charging and GetKeyPress(self.Combo) > 0 then
+			if range == self.Q.maxrange and GetDistance(CastPosition) < range - 350 and HitChance >= 6 then
 				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
 			end
 		end
-	end]]
+	end
+
+	for i,hero in pairs(GetEnemyHeroes()) do
+		if IsValidTarget(hero, 1000) then
+			target = GetAIHero(hero)
+			--local CastPosition, HitChance, Position = self:GetQLinePreCore(enemy)
+			if self:GetPassiveCount(target) > 0 and GetDistance(target) <= GetTrueAttackRange() then
+				if GetKeyPress(self.Combo) > 0 then
+					SetForcedTarget(target)
+				end
+			end
+		end
+	end
 end
 
---[[function Varus:OnTick()
-	if (IsDead(myHero.Addr) or myHero.IsRecall or IsTyping() or IsDodging()) then return end
-	SetLuaCombo(true)
-
-	if CanCast(_Q) and self.autoQ then
-		self:LogicQ();
-	end
-
-	if CanCast(_W) and self.autoW then
-		self:LogicW();
-	end
-
-	if CanCast(_E) and self.autoE then
-		self:LogicE();
-	end
-
-	if CanCast(_R) then
-		local TargetR = GetTargetSelector(self.R.range, 1)
-	    if GetKeyPress(self.useR) > 0 and IsValidTarget(TargetR, self.R.range) then
-	    	target = GetAIHero(TargetR)
-	    	local CastPosition, HitChance, Position = self:GetRCirclePreCore(target)
-	    	if HitChance >= self:HitChanceManager(self.rHC) then
-	    		CastSpellToPos(CastPosition.x, CastPosition.z, _R)
-	    	end
-	    end
-	    if self.autoR then
-			self:LogicR();
-		end
-	end
-
-	self:AutoQER()
-
-	if self.Enalble_Mod_Skin then
-		ModSkin(self.Set_Skin)
-	end
-end]]
 
 function Varus:CanMoveOrb(extraWindup)
     return GetTimeGame() + self:GamePing() > GetLastBATick() + GetWindupBA(myHero.Addr) + extraWindup --self.menu_advanced_delayWindup.getValue() /1000
@@ -322,46 +270,11 @@ function Varus:LogicQ()
 	local timecasting = GetTimeGame() - self.CastTime
 	local range = self:CalcQRange(timecasting)
 
-	--[[for i,hero in pairs(GetEnemyHeroes()) do
-		if hero ~= nil then
-			target = GetAIHero(hero)
-			if IsValidTarget(target.Addr, 1600) and self:GetQDmg(target) > target.HP then
-				local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-				self:CastQ(target, CastPosition, HitChance)
-			end
-		end
-	end]]
-
-	if self.maxQ and range < 1600 then --and CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) == 0 then --and not self.Charging then
-		return
-	end
-
 	local TargetQ = GetTargetSelector(self.Q.maxrange, 1)
 	if TargetQ ~= 0 then
 		target = GetAIHero(TargetQ)
-		--local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-		if (CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and self.qonly and self:GetPassiveCount(target) > 0) or myHero.LevelSpell(_E) == 0 then
+		if GetDistance(target) > self.Q.minrange and CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and myHero.MP > 250 then
 			if GetKeyPress(self.Combo) > 0 then
-				self:CastQ(target)
-			end
-		else
-			if GetKeyPress(self.Combo) > 0 and ((CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and GetDistance(target) > GetTrueAttackRange()) or myHero.LevelSpell(_E) == 0) and not self.qonly then
-				self:CastQ(target)
-			end
-		end
-		if not self.Charging and GetDistance(target) < GetTrueAttackRange() then
-			local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-	    	if HitChance >= 4 then
-	    		ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
-	    	end
-		end
-	end
-
-	local target = 0
-	if GetType(GetTargetOrb()) == 0 then
-		target = GetAIHero(GetTargetOrb())
-		if GetKeyPress(self.Combo) > 0 then
-			if self:GetPassiveCount(target) >= 3 then
 				self:CastQ(target)
 			end
 		end
@@ -371,24 +284,24 @@ function Varus:LogicQ()
 		if IsValidTarget(hero, self.Q.maxrange - 200) then
 			enemy = GetAIHero(hero)
 			--local CastPosition, HitChance, Position = self:GetQLinePreCore(enemy)
-			if self:GetPassiveCount(enemy) >= self.wCount then				
-				self:CastQ(enemy)
+			if self:GetPassiveCount(enemy) > 0 and GetDistance(enemy) > GetTrueAttackRange() then
+				if GetKeyPress(self.Combo) > 0 then
+					self:CastQ(enemy)
+				end
 			end
-			--[[if self.ts_prio[i].Menu then	    			    	
-			    if IsValidTarget(enemy, self.Q.maxrange) then
-			    	__PrintTextGame(tostring(enemy.NetworkId == self.ts_prio[i].Enemy.NetworkId))
-			    	if enemy.NetworkId == self.ts_prio[i].Enemy.NetworkId and GetDistance(enemy) > GetTrueAttackRange() and self:CanHarras() then				    						
-			    		self:CastQ(enemy, CastPosition, HitChance)
-			    	end
-			    end
-			end]]
+			if self:GetPassiveCount(enemy) >= self.wCount then --and GetDistance(enemy) < GetTrueAttackRange() then
+				self:CastQ(enemy);
+			end
 			if self:GetQDmg(enemy) > enemy.HP then
-				self:CastQ(enemy)
+				if GetKeyPress(self.Combo) > 0 then
+					self:CastQ(enemy);
+				end
 			end
 
 			if not self:CanMove(enemy) then --and self.Charging then
-				self:CastQ(enemy)
-				--ReleaseSpellToPos(enemy.x, enemy.z, _Q)
+				if GetKeyPress(self.Combo) > 0 then
+					self:CastQ(enemy)
+				end
 			end
 		end
 	end
@@ -399,7 +312,7 @@ function Varus:LogicE()
 	if TargetE ~= 0 then
 		target = GetAIHero(TargetE)
 		local CastPosition, HitChance, Position = self:GetECirclePreCore(target)
-		if CountEnemyChampAroundObject(myHero.Addr, 800) == 0 and GetDistance(target) < GetTrueAttackRange() then
+		if GetDistance(target) < GetTrueAttackRange() then
 			if GetKeyPress(self.Combo) > 0 and HitChance >= 6 then
 				CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 			end
@@ -414,7 +327,7 @@ function Varus:LogicE()
 				CastSpellToPos(enemy.x, enemy.z, _Q)
 			end
 
-			if self:GetPassiveCount(enemy) >= self.wCount and HitChance >= 6 then				
+			if self:GetPassiveCount(enemy) >= self.wCount and HitChance >= 6 then
 				CastSpellToPos(CastPosition.x, CastPosition.z, _E)
 			end
 
@@ -449,7 +362,7 @@ function Varus:LogicR()
 				CastSpellToPos(enemy.x, enemy.z, _R)
 			end
 
-			if self:GetPassiveCount(enemy) >= self.wCount and HitChance >= 6 and CanCast(_Q) and (self:GetRDmg(enemy) + self:GetQDmg(enemy) > enemy.HP) then				
+			if self:GetPassiveCount(enemy) >= self.wCount and HitChance >= 6 and CanCast(_Q) and (self:GetRDmg(enemy) + self:GetQDmg(enemy) > enemy.HP) then
 				CastSpellToPos(CastPosition.x, CastPosition.z, _R)
 			end
 
@@ -490,10 +403,6 @@ function Varus:AutoER()
 	end
 end
 
-function Varus:farmQ()
-
-end
-
 function Varus:DrawQRange()
 	if self.Charging then
 		local timecasting = GetTimeGame() - self.CastTime
@@ -508,7 +417,7 @@ end
 function Varus:OnDraw()
 	if self.menu_Draw_Already then
 		if self.menu_Draw_Q and self.Q:IsReady() then
-			--DrawCircleGame(myHero.x , myHero.y, myHero.z, self.Q.maxrange, Lua_ARGB(255,255,0,0))
+			self:DrawQRange()
 		end
 		if self.menu_Draw_E and self.E:IsReady() then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.E.range, Lua_ARGB(255,0,255,0))
@@ -519,11 +428,6 @@ function Varus:OnDraw()
 	else
 		if self.menu_Draw_Q then
 			self:DrawQRange()
-			--aa = (1 / (self.CastTime - GetTimeGame())) * self.Q.speed + self.Q.maxrange
-			--if --aa >= self.Q2.range then
-				--aa = self.Q2.range
-			--end
-			--DrawCircleGame(myHero.x , myHero.y, myHero.z, aa, Lua_ARGB(255,255,0,0))
 		end
 		if self.menu_Draw_E then
 			DrawCircleGame(myHero.x , myHero.y, myHero.z, self.E.range, Lua_ARGB(255,0,255,0))
@@ -548,18 +452,15 @@ end
 function Varus:OnDoCast(unit, spell)
 	local spellName = spell.Name:lower()
 	if unit.IsMe then
-		--__PrintTextGame(spell.Name)
 		if spell.Name == "VarusQ" or spell.Name == "VarusE" or spell.Name == "VarusR" then
 			self.CastTime = GetTimeGame();
             self.CanCast = false;
-            --self.Charging = true
 		end
 	end
 end
 
 function Varus:OnPlayAnimation(unit, anim)
 	if unit.IsMe then
-			--__PrintDebug(anim)
 			if anim == "Spell1" then
 				self._chargedCastedT = GetTimeGame()
 				self.Charging = true
@@ -609,59 +510,48 @@ function Varus:CalcQRange(timer)
 	return total
 end
 
-function Varus:CalcQRange2(timer)
-	local rangediff = self.Q.maxrange - self.Q.minrange
-	local min = self.Q.minrange
-
-	local total = rangediff / 1.4 * timer + min
-
-	--if total > self.Q.maxrange then total = self.Q.maxrange end
-
-	return total
-end
-
 function Varus:CastQ(target)
-	--__PrintTextGame(tostring(target))
-	local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
-	local timecasting = GetTimeGame() - self.CastTime
-	local range = self:CalcQRange(timecasting)
-	if not self.Charging then
-		if IsValidTarget(target.Addr, self.Q.maxrange) then
+	if target ~= nil then
+		local CastPosition, HitChance, Position = self:GetQLinePreCore(target)
+		local timecasting = GetTimeGame() - self.CastTime
+		local range = self:CalcQRange(timecasting)
+		if not self.Charging then
 			CastSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		end
-	else
-		if GetDistance(CastPosition) < range - 350 and self.fastQ and HitChance >= 6 then
-			ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		elseif range == self.Q.maxrange and GetDistance(CastPosition) < range - 350 and HitChance >= 6 then
-			ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
-		elseif GetDistance(target) < GetTrueAttackRange() and HitChance >= 6 then
-			ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
 		else
-			for i, heros in ipairs(GetEnemyHeroes()) do
-				if heros ~= nil then
-					local targetQ = GetAIHero(heros)
-					if IsValidTarget(targetQ.Addr, GetTrueAttackRange()) then
-						local CastPosition, HitChance, Position = self:GetQLinePreCore(targetQ)
-						if HitChance >= 5 then
-							--__PrintTextGame("1111111111111111")
-							ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+			if GetDistance(CastPosition) < range - 350 and self.qMode == 0 and HitChance >= 5 then
+				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+			elseif range == self.Q.maxrange and GetDistance(CastPosition) < range - 350 and self.qMode == 1 and HitChance >= 5 then
+				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+			elseif CountEnemyChampAroundObject(myHero.Addr, GetTrueAttackRange()) > 0 then
+				for i, heros in ipairs(GetEnemyHeroes()) do
+					if heros ~= nil then
+						local targetQ = GetAIHero(heros)
+						if IsValidTarget(targetQ.Addr, GetTrueAttackRange()) then
+							local CastPosition, HitChance, Position = self:GetQLinePreCore(targetQ)
+							if HitChance >= 5 and GetDistance(CastPosition) < range - 350 then
+								ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+							end
 						end
 					end
 				end
+			elseif range == self.Q.maxrange and GetDistance(CastPosition) < range - 350 and HitChance >= 5 then
+				ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+			else
+				return;
 			end
-			--__PrintTextGame("string szText")
-			--[[local TargetQ = GetTargetSelector(GetTrueAttackRange(), 1)
-			if TargetQ ~= 0 then
-				targetQ = GetAIHero(TargetQ)
-				local CastPosition, HitChance
-				local CastPosition, HitChance, Position = self:GetQLinePreCore(targetQ)
-				if HitChance >= 5 and GetDistance(targetQ) < 1800 then
-					--__PrintTextGame("1111111111111111")
-					ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+		end
+	else
+		for i, heros in ipairs(GetEnemyHeroes()) do
+			if heros ~= nil then
+				local targetQ = GetAIHero(heros)
+				if IsValidTarget(targetQ.Addr, GetTrueAttackRange()) then
+					local CastPosition, HitChance, Position = self:GetQLinePreCore(targetQ)
+					if HitChance >= 4 then
+						ReleaseSpellToPos(CastPosition.x, CastPosition.z, _Q)
+					end
 				end
-			end]]
-			return;
-		end		
+			end
+		end
 	end
 end
 
@@ -799,119 +689,5 @@ local function CountAlliesInRange(pos, range)
     return n
 end
 
-function Varus:CirclePoints(CircleLineSegmentN, radius, position)
-  local points = {}
-  for i = 1, CircleLineSegmentN, 1 do
-    local angle = i * 2 * math.pi / CircleLineSegmentN
-    local point = Vector(position.x + radius * math.cos(angle), position.y + radius * math.sin(angle), position.z);
-    table.insert(points, point)
-  end
-  return points
-end
 
-function Varus:CastDash(asap)
-    asap = asap and asap or false
-    local DashMode = self.E_Mode
-    local bestpoint = Vector(0, 0, 0)
-    local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
 
-    if DashMode == 0 then
-    	bestpoint = myHeroPos:Extended(GetMousePos(), self.E.range)
-    end
-
-    if DashMode == 1 then
-    	local orbT = GetTargetOrb()
-    	if orbT ~= nil and GetType(orbT) == 0 then
-	    	target = GetAIHero(orbT)
-		    local startpos = Vector(myHero.x, myHero.y, myHero.z)
-		    local endpos = Vector(target.x, target.y, target.z)
-		    local dir = (endpos - startpos):Normalized()
-		    local pDir = dir:Perpendicular()
-		    local rightEndPos = endpos + pDir * GetDistance(orbT)
-		    local leftEndPos = endpos - pDir * GetDistance(orbT)
-		    local rEndPos = Vector(rightEndPos.x, rightEndPos.y, myHero.z)
-		    local lEndPos = Vector(leftEndPos.x, leftEndPos.y, myHero.z);
-		    if GetDistance(GetMousePos(), rEndPos) < GetDistance(GetMousePos(), lEndPos) then
-		        bestpoint = myHeroPos:Extended(rEndPos, self.E.range);
-		    else
-		        bestpoint = myHeroPos:Extended(lEndPos, self.E.range);
-		    end
-   		end
-  	end
-
-    if DashMode == 2 then
-	    points = self:CirclePoints(15, self.E.range, myHeroPos)
-	    bestpoint = myHeroPos:Extended(GetMousePos(), self.E.range);
-	    local enemies = self:CountEnemiesInRange(bestpoint, 350)
-
-	    for i, point in pairs(points) do
-		    local count = self:CountEnemiesInRange(point, 350)
-		    if not self:InAARange(point) then
-			  	if self:IsUnderAllyTurret(point) then
-			        bestpoint = point;
-			        enemies = count - 1;
-			    elseif count < enemies then
-			        enemies = count;
-			        bestpoint = point;
-			    elseif count == enemies and GetDistance(GetMousePos(), point) < GetDistance(GetMousePos(), bestpoint) then
-			        enemies = count;
-			        bestpoint = point;
-			  	end
-		    end
-		end
-  	end
-
-  	if bestpoint == Vector(0, 0, 0) then
-    	return Vector(0, 0, 0)
-  	end
-
-  	local isGoodPos = self:IsGoodPosition(bestpoint)
-
-  	if asap and isGoodPos then
-    	return bestpoint
-  	elseif isGoodPos and self:InAARange(bestpoint) then
-    	return bestpoint
-  	end
-  	return Vector(0, 0, 0)
-end
-
-function Varus:InAARange(point)
-  --if not "AAcheck" then
-    --return true
-  --end
-  if self.targetslector ~= nil and GetType(GetTargetOrb()) == 0 then
-    --local targetpos = GetPos(orbwalk:GetTargetOrb())
-    local target = GetAIHero(GetTargetOrb())
-    local targetpos = Vector(target.x, target.y, target.z)
-    return GetDistance(point, targetpos) < GetTrueAttackRange()
-  else
-    return self:CountEnemiesInRange(point, GetTrueAttackRange()) > 0
-  end
-end
-
-function Varus:IsGoodPosition(dashPos)
-	local segment = self.E.range / 5;
-	local myHeroPos = Vector(myHero.x, myHero.y, myHero.z)
-	for i = 1, 5, 1 do
-		pos = myHeroPos:Extended(dashPos, i * segment)
-		if IsWall(pos.x, pos.y, pos.z) then
-			return false
-		end
-	end
-
-	if self:IsUnderTurretEnemy(dashPos) then
-		return false
-	end
-
-	local enemyCheck = 2 --Config.Item("EnemyCheck", true).GetValue<Slider>().Value;
-    local enemyCountDashPos = self:CountEnemiesInRange(dashPos, 600);
-    if enemyCheck > enemyCountDashPos then
-    	return true
-    end
-    local enemyCountPlayer = CountEnemyChampAroundObject(myHero.Addr, 400)
-    if enemyCountDashPos <= enemyCountPlayer then
-    	return true
-    end
-
-    return false
-end

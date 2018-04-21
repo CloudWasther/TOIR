@@ -396,7 +396,7 @@ function Graves:LogicR()
 		if hero ~= nil then
 			target = GetAIHero(hero)
 			if IsValidTarget(target, self.R.range - 150) and self:ValidUlt(target) then
-				local rDmg = GetDamage("Q", target)
+				local rDmg = GetDamage("R", target)
 				--__PrintTextGame(tostring(rDmg))
 				if rDmg > target.HP then
 					if self.overkillR and target.HP < myHero.HP then
